@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 104" width="96" height="104" role="img" aria-labelledby="title desc">
+  <title id="title">Instituto Jorge Robledo</title>
+  <desc id="desc">Escudo vectorial institucional para las páginas académicas.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.2" stdDeviation="1.2" flood-color="#000" flood-opacity="0.20"/>
+    </filter>
+  </defs>
+  <path d="M48 4 C31 8 17 8 7 6 C7 40 14 72 48 99 C82 72 89 40 89 6 C79 8 65 8 48 4 Z" fill="#111" filter="url(#shadow)"/>
+  <path d="M48 8 C32 12 19 12 11 10 C12 40 19 69 48 92 C77 69 84 40 85 10 C77 12 64 12 48 8 Z" fill="#ffffff"/>
+  <path d="M48 11 C33 14 21 14 14 13 C14 25 14 34 15 41 H81 C82 34 82 25 82 13 C75 14 63 14 48 11 Z" fill="#0a8f55"/>
+  <path d="M15 45 C18 64 27 79 46 91 V45 Z" fill="#1178bd"/>
+  <path d="M50 45 V91 C69 79 78 64 81 45 Z" fill="#d8232a"/>
+  <path d="M48 41 H15" stroke="#fff" stroke-width="3"/>
+  <path d="M48 41 H81" stroke="#fff" stroke-width="3"/>
+  <path d="M48 43 V93" stroke="#fff" stroke-width="3"/>
+  <path d="M58 64 L72 56 L81 63" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(27 19)">
+    <path d="M0 6 C7 0 14 1 21 7 V20 C14 15 7 15 0 20 Z" fill="#fff" stroke="#111" stroke-width="2"/>
+    <path d="M42 6 C35 0 28 1 21 7 V20 C28 15 35 15 42 20 Z" fill="#fff" stroke="#111" stroke-width="2"/>
+    <path d="M21 7 V22" stroke="#111" stroke-width="1.5"/>
+    <path d="M5 8 C10 7 14 8 18 10 M5 12 C10 11 14 12 18 14 M25 10 C29 8 34 7 38 8 M25 14 C29 12 34 11 38 12" stroke="#111" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(23 56)">
+    <path d="M14 0 C6 5 4 16 10 27 C5 25 3 21 4 15 C0 20 1 31 12 35 C18 37 24 33 26 27 C22 28 18 27 16 24 C23 22 27 16 25 9 C24 3 19 0 14 0 Z" fill="#fff" stroke="#111" stroke-width="1.6"/>
+    <circle cx="16" cy="9" r="1.6" fill="#111"/>
+  </g>
+  <g fill="#c9a25f" stroke="#111" stroke-width="1.2">
+    <g transform="translate(58 51)">
+      <ellipse cx="8" cy="10" rx="7" ry="10"/>
+      <circle cx="5" cy="8" r="2.7" fill="#fff"/><circle cx="11" cy="8" r="2.7" fill="#fff"/>
+      <circle cx="5" cy="8" r="1" fill="#111"/><circle cx="11" cy="8" r="1" fill="#111"/>
+      <path d="M8 10 l-2 3 h4 z" fill="#d88b1f"/>
+      <path d="M3 2 l-4 -2 M13 2 l4 -2"/>
+    </g>
+    <g transform="translate(72 52) scale(.75)">
+      <ellipse cx="8" cy="10" rx="7" ry="10"/>
+      <circle cx="5" cy="8" r="2.7" fill="#fff"/><circle cx="11" cy="8" r="2.7" fill="#fff"/>
+      <circle cx="5" cy="8" r="1" fill="#111"/><circle cx="11" cy="8" r="1" fill="#111"/>
+      <path d="M8 10 l-2 3 h4 z" fill="#d88b1f"/>
+      <path d="M3 2 l-4 -2 M13 2 l4 -2"/>
+    </g>
+    <g transform="translate(67 72) scale(.85)">
+      <ellipse cx="8" cy="10" rx="7" ry="10"/>
+      <circle cx="5" cy="8" r="2.7" fill="#fff"/><circle cx="11" cy="8" r="2.7" fill="#fff"/>
+      <circle cx="5" cy="8" r="1" fill="#111"/><circle cx="11" cy="8" r="1" fill="#111"/>
+      <path d="M8 10 l-2 3 h4 z" fill="#d88b1f"/>
+      <path d="M3 2 l-4 -2 M13 2 l4 -2"/>
+    </g>
+  </g>
+</svg>
