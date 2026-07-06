@@ -7,19 +7,7 @@
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
-  <section id="login" class="lock-screen">
-    <img class="lock-logo" src="assets/logo_colegio_transparente.png" alt="Logo Instituto Jorge Robledo" />
-    <p class="kicker">Instituto Jorge Robledo</p>
-    <h2>Acceso al curso / Course Access</h2>
-    <p>Ingresa la clave general del curso para consultar materiales comunes.</p>
-    <p>Enter the general course password to review shared class materials.</p>
-    <input id="password" type="password" placeholder="Clave / Password" autocomplete="current-password" />
-    <button onclick="checkAccess()">Entrar / Enter</button>
-    <p id="error" class="error"></p>
-    <p><small>Nota: esta clave organiza el acceso de estudiantes, pero no reemplaza una autenticación privada real.</small></p>
-  </section>
-
-  <main id="content" class="page" style="display:none;">
+  <main class="page">
     <header class="hero">
       <img class="school-logo" src="assets/logo_colegio_transparente.png" alt="Logo Instituto Jorge Robledo" />
       <div class="hero-text">
@@ -92,29 +80,5 @@
       <p>Hosted on GitHub Pages.</p>
     </footer>
   </main>
-
-  <script>
-    const COURSE_PASSWORD = "geo8-2026";
-    const ACCESS_KEY = "ijr-geometria-8-2026-2-access";
-
-    function checkAccess() {
-      const input = document.getElementById("password").value.trim();
-      const error = document.getElementById("error");
-      if (input === COURSE_PASSWORD) {
-        localStorage.setItem(ACCESS_KEY, "ok");
-        document.getElementById("login").style.display = "none";
-        document.getElementById("content").style.display = "block";
-      } else {
-        error.textContent = "Clave incorrecta. Verifica con el docente. / Incorrect password.";
-      }
-    }
-
-    window.onload = () => {
-      if (localStorage.getItem(ACCESS_KEY) === "ok") {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("content").style.display = "block";
-      }
-    };
-  </script>
 </body>
 </html>
