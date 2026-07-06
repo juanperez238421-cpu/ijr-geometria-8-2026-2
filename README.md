@@ -25,11 +25,9 @@ grupos/8C.html
 
 ## Acceso / Access
 
-Clave general inicial para estudiantes:
+La página principal del curso queda abierta para materiales comunes.
 
-```txt
-geo8-2026
-```
+The main course page remains open for shared materials.
 
 Claves específicas por grupo:
 
@@ -39,7 +37,7 @@ Claves específicas por grupo:
 8C: geo8C-2026
 ```
 
-Nota: estas claves organizan el acceso de estudiantes, pero no reemplazan una autenticación privada real. No se debe subir información sensible, calificaciones ni datos personales.
+Nota: estas claves organizan el acceso de estudiantes por grupo, pero no reemplazan una autenticación privada real. No se debe subir información sensible, calificaciones ni datos personales.
 
 ## Modelo de contenidos / Content Model
 
