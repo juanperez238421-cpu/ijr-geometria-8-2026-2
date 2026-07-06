@@ -15,6 +15,8 @@ https://juanperez238421-cpu.github.io/ijr-geometria-8-2026-2/
 ```txt
 index.html
 assets/style.css
+assets/logo_colegio_transparente.png
+assets/logo_colegio_fondo_blanco.png
 clases/semana-01/index.html
 grupos/8A.html
 grupos/8B.html
@@ -23,13 +25,28 @@ grupos/8C.html
 
 ## Acceso / Access
 
-Clave visual inicial para estudiantes:
+Clave general inicial para estudiantes:
 
 ```txt
 geo8-2026
 ```
 
-Nota: esta clave organiza el acceso de estudiantes, pero no reemplaza una autenticación privada real. No se debe subir información sensible, calificaciones ni datos personales.
+Claves específicas por grupo:
+
+```txt
+8A: geo8A-2026
+8B: geo8B-2026
+8C: geo8C-2026
+```
+
+Nota: estas claves organizan el acceso de estudiantes, pero no reemplazan una autenticación privada real. No se debe subir información sensible, calificaciones ni datos personales.
+
+## Modelo de contenidos / Content Model
+
+- Los videos, conceptos generales, guías y recursos base son comunes para 8°A, 8°B y 8°C.
+- Cada grupo tiene una página separada para recordatorios, actividades y observaciones particulares.
+- General videos, concepts, guides, and base resources are shared across 8°A, 8°B, and 8°C.
+- Each group has a separate page for reminders, activities, and specific notes.
 
 ## Curso / Course
 
