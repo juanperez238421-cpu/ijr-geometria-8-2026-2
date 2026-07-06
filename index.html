@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geometría 8° | Instituto Jorge Robledo</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <section id="login" class="lock-screen">
+    <p class="kicker">Instituto Jorge Robledo</p>
+    <h2>Acceso al curso / Course Access</h2>
+    <p>Ingresa la clave del curso para consultar los materiales académicos.</p>
+    <p>Enter the course password to review class materials.</p>
+    <input id="password" type="password" placeholder="Clave / Password" autocomplete="current-password" />
+    <button onclick="checkAccess()">Entrar / Enter</button>
+    <p id="error" class="error"></p>
+    <p><small>Nota: esta clave organiza el acceso de estudiantes, pero no reemplaza una autenticación privada real.</small></p>
+  </section>
+
+  <main id="content" class="page" style="display:none;">
+    <header class="hero">
+      <p class="kicker">Periodo académico 3 · 2026-2</p>
+      <h1>Geometría 8°</h1>
+      <p><strong>Geometry 8th Grade</strong> · Página académica para clases, guías, recursos y actividades.</p>
+      <p>Academic course page for lessons, guides, resources, and weekly updates.</p>
+      <div class="badges">
+        <span class="badge">8°A</span>
+        <span class="badge">8°B</span>
+        <span class="badge">8°C</span>
+        <span class="badge">Geometría</span>
+        <span class="badge">Geometry</span>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="sidebar">
+        <div class="sidebar-title">Navegación / Navigation</div>
+        <ul class="nav-list">
+          <li><a href="#ultima-clase">Última clase</a></li>
+          <li><a href="#materiales">Materiales</a></li>
+          <li><a href="#grupos">Grupos</a></li>
+          <li><a href="#archivo">Archivo semanal</a></li>
+        </ul>
+      </aside>
+
+      <div class="card-grid">
+        <article id="ultima-clase" class="card full">
+          <h2>Última clase / Latest Class</h2>
+          <div class="notice">
+            <p><strong>Semana 01:</strong> Introducción al curso, acuerdos de trabajo y diagnóstico inicial de pensamiento espacial.</p>
+            <p><strong>Week 01:</strong> Course introduction, classroom agreements, and initial spatial-thinking diagnostic activity.</p>
+          </div>
+          <div class="button-row">
+            <a class="button" href="clases/semana-01/">Abrir Semana 01</a>
+            <a class="button secondary" href="README.md">Ver README</a>
+          </div>
+        </article>
+
+        <article id="materiales" class="card">
+          <h2>Materiales / Materials</h2>
+          <p>En esta sección se publicarán presentaciones, guías, talleres, videos y recursos usados en clase.</p>
+          <p>This section will contain presentations, guides, worksheets, videos, and classroom resources.</p>
+        </article>
+
+        <article id="grupos" class="card">
+          <h2>Grupos / Groups</h2>
+          <p>Acceso rápido a la información específica por grupo.</p>
+          <div class="button-row">
+            <a class="button secondary" href="grupos/8A.html">8°A</a>
+            <a class="button secondary" href="grupos/8B.html">8°B</a>
+            <a class="button secondary" href="grupos/8C.html">8°C</a>
+          </div>
+        </article>
+
+        <article id="archivo" class="card full">
+          <h2>Archivo semanal / Weekly Archive</h2>
+          <p>Las clases se organizarán por semana para que los estudiantes puedan revisar el contenido visto, descargar recursos y preparar actividades pendientes.</p>
+          <ul>
+            <li><a href="clases/semana-01/">Semana 01 · Introducción al curso</a></li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>Instituto Jorge Robledo · Geometría 8° · 2026-2</p>
+      <p>Hosted on GitHub Pages.</p>
+    </footer>
+  </main>
+
+  <script>
+    const COURSE_PASSWORD = "geo8-2026";
+    const ACCESS_KEY = "ijr-geometria-8-2026-2-access";
+
+    function checkAccess() {
+      const input = document.getElementById("password").value.trim();
+      const error = document.getElementById("error");
+      if (input === COURSE_PASSWORD) {
+        localStorage.setItem(ACCESS_KEY, "ok");
+        document.getElementById("login").style.display = "none";
+        document.getElementById("content").style.display = "block";
+      } else {
+        error.textContent = "Clave incorrecta. Verifica con el docente. / Incorrect password.";
+      }
+    }
+
+    window.onload = () => {
+      if (localStorage.getItem(ACCESS_KEY) === "ok") {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("content").style.display = "block";
+      }
+    };
+  </script>
+</body>
+</html>
