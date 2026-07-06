@@ -28,10 +28,28 @@ body {
 
 .hero {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 18px;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 22px;
   padding-bottom: 30px;
   border-bottom: 1px solid var(--border);
+}
+
+.hero-text { min-width: 0; }
+
+.school-logo {
+  width: 96px;
+  height: 104px;
+  object-fit: contain;
+  display: block;
+}
+
+.lock-logo {
+  width: 82px;
+  height: 90px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 16px;
 }
 
 .kicker {
@@ -180,7 +198,7 @@ a:hover { text-decoration: underline; }
 }
 
 .lock-screen {
-  max-width: 520px;
+  max-width: 540px;
   margin: 72px auto;
   padding: 28px;
   border: 1px solid var(--border);
@@ -224,4 +242,6 @@ a:hover { text-decoration: underline; }
   .sidebar { position: static; }
   .card-grid { grid-template-columns: 1fr; }
   .page { padding: 34px 20px 56px; }
+  .hero { grid-template-columns: 1fr; }
+  .school-logo { width: 82px; height: 90px; }
 }
