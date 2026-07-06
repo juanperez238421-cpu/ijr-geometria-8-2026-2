@@ -7,21 +7,54 @@
   <link rel="stylesheet" href="../assets/style.css" />
 </head>
 <body>
-  <main class="page">
+  <section id="login" class="lock-screen">
+    <img class="lock-logo" src="../assets/logo_colegio_transparente.png" alt="Logo Instituto Jorge Robledo" />
+    <p class="kicker">Geometría 8° · Grupo 8°B</p>
+    <h2>Acceso por grupo</h2>
+    <p>Ingresa la clave específica del grupo 8°B.</p>
+    <input id="password" type="password" placeholder="Clave 8°B" />
+    <button onclick="checkAccess()">Entrar</button>
+    <p id="error" class="error"></p>
+  </section>
+
+  <main id="content" class="page" style="display:none;">
     <header class="hero">
-      <p class="kicker">Geometría 8° · Grupo 8°B</p>
-      <h1>Grupo 8°B</h1>
-      <p>Espacio específico para recordatorios, actividades y recursos del grupo 8°B.</p>
-      <p>Specific space for reminders, activities, and resources for group 8°B.</p>
+      <img class="school-logo" src="../assets/logo_colegio_transparente.png" alt="Logo Instituto Jorge Robledo" />
+      <div class="hero-text">
+        <p class="kicker">Geometría 8° · Grupo 8°B</p>
+        <h1>Grupo 8°B</h1>
+        <p>Espacio específico para recordatorios, actividades y recursos del grupo 8°B.</p>
+        <p>Specific space for reminders, activities, and resources for group 8°B.</p>
+      </div>
     </header>
     <section class="card-grid" style="margin-top:34px;">
       <article class="card full">
         <h2>Estado actual / Current Status</h2>
-        <p>Contenido pendiente por publicar.</p>
-        <p>Content pending publication.</p>
+        <p>Contenido específico pendiente por publicar.</p>
+        <p>Specific content pending publication.</p>
         <div class="button-row"><a class="button" href="../index.html">Volver al curso</a></div>
       </article>
     </section>
   </main>
+  <script>
+    const GROUP_PASSWORD = "geo8B-2026";
+    const ACCESS_KEY = "ijr-geo-8B-access";
+    function checkAccess() {
+      const input = document.getElementById("password").value.trim();
+      if (input === GROUP_PASSWORD) {
+        localStorage.setItem(ACCESS_KEY, "ok");
+        document.getElementById("login").style.display = "none";
+        document.getElementById("content").style.display = "block";
+      } else {
+        document.getElementById("error").textContent = "Clave incorrecta. Verifica con el docente.";
+      }
+    }
+    window.onload = () => {
+      if (localStorage.getItem(ACCESS_KEY) === "ok") {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("content").style.display = "block";
+      }
+    };
+  </script>
 </body>
 </html>
