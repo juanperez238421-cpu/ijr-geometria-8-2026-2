@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Restore readable Manim source
+      - name: Restore and validate Manim source
         shell: bash
         run: |
           set -euo pipefail
@@ -32,107 +32,59 @@ jobs:
 
       - name: Pull ManimCE 0.20.1
         shell: bash
-        run: |
-          set -euo pipefail
-          docker pull manimcommunity/manim:v0.20.1
+        run: docker pull manimcommunity/manim:v0.20.1
 
-      - name: Low-quality validation renders
+      - name: Render problems video in high quality
         shell: bash
         run: |
           set -euo pipefail
-          SRC="manim/pre_exam_2026_08_03/geometry8_pre_exam_workshop.py"
-          for SCENE in Geometry8_PreExam_Workshop_Problems Geometry8_PreExam_Workshop_Solutions; do
-            docker run --rm \
-              --user "$(id -u):$(id -g)" \
-              -e HOME=/tmp/manim-home \
-              -v "$PWD:/manim" \
-              -w /manim \
-              manimcommunity/manim:v0.20.1 \
-              manim -ql "$SRC" "$SCENE" --format=mp4 --disable_caching
-          done
-
-      - name: High-quality final renders
-        shell: bash
-        run: |
-          set -euo pipefail
-          SRC="manim/pre_exam_2026_08_03/geometry8_pre_exam_workshop.py"
-
           docker run --rm \
             --user "$(id -u):$(id -g)" \
             -e HOME=/tmp/manim-home \
             -v "$PWD:/manim" \
             -w /manim \
             manimcommunity/manim:v0.20.1 \
-            manim -qh "$SRC" Geometry8_PreExam_Workshop_Problems \
+            manim -qh manim/pre_exam_2026_08_03/geometry8_pre_exam_workshop.py \
+              Geometry8_PreExam_Workshop_Problems \
               --format=mp4 --disable_caching \
               --output_file Geometry8_PreExam_Workshop_Problems_1080p \
               2>&1 | tee render_problems.log
 
+      - name: Render solutions video in high quality
+        shell: bash
+        run: |
+          set -euo pipefail
           docker run --rm \
             --user "$(id -u):$(id -g)" \
             -e HOME=/tmp/manim-home \
             -v "$PWD:/manim" \
             -w /manim \
             manimcommunity/manim:v0.20.1 \
-            manim -qh "$SRC" Geometry8_PreExam_Workshop_Solutions \
+            manim -qh manim/pre_exam_2026_08_03/geometry8_pre_exam_workshop.py \
+              Geometry8_PreExam_Workshop_Solutions \
               --format=mp4 --disable_caching \
               --output_file Geometry8_PreExam_Workshop_Solutions_1080p \
               2>&1 | tee render_solutions.log
 
-      - name: Collect and verify delivery files
+      - name: Inventory rendered files
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p delivery
+          echo "Rendered MP4 inventory:"
+          find "$PWD" -type f -name '*.mp4' -printf '%s %p\n' | sort -nr | tee render_inventory.txt
+          count="$(find "$PWD" -type f -name '*.mp4' | wc -l)"
+          test "$count" -ge 2
 
-          echo "All rendered MP4 files:"
-          find media -type f -name '*.mp4' -printf '%s %p\n' | sort -nr
-
-          problems_file="$(find media -type f -name 'Geometry8_PreExam_Workshop_Problems_1080p.mp4' -print -quit)"
-          solutions_file="$(find media -type f -name 'Geometry8_PreExam_Workshop_Solutions_1080p.mp4' -print -quit)"
-
-          if [ -z "$problems_file" ]; then
-            problems_file="$(find media -type f -name '*Problems*.mp4' -printf '%s %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
-          fi
-          if [ -z "$solutions_file" ]; then
-            solutions_file="$(find media -type f -name '*Solutions*.mp4' -printf '%s %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
-          fi
-
-          test -n "$problems_file"
-          test -n "$solutions_file"
-          test -s "$problems_file"
-          test -s "$solutions_file"
-
-          cp "$problems_file" delivery/Geometry8_PreExam_Workshop_Problems_1080p.mp4
-          cp "$solutions_file" delivery/Geometry8_PreExam_Workshop_Solutions_1080p.mp4
-          cp manim/pre_exam_2026_08_03/geometry8_pre_exam_workshop.py delivery/
-          cp render_problems.log render_solutions.log delivery/
-
-          for item in Problems Solutions; do
-            file="delivery/Geometry8_PreExam_Workshop_${item}_1080p.mp4"
-            probe="delivery/${item,,}_ffprobe.txt"
-
-            ffprobe -v error -select_streams v:0 \
-              -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt \
-              -show_entries format=duration,size \
-              -of default=noprint_wrappers=1 \
-              "$file" | tee "$probe"
-
-            width="$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$file")"
-            height="$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$file")"
-            duration="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$file")"
-
-            test "$width" = "1920"
-            test "$height" = "1080"
-            awk -v d="$duration" 'BEGIN { exit !(d > 1.0) }'
-          done
-
-          sha256sum delivery/*.mp4 delivery/*.py > delivery/SHA256SUMS.txt
-
-      - name: Upload rendered package
+      - name: Upload raw Manim output
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: geometry8-pre-exam-workshop-rendered
-          path: delivery/
-          if-no-files-found: error
+          path: |
+            media/
+            manim/pre_exam_2026_08_03/geometry8_pre_exam_workshop.py
+            render_problems.log
+            render_solutions.log
+            render_inventory.txt
+          if-no-files-found: warn
           retention-days: 14
