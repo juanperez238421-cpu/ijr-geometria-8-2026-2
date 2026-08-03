@@ -34,7 +34,7 @@ jobs:
         shell: bash
         run: docker pull manimcommunity/manim:v0.20.1
 
-      - name: Render problems video in high quality
+      - name: Render corrected problems video in high quality
         shell: bash
         run: |
           set -euo pipefail
@@ -50,41 +50,22 @@ jobs:
               --output_file Geometry8_PreExam_Workshop_Problems_1080p \
               2>&1 | tee render_problems.log
 
-      - name: Render solutions video in high quality
+      - name: Inventory corrected render
         shell: bash
         run: |
           set -euo pipefail
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            -e HOME=/tmp/manim-home \
-            -v "$PWD:/manim" \
-            -w /manim \
-            manimcommunity/manim:v0.20.1 \
-            manim -qh manim/pre_exam_2026_08_03/geometry8_pre_exam_workshop.py \
-              Geometry8_PreExam_Workshop_Solutions \
-              --format=mp4 --disable_caching \
-              --output_file Geometry8_PreExam_Workshop_Solutions_1080p \
-              2>&1 | tee render_solutions.log
-
-      - name: Inventory rendered files
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Rendered MP4 inventory:"
           find "$PWD" -type f -name '*.mp4' -printf '%s %p\n' | sort -nr | tee render_inventory.txt
-          count="$(find "$PWD" -type f -name '*.mp4' | wc -l)"
-          test "$count" -ge 2
+          test "$(find "$PWD" -type f -name '*.mp4' | wc -l)" -ge 1
 
-      - name: Upload raw Manim output
+      - name: Upload corrected problems video
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: geometry8-pre-exam-workshop-rendered
+          name: geometry8-pre-exam-workshop-problems-corrected
           path: |
             media/
             manim/pre_exam_2026_08_03/geometry8_pre_exam_workshop.py
             render_problems.log
-            render_solutions.log
             render_inventory.txt
           if-no-files-found: warn
           retention-days: 14
