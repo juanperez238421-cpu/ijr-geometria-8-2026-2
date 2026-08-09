@@ -1,0 +1,1 @@
+Trigger synchronize event after workflow exists in the PR branch.
