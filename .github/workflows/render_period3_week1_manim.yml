@@ -1,0 +1,145 @@
+name: Render Period 3 Week 1 Manim PQH
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    name: Render ${{ matrix.slug }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - slug: class1-theory
+            file: geometry8_period3_week1_class1_theory.py
+            scene: Geometry8Week1Theory
+          - slug: class2-practice
+            file: geometry8_period3_week1_class2_practice.py
+            scene: Geometry8Week1Practice
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Decode temporary project payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p manim_temp/week1_project
+          base64 -d manim_temp/week1_payload.tar.gz.b64 > /tmp/week1_payload.tar.gz
+          tar -xzf /tmp/week1_payload.tar.gz -C manim_temp/week1_project
+          find manim_temp/week1_project -maxdepth 3 -type f -print
+
+      - name: Validate Python and JP classroom style
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd manim_temp/week1_project
+          python -m py_compile "${{ matrix.file }}"
+          python tools/check_manim_style.py "${{ matrix.file }}"
+
+      - name: Pull official ManimCE 0.20.1 image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker pull manimcommunity/manim:v0.20.1
+
+      - name: Protocol preview render (-pql)
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp/manim-home \
+            -e LESSON_TIME_SCALE=0.12 \
+            -e FILE="${{ matrix.file }}" \
+            -e SCENE="${{ matrix.scene }}" \
+            -v "$PWD:/manim" \
+            -w /manim/manim_temp/week1_project \
+            --entrypoint bash \
+            manimcommunity/manim:v0.20.1 \
+            -c '
+              set -euo pipefail
+              mkdir -p /tmp/manim-bin
+              printf "#!/usr/bin/env bash\nexit 0\n" > /tmp/manim-bin/xdg-open
+              chmod +x /tmp/manim-bin/xdg-open
+              export PATH="/tmp/manim-bin:$PATH"
+              manim -pql "$FILE" "$SCENE" --format=mp4 --disable_caching
+            ' 2>&1 | tee "preview_${{ matrix.slug }}.log"
+
+      - name: Final render with literal -pqh
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp/manim-home \
+            -e FILE="${{ matrix.file }}" \
+            -e SCENE="${{ matrix.scene }}" \
+            -v "$PWD:/manim" \
+            -w /manim/manim_temp/week1_project \
+            --entrypoint bash \
+            manimcommunity/manim:v0.20.1 \
+            -c '
+              set -euo pipefail
+              mkdir -p /tmp/manim-bin
+              printf "#!/usr/bin/env bash\nexit 0\n" > /tmp/manim-bin/xdg-open
+              chmod +x /tmp/manim-bin/xdg-open
+              export PATH="/tmp/manim-bin:$PATH"
+              manim -pqh "$FILE" "$SCENE" --format=mp4 --disable_caching
+            ' 2>&1 | tee "render_${{ matrix.slug }}.log"
+
+      - name: Verify final MP4
+        id: verify
+        shell: bash
+        env:
+          SCENE: ${{ matrix.scene }}
+        run: |
+          set -euo pipefail
+          cd manim_temp/week1_project
+          VIDEO="$(find media -type f -path '*/1080p30/*.mp4' -name "${SCENE}.mp4" -print -quit)"
+          test -n "$VIDEO"
+          test -s "$VIDEO"
+          echo "video=$VIDEO" >> "$GITHUB_OUTPUT"
+          ls -lh "$VIDEO"
+          ffprobe -v error \
+            -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt \
+            -show_entries format=duration,size \
+            -of default=noprint_wrappers=1 \
+            "$VIDEO"
+          WIDTH="$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$VIDEO")"
+          HEIGHT="$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$VIDEO")"
+          FPS="$(ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of csv=p=0 "$VIDEO")"
+          test "$WIDTH" = "1920"
+          test "$HEIGHT" = "1080"
+          test "$FPS" = "30/1"
+
+      - name: Stage delivery
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$PWD"
+          PROJECT="$ROOT/manim_temp/week1_project"
+          mkdir -p "$PROJECT/delivery"
+          cp "$PROJECT/${{ steps.verify.outputs.video }}" "$PROJECT/delivery/${{ matrix.scene }}_pqh.mp4"
+          cp "$PROJECT/${{ matrix.file }}" "$PROJECT/delivery/"
+          cp "$PROJECT/library/jp_classroom_style.py" "$PROJECT/delivery/"
+          cp "$ROOT/preview_${{ matrix.slug }}.log" "$PROJECT/delivery/"
+          cp "$ROOT/render_${{ matrix.slug }}.log" "$PROJECT/delivery/"
+          (cd "$PROJECT/delivery" && sha256sum * > SHA256SUMS.txt)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: week1-${{ matrix.slug }}-pqh
+          path: manim_temp/week1_project/delivery/
+          if-no-files-found: error
+          retention-days: 7
