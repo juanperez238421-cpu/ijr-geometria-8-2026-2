@@ -20,14 +20,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          wc -c manim_week3_shaded_v6/payload.part00 manim_week3_shaded_v6/payload.part01 manim_week3_shaded_v6/payload.part02 manim_week3_shaded_v6/payload.part03
-          sha256sum manim_week3_shaded_v6/payload.part00 manim_week3_shaded_v6/payload.part01 manim_week3_shaded_v6/payload.part02 manim_week3_shaded_v6/payload.part03
-          test "$(sha256sum manim_week3_shaded_v6/payload.part00 | awk '{print $1}')" = "3715ab4b50cd080e7ff8b897832c05193d663fc9b5f1895cc229187e543dd367"
-          test "$(sha256sum manim_week3_shaded_v6/payload.part01 | awk '{print $1}')" = "f7bce5de250aebcc7b641d428ad8941e260dd8dbf83e4c995f39789c1a2c43a3"
-          test "$(sha256sum manim_week3_shaded_v6/payload.part02 | awk '{print $1}')" = "af6ff5e6b9bd63647a7f16736a06ba90eb0f9df24a9c2ca945b6bfc91a326251"
-          test "$(sha256sum manim_week3_shaded_v6/payload.part03 | awk '{print $1}')" = "4a472833d1636b5dd25fb962de52857dc770dd58bdbaa79b5a6ee6b12ba6dd43"
           mkdir -p render_v6
-          cat manim_week3_shaded_v6/payload.part00 manim_week3_shaded_v6/payload.part01 manim_week3_shaded_v6/payload.part02 manim_week3_shaded_v6/payload.part03 > render_v6/payload.b64
+          cat \
+            manim_week3_shaded_v6/payload.part00 \
+            manim_week3_shaded_v6/p01_00 \
+            manim_week3_shaded_v6/p01_01 \
+            manim_week3_shaded_v6/p01_02 \
+            manim_week3_shaded_v6/p01_03 \
+            manim_week3_shaded_v6/p01_04 \
+            manim_week3_shaded_v6/p02_00 \
+            manim_week3_shaded_v6/p02_01 \
+            manim_week3_shaded_v6/p02_02 \
+            manim_week3_shaded_v6/p02_03 \
+            manim_week3_shaded_v6/p02_04 \
+            manim_week3_shaded_v6/payload.part03 > render_v6/payload.b64
+          test "$(wc -c < render_v6/payload.b64)" = "18324"
           base64 -d render_v6/payload.b64 > render_v6/payload.tar.gz
           test "$(sha256sum render_v6/payload.tar.gz | awk '{print $1}')" = "b16f8897ee1a92c0bf534b2f9deab11bffc24befaf15852bc44b63867d318dee"
           cd render_v6
