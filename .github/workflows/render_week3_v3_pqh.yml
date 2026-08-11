@@ -24,19 +24,34 @@ jobs:
           tar -xzf geometry8_week3_v3.tar.gz
           python - <<'PY'
           from pathlib import Path
-          p = Path('Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py')
-          s = p.read_text(encoding='utf-8')
-          old = 'fill_color=LIGHT_GRAY, fill_opacity=0.72).move_to(LEFT*3.35 + DOWN*0.62)'
-          new = 'fill_color=LIGHT_GRAY, fill_opacity=0.72).move_to(LEFT*3.35 + DOWN*0.97)'
-          assert old in s, 'expected square-example position not found'
-          p.write_text(s.replace(old, new), encoding='utf-8')
-          for name, old_class, new_class in [
-              ('Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py', 'Geometry8Week3CircleTheorySeniorV3 --format', 'Geometry8Week3CircleTheorySeniorV3Final --format'),
-              ('Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py', 'Geometry8Week3ShadedAreasSeniorV3 --format', 'Geometry8Week3ShadedAreasSeniorV3Final --format'),
-          ]:
-              q = Path(name)
-              t = q.read_text(encoding='utf-8').replace(old_class, new_class)
-              q.write_text(t, encoding='utf-8')
+
+          shaded = Path('Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py')
+          s = shaded.read_text(encoding='utf-8')
+          patches = [
+              ('fill_color=LIGHT_GRAY, fill_opacity=0.72).move_to(LEFT*3.35 + DOWN*0.62)',
+               'fill_color=LIGHT_GRAY, fill_opacity=0.72).move_to(LEFT*3.35 + DOWN*0.97)'),
+              ('r"10\\,\\mathrm{cm}", y_shift=0.30, size=46)',
+               'r"10\\,\\mathrm{cm}", y_shift=-0.35, size=46)'),
+              ('Geometry8Week3ShadedAreasSeniorV3 --format',
+               'Geometry8Week3ShadedAreasSeniorV3Final --format'),
+          ]
+          for old, new in patches:
+              assert old in s, f'expected shaded patch not found: {old}'
+              s = s.replace(old, new, 1)
+          shaded.write_text(s, encoding='utf-8')
+
+          circle = Path('Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py')
+          c = circle.read_text(encoding='utf-8')
+          patches = [
+              ('r"\\boxed{C=\\pi d}"', 'r"C=\\pi d"'),
+              ('r"\\boxed{C=2\\pi r}"', 'r"C=2\\pi r"'),
+              ('Geometry8Week3CircleTheorySeniorV3 --format',
+               'Geometry8Week3CircleTheorySeniorV3Final --format'),
+          ]
+          for old, new in patches:
+              assert old in c, f'expected circle patch not found: {old}'
+              c = c.replace(old, new, 1)
+          circle.write_text(c, encoding='utf-8')
           PY
           python -m py_compile jp_classroom_style.py \
             Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py \
