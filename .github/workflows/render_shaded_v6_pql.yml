@@ -73,7 +73,6 @@ jobs:
           cp Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py delivery/
           cp jp_classroom_style.py delivery/
           cp render_v6_pql.log delivery/
-          ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt -show_entries format=duration,size -of default=noprint_wrappers=1 delivery/Geometry8_Week3_Class2_ShadedAreas_Senior_V6_PQL_QA.mp4 > delivery/ffprobe.txt
           sha256sum delivery/* > delivery/SHA256SUMS.txt
 
       - uses: actions/upload-artifact@v4
