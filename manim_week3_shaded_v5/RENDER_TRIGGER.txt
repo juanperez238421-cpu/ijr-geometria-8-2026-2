@@ -1,0 +1,1 @@
+Trigger audited Shaded Areas V5 PQL/PQH render after deterministic V4-to-V5 reconstruction.
