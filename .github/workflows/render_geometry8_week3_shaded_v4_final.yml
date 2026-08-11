@@ -1,0 +1,90 @@
+name: Render Geometry8 Week3 Shaded V4 FINAL
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render-shaded-v4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reconstruct exact V4 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p render_v4
+          base64 -d manim_week3_shaded_v4/payload.b64 > render_v4/payload.tar.gz
+          cd render_v4
+          tar -xzf payload.tar.gz
+          python -m py_compile Geometry8_Week3_Class2_ShadedAreas_Senior_V4_FINAL.py jp_classroom_style.py
+          test "$(sha256sum Geometry8_Week3_Class2_ShadedAreas_Senior_V4_FINAL.py | awk '{print $1}')" = "404c785ee5f73a46e155e4263a183e862041935c43961b7619006cc5b3f90dbf"
+          test "$(sha256sum jp_classroom_style.py | awk '{print $1}')" = "75ebb3b37b8b925ddf87ef0256c63e8c47a5f014f549f0330d600f540361921a"
+          echo "Exact audited Shaded Areas V4 source verified."
+
+      - name: Pull official ManimCE 0.20.1 image
+        run: docker pull manimcommunity/manim:v0.20.1
+
+      - name: PQL layout QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd render_v4
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp/manim-home \
+            -e LESSON_TIME_SCALE=0.04 \
+            -v "$PWD:/manim" -w /manim \
+            --entrypoint bash manimcommunity/manim:v0.20.1 \
+            -c "set -euo pipefail; mkdir -p /tmp/colab-bin; printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/colab-bin/xdg-open; chmod +x /tmp/colab-bin/xdg-open; export PATH=/tmp/colab-bin:\$PATH; manim -pql Geometry8_Week3_Class2_ShadedAreas_Senior_V4_FINAL.py Geometry8Week3ShadedAreasSeniorV4Final --format=mp4 --disable_caching" \
+            2>&1 | tee render_shaded_v4_pql.log
+
+      - name: Full literal -pqh production render
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd render_v4
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp/manim-home \
+            -e LESSON_TIME_SCALE=1.0 \
+            -v "$PWD:/manim" -w /manim \
+            --entrypoint bash manimcommunity/manim:v0.20.1 \
+            -c "set -euo pipefail; mkdir -p /tmp/colab-bin; printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/colab-bin/xdg-open; chmod +x /tmp/colab-bin/xdg-open; export PATH=/tmp/colab-bin:\$PATH; manim -pqh Geometry8_Week3_Class2_ShadedAreas_Senior_V4_FINAL.py Geometry8Week3ShadedAreasSeniorV4Final --format=mp4 --disable_caching" \
+            2>&1 | tee render_shaded_v4_pqh.log
+
+      - name: Stage and verify final MP4
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd render_v4
+          RAW="$(find media -type f -path '*/1080p30/*' -name 'Geometry8Week3ShadedAreasSeniorV4Final.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
+          test -n "$RAW" && test -s "$RAW"
+          mkdir -p delivery
+          FINAL="delivery/Geometry8_Week3_Class2_ShadedAreas_Senior_V4_FINAL_pqh.mp4"
+          cp "$RAW" "$FINAL"
+          cp Geometry8_Week3_Class2_ShadedAreas_Senior_V4_FINAL.py delivery/
+          cp render_shaded_v4_pql.log render_shaded_v4_pqh.log delivery/
+          ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,avg_frame_rate,pix_fmt -show_entries format=duration,size -of default=noprint_wrappers=1 "$FINAL" | tee delivery/ffprobe.txt
+          grep -q '^codec_name=h264$' delivery/ffprobe.txt
+          grep -q '^width=1920$' delivery/ffprobe.txt
+          grep -q '^height=1080$' delivery/ffprobe.txt
+          grep -q '^pix_fmt=yuv420p$' delivery/ffprobe.txt
+          grep -q '^r_frame_rate=30/1$' delivery/ffprobe.txt
+          ffmpeg -v error -i "$FINAL" -f null -
+          sha256sum delivery/* > delivery/SHA256SUMS.txt
+
+      - name: Upload verified final artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: geometry8-week3-shaded-v4-final
+          path: render_v4/delivery/
+          if-no-files-found: error
+          retention-days: 7
