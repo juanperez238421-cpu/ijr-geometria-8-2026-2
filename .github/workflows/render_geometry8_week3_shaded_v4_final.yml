@@ -16,17 +16,65 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Reconstruct exact V5 source
+      - name: Reconstruct exact audited V5 source
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p render_v5
-          base64 -d manim_week3_shaded_v5/payload.b64 > render_v5/payload.tar.gz
+          base64 -d manim_week3_shaded_v4/payload.b64 > render_v5/payload.tar.gz
           cd render_v5
           tar -xzf payload.tar.gz
+          test "$(sha256sum Geometry8_Week3_Class2_ShadedAreas_Senior_V4_FINAL.py | awk '{print $1}')" = "404c785ee5f73a46e155e4263a183e862041935c43961b7619006cc5b3f90dbf"
+          test "$(sha256sum jp_classroom_style.py | awk '{print $1}')" = "75ebb3b37b8b925ddf87ef0256c63e8c47a5f014f549f0330d600f540361921a"
+
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('Geometry8_Week3_Class2_ShadedAreas_Senior_V4_FINAL.py')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('Geometry8Week3ShadedAreasSeniorV4Final','Geometry8Week3ShadedAreasSeniorV5Final')
+          old='''        left=self.card("SUBTRACT",["One whole region", "One or more holes", "whole − missing"],width=5.85,body_size=40).move_to(LEFT*3.40+UP*0.30)
+        right=self.card("ADD",["Separate shaded pieces", "Each piece is easy", "piece 1 + piece 2 + …"],width=5.85,body_size=40).move_to(RIGHT*3.40+UP*0.30)
+
+        sq=Square(side_length=1.20,stroke_color=BLACK_LINE,stroke_width=3,fill_color=LIGHT_GRAY,fill_opacity=.70)
+        hole=Circle(radius=.36,stroke_color=BLACK_LINE,stroke_width=3,fill_color=WHITE,fill_opacity=1).move_to(sq)
+        mini_left=VGroup(sq,hole).move_to(left.get_center()+DOWN*1.05)
+        p1=Rectangle(width=.78,height=1.05,stroke_color=BLACK_LINE,stroke_width=3,fill_color=LIGHT_GRAY,fill_opacity=.70)
+        p2=p1.copy(); p3=p1.copy()
+        mini_right=VGroup(p1,p2,p3).arrange(RIGHT,buff=.20).move_to(right.get_center()+DOWN*1.05)
+        self.play(FadeIn(left),FadeIn(mini_left),run_time=RUN_NORMAL); self.wait(PAUSE_READ)
+        self.play(FadeIn(right),FadeIn(mini_right),run_time=RUN_NORMAL); self.wait(PAUSE_READ)
+        q=self.text("DECISION: Which regions actually belong in the answer?",45,BOLD).to_edge(DOWN,buff=0.52)
+        self.play(FadeIn(q),run_time=RUN_NORMAL)
+'''
+          new='''        # Keep this decision scene deliberately uncluttered.  In V4, mini-diagrams
+        # were placed inside the text cards and could cover the final body line.
+        left=self.card("SUBTRACT",["Start from ONE whole region", "Remove every hole or gap"],width=5.85,body_size=41).move_to(LEFT*3.40+UP*0.62)
+        right=self.card("ADD",["Use separate shaded pieces", "Add only the pieces you KEEP"],width=5.85,body_size=41).move_to(RIGHT*3.40+UP*0.62)
+        left_rule=self.math(r"A_{\\text{shaded}}=A_{\\text{whole}}-A_{\\text{missing}}",48)
+        right_rule=self.math(r"A_{\\text{shaded}}=A_1+A_2+\\cdots",48)
+        left_rule.next_to(left,DOWN,buff=0.42)
+        right_rule.next_to(right,DOWN,buff=0.42)
+        self.fit(left_rule,5.55,0.80); self.fit(right_rule,5.55,0.80)
+        self.assert_content_safe(VGroup(left,right,left_rule,right_rule), "operation choice cards")
+        self.play(FadeIn(left),run_time=RUN_NORMAL)
+        self.play(FadeIn(left_rule),run_time=RUN_QUICK); self.wait(PAUSE_READ)
+        self.play(FadeIn(right),run_time=RUN_NORMAL)
+        self.play(FadeIn(right_rule),run_time=RUN_QUICK); self.wait(PAUSE_READ)
+        q=self.text("DECISION: Which regions actually belong in the answer?",45,BOLD).to_edge(DOWN,buff=0.48)
+        self.fit(q,12.7,0.72)
+        self.assert_within_frame(q, "operation choice decision prompt")
+        self.play(FadeIn(q),run_time=RUN_NORMAL)
+'''
+          if old not in s:
+              raise SystemExit('V4 operation-choice block not found')
+          s=s.replace(old,new,1)
+          out=Path('Geometry8_Week3_Class2_ShadedAreas_Senior_V5_FINAL.py')
+          out.write_text(s,encoding='utf-8')
+          p.unlink()
+          PY
+
           python -m py_compile Geometry8_Week3_Class2_ShadedAreas_Senior_V5_FINAL.py jp_classroom_style.py
           test "$(sha256sum Geometry8_Week3_Class2_ShadedAreas_Senior_V5_FINAL.py | awk '{print $1}')" = "c29c0fd9bccdc388e284262cd315d4c0809f283058b94af33b70034757cf83fc"
-          test "$(sha256sum jp_classroom_style.py | awk '{print $1}')" = "75ebb3b37b8b925ddf87ef0256c63e8c47a5f014f549f0330d600f540361921a"
           echo "Exact audited Shaded Areas V5 source verified."
 
       - name: Pull official ManimCE 0.20.1 image
@@ -65,8 +113,6 @@ jobs:
         run: |
           set -euo pipefail
           cd render_v5
-          echo "Rendered MP4 candidates:"
-          find media -type f -name '*.mp4' -print
           RAW="$(find media -type f -name 'Geometry8Week3ShadedAreasSeniorV5Final.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
           test -n "$RAW" && test -s "$RAW"
           mkdir -p delivery
