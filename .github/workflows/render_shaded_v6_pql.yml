@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Reconstruct exact V6
+      - name: Reconstruct exact V6 FINAL
         shell: bash
         run: |
           set -euo pipefail
@@ -39,10 +39,11 @@ jobs:
           test "$(sha256sum render_v6/payload.tar.gz | awk '{print $1}')" = "b16f8897ee1a92c0bf534b2f9deab11bffc24befaf15852bc44b63867d318dee"
           cd render_v6
           tar -xzf payload.tar.gz
+          python ../manim_week3_shaded_v6/apply_v6_final_patch.py
           python -m py_compile Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py jp_classroom_style.py
-          test "$(sha256sum Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py | awk '{print $1}')" = "d45567d9c9051cfffc9d7dd1e8b10463af67e0251671a0c1b4932e62f4a362a2"
+          test "$(sha256sum Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py | awk '{print $1}')" = "f58b04e218f693a45d5de7dddaa5a481dcb7053163793f6a11ea397c89b91b94"
           test "$(sha256sum jp_classroom_style.py | awk '{print $1}')" = "3f3f06e94d5cad870ad335502cc1a93e56ce675abb1231ded5f9c71fd3e60e3d"
-          echo "Exact V6 source integrity verified."
+          echo "Exact patched V6 FINAL source integrity verified."
 
       - name: Pull ManimCE 0.20.1
         run: docker pull manimcommunity/manim:v0.20.1
@@ -77,7 +78,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: geometry8-week3-shaded-v6-pql-qa
+          name: geometry8-week3-shaded-v6-pql-qa-final
           path: render_v6/delivery/
           if-no-files-found: error
           retention-days: 7
