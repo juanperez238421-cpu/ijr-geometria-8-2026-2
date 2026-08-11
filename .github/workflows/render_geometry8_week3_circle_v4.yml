@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p render_v4
-          cat manim_week3_circle_v4/payload.part* | base64 -d > render_v4/payload.tar.gz
+          cp manim_week3_circle_v4/payload.tar.gz render_v4/payload.tar.gz
           cd render_v4
           echo "payload sha256: $(sha256sum payload.tar.gz | awk '{print $1}')"
           test "$(sha256sum payload.tar.gz | awk '{print $1}')" = "6d12389d9caef1a381e03a322aa4174aec08b95f6837cadfd5625a95433826e5"
