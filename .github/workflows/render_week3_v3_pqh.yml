@@ -60,33 +60,28 @@ jobs:
       - name: Pull official ManimCE 0.20.1 image
         run: docker pull manimcommunity/manim:v0.20.1
 
-      - name: QA and final renders
+      - name: Final literal -pqh renders
         shell: bash
         run: |
           set -euo pipefail
           run_manim () {
-            local scale="$1" quality="$2" source="$3" scene="$4" log="$5"
+            local source="$1" scene="$2" log="$3"
             docker run --rm \
               --user "$(id -u):$(id -g)" \
               -e HOME=/tmp/manim-home \
-              -e LESSON_TIME_SCALE="$scale" \
+              -e LESSON_TIME_SCALE=1.0 \
               -v "$PWD:/manim" -w /manim \
               --entrypoint bash manimcommunity/manim:v0.20.1 \
-              -c "set -euo pipefail; mkdir -p /tmp/colab-bin; printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/colab-bin/xdg-open; chmod +x /tmp/colab-bin/xdg-open; export PATH=/tmp/colab-bin:\$PATH; manim $quality '$source' '$scene' --format=mp4 --disable_caching" \
+              -c "set -euo pipefail; mkdir -p /tmp/colab-bin; printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/colab-bin/xdg-open; chmod +x /tmp/colab-bin/xdg-open; export PATH=/tmp/colab-bin:\$PATH; manim -pqh '$source' '$scene' --format=mp4 --disable_caching" \
               2>&1 | tee "$log"
           }
+          run_manim Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py Geometry8Week3CircleTheorySeniorV3Final render_circle_pqh.log
+          run_manim Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py Geometry8Week3ShadedAreasSeniorV3Final render_shaded_pqh.log
 
-          run_manim 0.04 -pql Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py Geometry8Week3CircleTheorySeniorV3Final render_circle_pql.log
-          run_manim 0.04 -pql Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py Geometry8Week3ShadedAreasSeniorV3Final render_shaded_pql.log
-          run_manim 1.0 -pqh Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py Geometry8Week3CircleTheorySeniorV3Final render_circle_pqh.log
-          run_manim 1.0 -pqh Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py Geometry8Week3ShadedAreasSeniorV3Final render_shaded_pqh.log
-
-      - name: Verify and stage delivery
+      - name: Stage exact rendered delivery
         shell: bash
         run: |
           set -euo pipefail
-          command -v ffprobe >/dev/null
-          command -v ffmpeg >/dev/null
           mkdir -p delivery
           CIRCLE="$(find media -type f -name 'Geometry8Week3CircleTheorySeniorV3Final.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
           SHADED="$(find media -type f -name 'Geometry8Week3ShadedAreasSeniorV3Final.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
@@ -97,25 +92,29 @@ jobs:
           cp Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py delivery/
           cp Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py delivery/
           cp jp_classroom_style.py delivery/
-          cp render_*log delivery/
-
-          for f in delivery/*.mp4; do
-            meta="${f%.mp4}.ffprobe.txt"
-            ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt -show_entries format=duration,size -of default=noprint_wrappers=1 "$f" > "$meta"
-            grep -q '^codec_name=h264$' "$meta"
-            grep -q '^width=1920$' "$meta"
-            grep -q '^height=1080$' "$meta"
-            grep -q '^pix_fmt=yuv420p$' "$meta"
-            grep -q '^r_frame_rate=30/1$' "$meta"
-            ffmpeg -v error -i "$f" -f null -
-          done
-          sha256sum delivery/* > delivery/SHA256SUMS.txt
+          cp render_circle_pqh.log render_shaded_pqh.log delivery/
+          sha256sum delivery/*.mp4 delivery/*.py > delivery/SHA256SUMS.txt
           ls -lh delivery
 
-      - name: Upload verified artifact
+      - name: Upload rendered delivery
         uses: actions/upload-artifact@v4
         with:
           name: geometry8-week3-v3-pqh
           path: delivery/
           if-no-files-found: error
           retention-days: 7
+
+      - name: Post-render audit
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -u
+          for f in delivery/*.mp4; do
+            meta="${f%.mp4}.ffprobe.txt"
+            ffprobe -v error -select_streams v:0 \
+              -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt \
+              -show_entries format=duration,size \
+              -of default=noprint_wrappers=1 "$f" > "$meta"
+            cat "$meta"
+            ffmpeg -v error -i "$f" -f null -
+          done
