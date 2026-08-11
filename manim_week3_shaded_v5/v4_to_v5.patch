@@ -1,0 +1,56 @@
+--- Geometry8_Week3_Class2_ShadedAreas_Senior_V4_FINAL.py	2026-08-11 18:50:49.955912339 +0000
++++ Geometry8_Week3_Class2_ShadedAreas_Senior_V5_FINAL.py	2026-08-11 19:08:37.652872662 +0000
+@@ -8,7 +8,7 @@
+ 
+ Final render:
+     manim -pqh Geometry8_Week3_Class2_ShadedAreas_Senior_V4_FINAL.py \
+-        Geometry8Week3ShadedAreasSeniorV4Final --format=mp4 --disable_caching
++        Geometry8Week3ShadedAreasSeniorV5Final --format=mp4 --disable_caching
+ """
+ from __future__ import annotations
+ 
+@@ -44,7 +44,7 @@
+ CH_SHADED = CH_SIDE**2 - math.pi * CH_R**2
+ 
+ 
+-class Geometry8Week3ShadedAreasSeniorV4Final(JPMathClassroomScene):
++class Geometry8Week3ShadedAreasSeniorV5Final(JPMathClassroomScene):
+     """Focus-first shaded-area lesson with large figures and one equation state at a time."""
+ 
+     def validate_lesson_data(self) -> None:
+@@ -369,18 +369,23 @@
+     # 07
+     def operation_choice(self) -> None:
+         self.big_header(7, "ADD OR SUBTRACT?", "Choose the operation from the geometry, not from a memorized keyword.")
+-        left=self.card("SUBTRACT",["One whole region", "One or more holes", "whole − missing"],width=5.85,body_size=40).move_to(LEFT*3.40+UP*0.30)
+-        right=self.card("ADD",["Separate shaded pieces", "Each piece is easy", "piece 1 + piece 2 + …"],width=5.85,body_size=40).move_to(RIGHT*3.40+UP*0.30)
+-
+-        sq=Square(side_length=1.20,stroke_color=BLACK_LINE,stroke_width=3,fill_color=LIGHT_GRAY,fill_opacity=.70)
+-        hole=Circle(radius=.36,stroke_color=BLACK_LINE,stroke_width=3,fill_color=WHITE,fill_opacity=1).move_to(sq)
+-        mini_left=VGroup(sq,hole).move_to(left.get_center()+DOWN*1.05)
+-        p1=Rectangle(width=.78,height=1.05,stroke_color=BLACK_LINE,stroke_width=3,fill_color=LIGHT_GRAY,fill_opacity=.70)
+-        p2=p1.copy(); p3=p1.copy()
+-        mini_right=VGroup(p1,p2,p3).arrange(RIGHT,buff=.20).move_to(right.get_center()+DOWN*1.05)
+-        self.play(FadeIn(left),FadeIn(mini_left),run_time=RUN_NORMAL); self.wait(PAUSE_READ)
+-        self.play(FadeIn(right),FadeIn(mini_right),run_time=RUN_NORMAL); self.wait(PAUSE_READ)
+-        q=self.text("DECISION: Which regions actually belong in the answer?",45,BOLD).to_edge(DOWN,buff=0.52)
++        # Keep this decision scene deliberately uncluttered.  In V4, mini-diagrams
++        # were placed inside the text cards and could cover the final body line.
++        left=self.card("SUBTRACT",["Start from ONE whole region", "Remove every hole or gap"],width=5.85,body_size=41).move_to(LEFT*3.40+UP*0.62)
++        right=self.card("ADD",["Use separate shaded pieces", "Add only the pieces you KEEP"],width=5.85,body_size=41).move_to(RIGHT*3.40+UP*0.62)
++        left_rule=self.math(r"A_{\text{shaded}}=A_{\text{whole}}-A_{\text{missing}}",48)
++        right_rule=self.math(r"A_{\text{shaded}}=A_1+A_2+\cdots",48)
++        left_rule.next_to(left,DOWN,buff=0.42)
++        right_rule.next_to(right,DOWN,buff=0.42)
++        self.fit(left_rule,5.55,0.80); self.fit(right_rule,5.55,0.80)
++        self.assert_content_safe(VGroup(left,right,left_rule,right_rule), "operation choice cards")
++        self.play(FadeIn(left),run_time=RUN_NORMAL)
++        self.play(FadeIn(left_rule),run_time=RUN_QUICK); self.wait(PAUSE_READ)
++        self.play(FadeIn(right),run_time=RUN_NORMAL)
++        self.play(FadeIn(right_rule),run_time=RUN_QUICK); self.wait(PAUSE_READ)
++        q=self.text("DECISION: Which regions actually belong in the answer?",45,BOLD).to_edge(DOWN,buff=0.48)
++        self.fit(q,12.7,0.72)
++        self.assert_within_frame(q, "operation choice decision prompt")
+         self.play(FadeIn(q),run_time=RUN_NORMAL)
+         self.wait(PAUSE_SUMMARY)
+         self.clear_stage()
