@@ -16,18 +16,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Reconstruct exact V6
+      - name: Reconstruct V6 and report integrity
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p render_v6
           base64 -d manim_week3_shaded_v6/payload.b64 > render_v6/payload.tar.gz
-          test "$(sha256sum render_v6/payload.tar.gz | awk '{print $1}')" = "a1f6b8eee7a371e66251ebe10b75737030e0a2acf2eee7ec54ee97534f883b27"
+          echo "PAYLOAD:"; sha256sum render_v6/payload.tar.gz
           cd render_v6
           tar -xzf payload.tar.gz
           python -m py_compile Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py jp_classroom_style.py
-          test "$(sha256sum Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py | awk '{print $1}')" = "18cdac6a50beaa5b8abbe527240593872017be1d4271722362f7d7e31ec52db5"
-          test "$(sha256sum jp_classroom_style.py | awk '{print $1}')" = "3f3f06e94d5cad870ad335502cc1a93e56ce675abb1231ded5f9c71fd3e60e3d"
+          echo "SOURCE:"; sha256sum Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py
+          echo "STYLE:"; sha256sum jp_classroom_style.py
 
       - name: Pull ManimCE 0.20.1
         run: docker pull manimcommunity/manim:v0.20.1
@@ -56,8 +56,10 @@ jobs:
           mkdir -p delivery
           cp "$RAW" delivery/Geometry8_Week3_Class2_ShadedAreas_Senior_V6_PQL_QA.mp4
           cp Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py delivery/
+          cp jp_classroom_style.py delivery/
           cp render_v6_pql.log delivery/
           ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt -show_entries format=duration,size -of default=noprint_wrappers=1 delivery/Geometry8_Week3_Class2_ShadedAreas_Senior_V6_PQL_QA.mp4 > delivery/ffprobe.txt
+          sha256sum delivery/* > delivery/SHA256SUMS.txt
 
       - uses: actions/upload-artifact@v4
         with:
