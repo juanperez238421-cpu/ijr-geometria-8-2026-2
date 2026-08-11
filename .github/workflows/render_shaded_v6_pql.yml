@@ -16,18 +16,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Reconstruct V6 and report integrity
+      - name: Reconstruct exact V6
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p render_v6
-          base64 -d manim_week3_shaded_v6/payload.b64 > render_v6/payload.tar.gz
-          echo "PAYLOAD:"; sha256sum render_v6/payload.tar.gz
+          cat manim_week3_shaded_v6/payload.part00 manim_week3_shaded_v6/payload.part01 manim_week3_shaded_v6/payload.part02 manim_week3_shaded_v6/payload.part03 | base64 -d > render_v6/payload.tar.gz
+          test "$(sha256sum render_v6/payload.tar.gz | awk '{print $1}')" = "b16f8897ee1a92c0bf534b2f9deab11bffc24befaf15852bc44b63867d318dee"
           cd render_v6
           tar -xzf payload.tar.gz
           python -m py_compile Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py jp_classroom_style.py
-          echo "SOURCE:"; sha256sum Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py
-          echo "STYLE:"; sha256sum jp_classroom_style.py
+          test "$(sha256sum Geometry8_Week3_Class2_ShadedAreas_Senior_V6_FINAL.py | awk '{print $1}')" = "d45567d9c9051cfffc9d7dd1e8b10463af67e0251671a0c1b4932e62f4a362a2"
+          test "$(sha256sum jp_classroom_style.py | awk '{print $1}')" = "3f3f06e94d5cad870ad335502cc1a93e56ce675abb1231ded5f9c71fd3e60e3d"
+          echo "Exact V6 source integrity verified."
 
       - name: Pull ManimCE 0.20.1
         run: docker pull manimcommunity/manim:v0.20.1
