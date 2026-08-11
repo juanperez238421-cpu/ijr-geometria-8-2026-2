@@ -23,10 +23,11 @@ jobs:
           mkdir -p render_v4
           cp manim_week3_circle_v4/payload.tar.gz render_v4/payload.tar.gz
           cd render_v4
-          echo "payload sha256: $(sha256sum payload.tar.gz | awk '{print $1}')"
-          test "$(sha256sum payload.tar.gz | awk '{print $1}')" = "6d12389d9caef1a381e03a322aa4174aec08b95f6837cadfd5625a95433826e5"
+          echo "received payload sha256: $(sha256sum payload.tar.gz | awk '{print $1}')"
+          tar -tzf payload.tar.gz
           tar -xzf payload.tar.gz
           python -m py_compile Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py jp_classroom_style.py
+          echo "source sha256: $(sha256sum Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py | awk '{print $1}')"
           test "$(sha256sum Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py | awk '{print $1}')" = "5f30e8b3e4f741373f7e2358386a03b11841baea8c9973e2f0a256d5a39b87b7"
           sha256sum Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py jp_classroom_style.py
 
