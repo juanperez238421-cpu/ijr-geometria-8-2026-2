@@ -1,6 +1,8 @@
 name: Render Geometry8 Week3 Shaded V5 FINAL
 
 on:
+  push:
+    branches: [temp/manim-week3-shaded-v5-20260811]
   pull_request:
     branches: [main]
   workflow_dispatch:
