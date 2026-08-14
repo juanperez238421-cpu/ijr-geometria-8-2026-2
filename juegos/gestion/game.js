@@ -1,513 +1,217 @@
 "use strict";
-
-const $ = (id) => document.getElementById(id);
-const canvas = $("gameCanvas");
-const ctx = canvas.getContext("2d", { alpha: false });
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const lerp = (a, b, t) => a + (b - a) * t;
-const dist2 = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
-const rand = (a, b) => Math.random() * (b - a) + a;
-const randi = (a, b) => Math.floor(rand(a, b + 1));
-
-const UI = {
-  day: $("dayValue"), time: $("timeValue"), cash: $("cashValue"), rep: $("repValue"), lives: $("livesValue"),
-  served: $("servedValue"), servedProgress: $("servedProgress"), earned: $("earnedValue"), strikes: $("strikeValue"),
-  orders: $("orderList"), rush: $("rushBadge"), carried: $("carriedDish"), route: $("stationRoute"),
-  statusTitle: $("statusTitle"), statusText: $("statusText"), actionWrap: $("actionProgressWrap"), actionBar: $("actionProgress"), actionText: $("actionProgressText"),
-  prompt: $("interactionPrompt"), promptTitle: $("promptTitle"), promptText: $("promptText"), toast: $("toast"),
-  start: $("startOverlay"), management: $("managementOverlay"), quiz: $("quizOverlay"), help: $("helpOverlay"), end: $("endOverlay"),
-  managementTitle: $("managementTitle"), managementSummary: $("managementSummary"), managementCash: $("managementCash"), dayReport: $("dayReport"), nextDay: $("nextDayBtn"),
-  quizTag: $("quizTag"), questionEn: $("questionEn"), questionEs: $("questionEs"), answerGrid: $("answerGrid"), quizFeedback: $("quizFeedback"), continueQuiz: $("continueQuizBtn"),
-  endIcon: $("endIcon"), endTitle: $("endTitle"), endText: $("endText"), endStats: $("endStats")
+const $=id=>document.getElementById(id), canvas=$("gameCanvas"), ctx=canvas.getContext("2d",{alpha:false});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,t)=>a+(b-a)*t, rand=(a,b)=>Math.random()*(b-a)+a, randi=(a,b)=>Math.floor(rand(a,b+1));
+const d2=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z), money=v=>`$${Math.round(v)}`;
+const UI={
+ day:$("dayValue"),time:$("timeValue"),cash:$("cashValue"),rep:$("repValue"),lives:$("livesValue"),capacity:$("capacityValue"),staff:$("staffValue"),
+ served:$("servedValue"),servedProgress:$("servedProgress"),earned:$("earnedValue"),strikes:$("strikeValue"),tables:$("tablesValue"),orders:$("orderList"),rush:$("rushBadge"),
+ carried:$("carriedDish"),route:$("stationRoute"),inventoryMini:$("inventoryMini"),statusTitle:$("statusTitle"),statusText:$("statusText"),actionWrap:$("actionProgressWrap"),actionBar:$("actionProgress"),actionText:$("actionProgressText"),
+ prompt:$("interactionPrompt"),promptTitle:$("promptTitle"),promptText:$("promptText"),toast:$("toast"),
+ start:$("startOverlay"),menu:$("menuOverlay"),management:$("managementOverlay"),map:$("mapOverlay"),quiz:$("quizOverlay"),help:$("helpOverlay"),end:$("endOverlay"),
+ continueBtn:$("continueBtn"),liveMenuGrid:$("liveMenuGrid"),managementCash:$("managementCash"),managementSummary:$("managementSummary"),dayReport:$("dayReport"),inventoryManagement:$("inventoryManagement"),operationSummary:$("operationSummary"),menuManagementGrid:$("menuManagementGrid"),teamGrid:$("teamGrid"),expansionGrid:$("expansionGrid"),styleGrid:$("styleGrid"),miniMap:$("miniMap"),nextDay:$("nextDayBtn"),
+ quizTag:$("quizTag"),questionEn:$("questionEn"),questionEs:$("questionEs"),answerGrid:$("answerGrid"),quizFeedback:$("quizFeedback"),continueQuiz:$("continueQuizBtn"),
+ endIcon:$("endIcon"),endTitle:$("endTitle"),endText:$("endText"),endStats:$("endStats")
 };
-
-const recipes = {
-  salad:  { name: "Green Salad", icon: "🥗", price: 14, route: ["fridge", "prep", "pass"] },
-  burger: { name: "Bistro Burger", icon: "🍔", price: 21, route: ["fridge", "prep", "stove", "pass"] },
-  pasta:  { name: "Hot Pasta", icon: "🍝", price: 19, route: ["fridge", "prep", "stove", "pass"] },
-  soup:   { name: "Tomato Soup", icon: "🍲", price: 17, route: ["fridge", "prep", "stove", "pass"] },
-  toast:  { name: "Chef Toast", icon: "🥪", price: 16, route: ["fridge", "prep", "stove", "pass"] }
+const ingredients={produce:{name:"Produce",icon:"🥬"},protein:{name:"Protein",icon:"🥩"},bread:{name:"Bread",icon:"🍞"},pasta:{name:"Pasta",icon:"🍝"},dairy:{name:"Dairy",icon:"🧀"},sauce:{name:"Sauce",icon:"🥫"}};
+const recipes={
+ salad:{name:"Garden Salad",icon:"🥗",asset:"assets/dish-salad.svg",base:15,unlock:0,route:["fridge","prep","pass"],need:{produce:2,sauce:1},difficulty:1,tags:["quick","fresh"]},
+ burger:{name:"Bistro Burger",icon:"🍔",asset:"assets/dish-burger.svg",base:23,unlock:0,route:["fridge","prep","stove","pass"],need:{protein:2,bread:1,produce:1,dairy:1},difficulty:2,tags:["student","family"]},
+ pasta:{name:"Hot Pasta",icon:"🍝",asset:"assets/dish-pasta.svg",base:21,unlock:0,route:["fridge","prep","stove","pass"],need:{pasta:2,sauce:1,dairy:1},difficulty:2,tags:["family","classic"]},
+ soup:{name:"Chef Soup",icon:"🍲",asset:"assets/dish-soup.svg",base:18,unlock:0,route:["fridge","prep","stove","pass"],need:{produce:1,sauce:2},difficulty:2,tags:["classic","quick"]},
+ toast:{name:"Chef Toast",icon:"🥪",asset:"assets/dish-toast.svg",base:17,unlock:60,route:["fridge","prep","stove","pass"],need:{bread:2,dairy:1,produce:1},difficulty:1,tags:["student","quick"]},
+ pizza:{name:"House Pizza",icon:"🍕",asset:"assets/dish-pizza.svg",base:27,unlock:110,route:["fridge","prep","oven","pass"],need:{bread:2,sauce:2,dairy:2,produce:1},difficulty:3,tags:["family","student"]},
+ chicken:{name:"Grilled Chicken",icon:"🍗",asset:"assets/dish-chicken.svg",base:31,unlock:145,route:["fridge","prep","stove","pass"],need:{protein:3,produce:2,sauce:1},difficulty:3,tags:["foodie","premium"]},
+ waffle:{name:"Berry Waffle",icon:"🧇",asset:"assets/dish-waffle.svg",base:25,unlock:125,route:["fridge","prep","oven","pass"],need:{bread:2,dairy:1,produce:1},difficulty:2,tags:["family","foodie"]}
 };
-const recipeKeys = Object.keys(recipes);
-
-const stations = [
-  { id:"fridge", name:"Refrigerador", icon:"🧊", x:-6.1, z:-4.45, w:1.45, d:1.2, h:2.4, color:"#5ba6dd", interact:{x:-6.1,z:-3.35}, baseTime:.7 },
-  { id:"prep", name:"Mesa de preparación", icon:"🔪", x:-2.8, z:-4.45, w:2.55, d:1.2, h:1.05, color:"#c89962", interact:{x:-2.8,z:-3.35}, baseTime:2.55 },
-  { id:"stove", name:"Estufa", icon:"🔥", x:.75, z:-4.45, w:2.05, d:1.2, h:1.12, color:"#697686", interact:{x:.75,z:-3.35}, baseTime:3.35 },
-  { id:"pass", name:"Pase de servicio", icon:"🔔", x:4.65, z:-2.45, w:1.25, d:3.5, h:1.05, color:"#c78355", interact:{x:3.65,z:-2.45}, baseTime:.65 },
-  { id:"sink", name:"Lavaplatos", icon:"💧", x:-6.05, z:-1.0, w:1.45, d:1.4, h:1.05, color:"#568ca6", interact:{x:-4.95,z:-1}, baseTime:1.2 },
-  { id:"trash", name:"Basura", icon:"🗑️", x:-6.1, z:2.15, w:1.1, d:1.1, h:1.0, color:"#55606b", interact:{x:-4.95,z:2.15}, baseTime:.2 }
-];
-const stationById = Object.fromEntries(stations.map(s => [s.id, s]));
-
-const tables = [
-  {x:-2.2,z:1.65,w:1.45,d:1.25},{x:.3,z:2.75,w:1.45,d:1.25},{x:2.55,z:1.25,w:1.45,d:1.25},{x:-1.0,z:4.45,w:1.45,d:1.25},{x:2.1,z:4.15,w:1.45,d:1.25}
-];
-const tableSeats = tables.map((t,i)=>({x:t.x + (i%2?.85:-.85), z:t.z+.15}));
-const obstacles = [
-  ...stations.map(s=>({x:s.x,z:s.z,w:s.w,d:s.d})),
-  ...tables.map(t=>({x:t.x,z:t.z,w:t.w+1.0,d:t.d+1.0}))
-];
-
-const quizBank = [
-  {tag:"Area",en:"A rectangle is 12 cm long and 7 cm wide. What is its area?",es:"Un rectángulo mide 12 cm por 7 cm. ¿Cuál es su área?",options:["19 cm²","38 cm²","84 cm²","96 cm²"],correct:2,explain:"A = b·h = 12·7 = 84 cm²."},
-  {tag:"Area",en:"A square has side length 9 m. What is its area?",es:"Un cuadrado tiene lado de 9 m. ¿Cuál es su área?",options:["18 m²","36 m²","72 m²","81 m²"],correct:3,explain:"A = s² = 9² = 81 m²."},
-  {tag:"Triangle",en:"A triangle has base 14 cm and height 8 cm. Find its area.",es:"Un triángulo tiene base 14 cm y altura 8 cm. Halla su área.",options:["44 cm²","56 cm²","88 cm²","112 cm²"],correct:1,explain:"A = (b·h)/2 = 56 cm²."},
-  {tag:"Trapezoid",en:"A trapezoid has bases 8 cm and 14 cm, and height 5 cm. Find its area.",es:"Un trapecio tiene bases 8 cm y 14 cm, y altura 5 cm. Halla su área.",options:["44 cm²","50 cm²","55 cm²","110 cm²"],correct:2,explain:"A = ((B+b)h)/2 = 55 cm²."},
-  {tag:"Circle",en:"A circle has radius 4 cm. What is its exact area?",es:"Un círculo tiene radio 4 cm. ¿Cuál es su área exacta?",options:["4π cm²","8π cm²","16π cm²","32π cm²"],correct:2,explain:"A = πr² = 16π cm²."},
-  {tag:"Circle",en:"A circle has diameter 10 m. What is its exact circumference?",es:"Un círculo tiene diámetro 10 m. ¿Cuál es su circunferencia exacta?",options:["5π m","10π m","20π m","25π m"],correct:1,explain:"C = πd = 10π m."},
-  {tag:"Semicircle",en:"A semicircle has radius 6 cm. What is its area?",es:"Un semicírculo tiene radio 6 cm. ¿Cuál es su área?",options:["6π cm²","12π cm²","18π cm²","36π cm²"],correct:2,explain:"A = πr²/2 = 18π cm²."},
-  {tag:"Shaded Area",en:"A 10×8 rectangle contains an unshaded 4×3 rectangle. What is the shaded area?",es:"Un rectángulo 10×8 contiene un rectángulo sin sombrear 4×3. ¿Área sombreada?",options:["12 cm²","56 cm²","68 cm²","80 cm²"],correct:2,explain:"80 − 12 = 68 cm²."},
-  {tag:"Shaded Area",en:"A square has side 12 cm. A circle of radius 3 cm is removed. What remains?",es:"Un cuadrado tiene lado 12 cm. Se retira un círculo de radio 3 cm. ¿Qué área queda?",options:["144−3π","144−6π","144−9π","132π"],correct:2,explain:"12² − π·3² = 144 − 9π."},
-  {tag:"Shaded Area",en:"A ring has outer radius 5 cm and inner radius 2 cm. Find its area.",es:"Un anillo tiene radio exterior 5 cm e interior 2 cm. Halla su área.",options:["3π cm²","7π cm²","21π cm²","29π cm²"],correct:2,explain:"π(25−4)=21π cm²."},
-  {tag:"Perimeter",en:"A rectangle measures 9 cm by 5 cm. What is its perimeter?",es:"Un rectángulo mide 9 cm por 5 cm. ¿Cuál es su perímetro?",options:["14 cm","28 cm","45 cm","90 cm"],correct:1,explain:"P = 2(9+5) = 28 cm."},
-  {tag:"Triangle",en:"A triangle has area 45 cm² and base 10 cm. What is its height?",es:"Un triángulo tiene área 45 cm² y base 10 cm. ¿Cuál es su altura?",options:["4.5 cm","8 cm","9 cm","18 cm"],correct:2,explain:"45=(10h)/2 → h=9 cm."},
-  {tag:"Circle",en:"A circle has area 49π cm². What is its radius?",es:"Un círculo tiene área 49π cm². ¿Cuál es su radio?",options:["3.5 cm","7 cm","14 cm","49 cm"],correct:1,explain:"πr²=49π → r=7 cm."},
-  {tag:"Sector",en:"A 90° sector has radius 8 cm. What is its exact area?",es:"Un sector de 90° tiene radio 8 cm. ¿Cuál es su área exacta?",options:["8π cm²","16π cm²","32π cm²","64π cm²"],correct:1,explain:"One quarter of π·8² is 16π cm²."},
-  {tag:"Shaded Area",en:"A 10×10 square has four 2×2 corner squares removed. What area remains?",es:"A un cuadrado 10×10 se le quitan cuatro cuadrados 2×2. ¿Qué área queda?",options:["68","76","84","92"],correct:2,explain:"100 − 4(4) = 84."},
-  {tag:"Concept",en:"Which unit is appropriate for area?",es:"¿Qué unidad es apropiada para medir área?",options:["cm","cm²","cm³","degrees"],correct:1,explain:"Area uses square units, such as cm²."},
-  {tag:"Composite Area",en:"Two non-overlapping rectangles are 6×4 and 3×2. What is their total area?",es:"Dos rectángulos sin superposición miden 6×4 y 3×2. ¿Área total?",options:["18","24","30","36"],correct:2,explain:"24+6=30 square units."},
-  {tag:"Concept",en:"For a shaded region with a hole, what is the usual strategy?",es:"Para una región sombreada con un hueco, ¿qué estrategia se usa normalmente?",options:["Add both areas","Multiply areas","Outer area − inner area","Use perimeter only"],correct:2,explain:"Shaded area = outer area − removed area."}
-];
-
-const logoImg = new Image();
-logoImg.src = "../../assets/logo_colegio_transparente.png";
-
-const keys = new Set();
-let W = innerWidth, H = innerHeight, DPR = 1;
-let lastTime = performance.now();
-let faceQueue = [];
-let spriteQueue = [];
-let toastTimer = 0;
-let actionId = 0;
-
-const game = {
-  started:false, running:false, paused:true, day:1, maxDays:5, shiftLength:75, timeLeft:75,
-  cash:100, rep:70, lives:3, strikes:0, servedToday:0, earnedToday:0, totalServed:0, totalEarned:0,
-  target:5, spawnTimer:2, orders:[], customers:[], nextOrderId:1, nextCustomerId:1, carried:null,
-  action:null, afterQuiz:null, quizQuestion:null, quizAnswered:false, helperTimer:12,
-  upgrades:{prep:1,stove:1,decor:1,server:0},
-  player:{x:-1.5,z:.1,y:0,dir:0,speed:3.15},
-  camera:{x:0,z:0},
-  stats:{walkouts:0,quizRight:0,quizTotal:0},
-  best:Number(localStorage.getItem("robledoBistro3DBest")||0)
+const recipeKeys=Object.keys(recipes);
+const customerTypes={
+ student:{name:"Students",price:.72,patience:1.0,prefs:["student","quick"]},family:{name:"Family",price:.9,patience:1.16,prefs:["family","classic"]},foodie:{name:"Foodie",price:1.2,patience:.92,prefs:["foodie","premium"]},quick:{name:"Quick lunch",price:.82,patience:.72,prefs:["quick"]}
 };
-
-function resize(){
-  DPR = Math.min(devicePixelRatio || 1, 2);
-  W = innerWidth; H = innerHeight;
-  canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);
-  canvas.style.width=W+"px"; canvas.style.height=H+"px";
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+const styles={
+ classic:{name:"Robledo Classic",cost:0,patience:0,floor:"#c8b18a",wall:"#1e4650",table:"#865e3e",chair:"#4c372a",accent:"#58c6a7",sw:["#1e4650","#c8b18a","#865e3e"]},
+ garden:{name:"Garden Bistro",cost:115,patience:7,floor:"#c7cfae",wall:"#315947",table:"#7f6243",chair:"#55704b",accent:"#8bd17c",sw:["#315947","#c7cfae","#8bd17c"]},
+ midnight:{name:"Midnight Modern",cost:150,patience:10,floor:"#6f7b83",wall:"#182a3e",table:"#344f64",chair:"#233442",accent:"#7aa7ff",sw:["#182a3e","#344f64","#7aa7ff"]}
+};
+const staffDefs={
+ host:{name:"Host",icon:"🧑‍💼",hire:95,wage:18,desc:"Asigna mesas más rápido y protege la paciencia de la fila."},
+ cook:{name:"Cook",icon:"👨‍🍳",hire:160,wage:28,desc:"Completa automáticamente pedidos en cocina de forma periódica."},
+ waiter:{name:"Waiter",icon:"🧑‍🍳",hire:130,wage:23,desc:"Recoge platos listos y los entrega directamente a la mesa."},
+ cleaner:{name:"Cleaner",icon:"🧹",hire:90,wage:16,desc:"Limpia mesas sucias y acelera su reutilización."}
+};
+const expansionDefs={
+ dining:{name:"Dining Hall B",icon:"🪑",cost:190,desc:"Abre 4 mesas adicionales y aumenta la capacidad del salón."},
+ terrace:{name:"Garden Terrace",icon:"🌿",cost:285,desc:"Abre 4 mesas exteriores de alta satisfacción."},
+ kitchenWing:{name:"Kitchen Wing",icon:"🔥",cost:330,desc:"Desbloquea segunda preparación, segunda estufa y horno profesional."}
+};
+const stations=[
+ {id:"fridge",kind:"fridge",name:"Walk-in Fridge",icon:"🧊",x:-10.5,z:-7.3,w:1.8,d:1.35,h:2.6,color:"#5aa7d9",interact:{x:-10.5,z:-5.9},time:.55},
+ {id:"pantry",kind:"pantry",name:"Emergency Pantry",icon:"📦",x:-7.8,z:-7.3,w:2.2,d:1.35,h:2.25,color:"#a98254",interact:{x:-7.8,z:-5.9},time:.45},
+ {id:"prep",kind:"prep",name:"Prep Station",icon:"🔪",x:-4.7,z:-7.2,w:2.6,d:1.45,h:1.05,color:"#b9875a",interact:{x:-4.7,z:-5.8},time:2.2},
+ {id:"stove",kind:"stove",name:"Range",icon:"🔥",x:-1.2,z:-7.2,w:2.2,d:1.45,h:1.12,color:"#606d79",interact:{x:-1.2,z:-5.8},time:2.9},
+ {id:"oven",kind:"oven",name:"Oven",icon:"♨️",x:1.9,z:-7.2,w:2.1,d:1.45,h:1.6,color:"#4d5963",interact:{x:1.9,z:-5.7},time:3.35,requires:"kitchenWing"},
+ {id:"pass",kind:"pass",name:"Service Pass",icon:"🔔",x:4.25,z:-3.2,w:1.35,d:4.3,h:1.1,color:"#c68754",interact:{x:3.0,z:-3.2},time:.45},
+ {id:"sink",kind:"sink",name:"Dish Station",icon:"💧",x:-10.2,z:-2.7,w:1.9,d:1.5,h:1.05,color:"#5d95ad",interact:{x:-8.9,z:-2.7},time:1.0},
+ {id:"prep2",kind:"prep",name:"Prep Station B",icon:"🔪",x:-8.0,z:5.5,w:2.7,d:1.5,h:1.05,color:"#b9875a",interact:{x:-8.0,z:4.0},time:1.8,requires:"kitchenWing"},
+ {id:"stove2",kind:"stove",name:"Range B",icon:"🔥",x:-4.5,z:5.5,w:2.3,d:1.5,h:1.12,color:"#606d79",interact:{x:-4.5,z:4.0},time:2.4,requires:"kitchenWing"}
+];
+const tableDefs=[
+ {id:1,x:7.0,z:-2.5,cap:2,zone:"base"},{id:2,x:10.0,z:-2.0,cap:4,zone:"base"},{id:3,x:7.0,z:1.2,cap:4,zone:"base"},{id:4,x:10.4,z:1.8,cap:2,zone:"base"},{id:5,x:7.0,z:5.0,cap:4,zone:"base"},{id:6,x:10.4,z:5.3,cap:4,zone:"base"},
+ {id:7,x:1.8,z:5.2,cap:2,zone:"dining"},{id:8,x:4.0,z:6.9,cap:4,zone:"dining"},{id:9,x:1.3,z:8.8,cap:4,zone:"dining"},{id:10,x:4.5,z:9.3,cap:2,zone:"dining"},
+ {id:11,x:16.2,z:1.0,cap:4,zone:"terrace"},{id:12,x:19.5,z:1.8,cap:2,zone:"terrace"},{id:13,x:16.3,z:5.0,cap:4,zone:"terrace"},{id:14,x:19.4,z:6.3,cap:4,zone:"terrace"}
+];
+const quizBank=[
+ {tag:"Area",en:"A rectangle is 12 cm long and 7 cm wide. What is its area?",es:"Un rectángulo mide 12 cm por 7 cm. ¿Cuál es su área?",options:["19 cm²","38 cm²","84 cm²","96 cm²"],correct:2,explain:"A=b·h=12·7=84 cm²."},
+ {tag:"Area",en:"A square has side length 9 m. What is its area?",es:"Un cuadrado tiene lado de 9 m. ¿Cuál es su área?",options:["18 m²","36 m²","72 m²","81 m²"],correct:3,explain:"A=s²=81 m²."},
+ {tag:"Triangle",en:"A triangle has base 14 cm and height 8 cm. Find its area.",es:"Un triángulo tiene base 14 cm y altura 8 cm. Halla su área.",options:["44 cm²","56 cm²","88 cm²","112 cm²"],correct:1,explain:"A=(14·8)/2=56 cm²."},
+ {tag:"Trapezoid",en:"A trapezoid has bases 8 cm and 14 cm and height 5 cm. Find its area.",es:"Un trapecio tiene bases 8 cm y 14 cm y altura 5 cm. Halla su área.",options:["44 cm²","50 cm²","55 cm²","110 cm²"],correct:2,explain:"A=((14+8)·5)/2=55 cm²."},
+ {tag:"Circle",en:"A circle has radius 4 cm. What is its exact area?",es:"Un círculo tiene radio 4 cm. ¿Cuál es su área exacta?",options:["4π cm²","8π cm²","16π cm²","32π cm²"],correct:2,explain:"A=πr²=16π cm²."},
+ {tag:"Circle",en:"A circle has diameter 10 m. What is its exact circumference?",es:"Un círculo tiene diámetro 10 m. ¿Cuál es su circunferencia exacta?",options:["5π m","10π m","20π m","25π m"],correct:1,explain:"C=πd=10π m."},
+ {tag:"Shaded Area",en:"A 10×8 rectangle contains an unshaded 4×3 rectangle. What is the shaded area?",es:"Un rectángulo 10×8 contiene un rectángulo sin sombrear 4×3. ¿Área sombreada?",options:["12 cm²","56 cm²","68 cm²","80 cm²"],correct:2,explain:"80−12=68 cm²."},
+ {tag:"Shaded Area",en:"A square has side 12 cm. A circle of radius 3 cm is removed. What remains?",es:"Un cuadrado tiene lado 12 cm. Se retira un círculo de radio 3 cm. ¿Qué área queda?",options:["144−3π","144−6π","144−9π","132π"],correct:2,explain:"12²−π·3²=144−9π."},
+ {tag:"Perimeter",en:"A rectangle measures 9 cm by 5 cm. What is its perimeter?",es:"Un rectángulo mide 9 cm por 5 cm. ¿Cuál es su perímetro?",options:["14 cm","28 cm","45 cm","90 cm"],correct:1,explain:"P=2(9+5)=28 cm."},
+ {tag:"Sector",en:"A 90° sector has radius 8 cm. What is its exact area?",es:"Un sector de 90° tiene radio 8 cm. ¿Cuál es su área exacta?",options:["8π cm²","16π cm²","32π cm²","64π cm²"],correct:1,explain:"A=(1/4)π·8²=16π cm²."},
+ {tag:"Composite Area",en:"Two non-overlapping rectangles are 6×4 and 3×2. What is their total area?",es:"Dos rectángulos sin superposición miden 6×4 y 3×2. ¿Área total?",options:["18","24","30","36"],correct:2,explain:"24+6=30 square units."},
+ {tag:"Concept",en:"For a shaded region with a hole, what is the usual strategy?",es:"Para una región sombreada con un hueco, ¿qué estrategia se usa normalmente?",options:["Add both areas","Multiply areas","Outer area − inner area","Use perimeter only"],correct:2,explain:"Shaded area = outer area − removed area."}
+];
+const logoImg=new Image();logoImg.src="../../assets/logo_colegio_transparente.png";
+const signImg=new Image();signImg.src="assets/restaurant-sign.svg";
+const dishImages={};recipeKeys.forEach(k=>{const im=new Image();im.src=recipes[k].asset;dishImages[k]=im});
+const keys=new Set(); let W=innerWidth,H=innerHeight,DPR=1,last=performance.now(),faces=[],sprites=[],toastTimer=0;
+function baseState(){return {
+ started:false,running:false,paused:true,day:1,maxDays:7,shiftLength:95,timeLeft:95,cash:180,rep:72,lives:3,strikes:0,servedToday:0,earnedToday:0,totalServed:0,totalEarned:0,target:6,
+ parties:[],orders:[],readyOrders:[],tables:tableDefs.map(t=>({...t,partyId:null,dirty:0})),nextPartyId:1,nextOrderId:1,spawnTimer:2.5,seatTimer:0,staffTimers:{cook:8,waiter:5},
+ carried:null,action:null,afterQuiz:null,quizQuestion:null,quizAnswered:false,
+ stock:{produce:22,protein:18,bread:20,pasta:16,dairy:18,sauce:20},
+ menu:Object.fromEntries(recipeKeys.map((k,i)=>[k,{unlocked:recipes[k].unlock===0,enabled:i<4,mult:1}])),
+ staff:{host:0,cook:0,waiter:0,cleaner:0},expansions:{dining:false,terrace:false,kitchenWing:false},style:"classic",ownedStyles:{classic:true,garden:false,midnight:false},
+ player:{x:0,z:-1,y:0,dir:0,speed:3.55},camera:{x:0,z:0},stats:{walkouts:0,quizRight:0,quizTotal:0,parties:0},lastReport:null,
+ best:Number(localStorage.getItem("robledoBistroSeniorBest")||0)
+}}
+let game=baseState();
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);canvas.style.width=W+"px";canvas.style.height=H+"px";ctx.setTransform(DPR,0,0,DPR,0,0)} addEventListener("resize",resize);resize();
+function activeStations(){return stations.filter(s=>!s.requires||game.expansions[s.requires])}
+function activeTables(){return game.tables.filter(t=>t.zone==="base"||(t.zone==="dining"&&game.expansions.dining)||(t.zone==="terrace"&&game.expansions.terrace))}
+function restaurantCapacity(){return activeTables().reduce((s,t)=>s+t.cap,0)}
+function staffCount(){return Object.values(game.staff).reduce((a,b)=>a+b,0)}
+function style(){return styles[game.style]||styles.classic}
+function project(p){const sc=Math.min(W,H)/24.5,x=p.x-game.camera.x,z=p.z-game.camera.z;return{x:W*.5+(x-z)*sc*.78,y:H*.54+(x+z)*sc*.39-p.y*sc*.9,depth:x+z+p.y*.12,scale:sc}}
+function hexRgb(hex){const h=hex.replace("#","");const v=parseInt(h.length===3?h.split("").map(c=>c+c).join(""):h,16);return[(v>>16)&255,(v>>8)&255,v&255]}
+function shade(hex,f){const [r,g,b]=hexRgb(hex),c=v=>clamp(Math.round(v*f),0,255);return`rgb(${c(r)},${c(g)},${c(b)})`}
+function poly(points,color,depth,stroke="rgba(2,8,12,.22)"){faces.push({points:points.map(project),color,depth,stroke})}
+function quad(a,b,c,d,color,stroke){const dep=(a.x+a.z+b.x+b.z+c.x+c.z+d.x+d.z)/4;poly([a,b,c,d],color,dep,stroke)}
+function box(x,y,z,w,h,d,color){const x0=x-w/2,x1=x+w/2,z0=z-d/2,z1=z+d/2,y0=y,y1=y+h;quad({x:x0,y:y1,z:z0},{x:x1,y:y1,z:z0},{x:x1,y:y1,z:z1},{x:x0,y:y1,z:z1},shade(color,1.12));quad({x:x0,y:y0,z:z1},{x:x1,y:y0,z:z1},{x:x1,y:y1,z:z1},{x:x0,y:y1,z:z1},shade(color,.8));quad({x:x1,y:y0,z:z0},{x:x1,y:y0,z:z1},{x:x1,y:y1,z:z1},{x:x1,y:y1,z:z0},shade(color,.92));}
+function floorRect(x0,z0,x1,z1,color){quad({x:x0,y:0,z:z0},{x:x1,y:0,z:z0},{x:x1,y:0,z:z1},{x:x0,y:0,z:z1},color,"rgba(255,255,255,.05)")}
+function sprite(x,y,z,draw,depthAdd=.2){const p=project({x,y,z});sprites.push({p,draw,depth:p.depth+depthAdd})}
+function drawRoom(){const s=style();ctx.fillStyle="#07141c";ctx.fillRect(0,0,W,H);floorRect(-13,-9,5,2,shade(s.floor,.82));floorRect(5,-9,14,10,s.floor);floorRect(-13,2,5,11,game.expansions.kitchenWing?shade(s.floor,.76):"#29343a");floorRect(0,2,5,11,game.expansions.dining?s.floor:"#30363a");floorRect(14,-1,22,10,game.expansions.terrace?"#87a87c":"#26343a");floorRect(10,-9,14,-4,"#b7c0c4");
+ // walls / dividers
+ box(-13,.0,-3.5,.35,2.4,11,s.wall);box(-4,.0,-9,18,.35,0.35,s.wall);box(5,.0,-5.5,.3,1.1,7,s.wall);box(14,.0,3.0,.28,1.0,12,shade(s.wall,.9));
+ // entrance and lobby props
+ box(12.0,0,-7.7,2.7,.12,1.5,"#d7c1a1");box(12.0,0,-8.65,4.5,2.1,.18,"#456b7a");
+ // expansion barriers
+ if(!game.expansions.dining)box(4.7,0,6.5,.25,1.25,8,"#8c6d4f"); if(!game.expansions.kitchenWing)box(-4,0,2.2,8,.25,1.0,"#8c6d4f"); if(!game.expansions.terrace)box(14.1,0,4.5,.2,1.35,11,"#8c6d4f");
+ // plants / decor
+ for(const p of [{x:12.7,z:8.3},{x:6,z:8.4},{x:18,z:8.4},{x:12.5,z:-4.8}]){if(p.x>14&&!game.expansions.terrace)continue;box(p.x,0,p.z,.65,.55,.65,"#866342");sprite(p.x,.55,p.z,(q,sc)=>{ctx.fillStyle="#4e8b55";ctx.beginPath();ctx.arc(q.x,q.y-sc*.25,sc*.35,0,Math.PI*2);ctx.fill()})}
 }
-addEventListener("resize", resize); resize();
-
-function project(p){
-  const scale = Math.min(W,H) / 17.5;
-  const x = p.x - game.camera.x;
-  const z = p.z - game.camera.z;
-  return {
-    x: W*.5 + (x-z)*scale*.88,
-    y: H*.56 + (x+z)*scale*.44 - p.y*scale*.94,
-    depth: x+z+p.y*.12,
-    scale
-  };
-}
-
-function hexToRgb(hex){
-  const h=hex.replace("#",""); const v=parseInt(h.length===3?h.split("").map(c=>c+c).join(""):h,16);
-  return [(v>>16)&255,(v>>8)&255,v&255];
-}
-function shade(hex, factor){
-  const [r,g,b]=hexToRgb(hex); const f=(v)=>clamp(Math.round(v*factor),0,255);
-  return `rgb(${f(r)},${f(g)},${f(b)})`;
-}
-function poly(points,color,depth,stroke="rgba(4,10,18,.28)"){
-  faceQueue.push({points:points.map(project),color,depth,stroke});
-}
-function quad(a,b,c,d,color,stroke){
-  const depth=(a.x+a.z+b.x+b.z+c.x+c.z+d.x+d.z)/4 + (a.y+b.y+c.y+d.y)/16;
-  poly([a,b,c,d],color,depth,stroke);
-}
-function addBox(x,y,z,w,h,d,color){
-  const x0=x-w/2,x1=x+w/2,y0=y,y1=y+h,z0=z-d/2,z1=z+d/2;
-  quad({x:x0,y:y1,z:z0},{x:x1,y:y1,z:z0},{x:x1,y:y1,z:z1},{x:x0,y:y1,z:z1},shade(color,1.18));
-  quad({x:x0,y:y0,z:z1},{x:x1,y:y0,z:z1},{x:x1,y:y1,z:z1},{x:x0,y:y1,z:z1},shade(color,.86));
-  quad({x:x1,y:y0,z:z0},{x:x1,y:y0,z:z1},{x:x1,y:y1,z:z1},{x:x1,y:y1,z:z0},shade(color,.73));
-  quad({x:x0,y:y0,z:z0},{x:x0,y:y1,z:z0},{x:x0,y:y1,z:z1},{x:x0,y:y0,z:z1},shade(color,.64));
-  quad({x:x0,y:y0,z:z0},{x:x1,y:y0,z:z0},{x:x1,y:y1,z:z0},{x:x0,y:y1,z:z0},shade(color,.58));
-}
-function addDiamondFloor(x,z,size,color){
-  quad({x:x-size/2,y:.015,z:z-size/2},{x:x+size/2,y:.015,z:z-size/2},{x:x+size/2,y:.015,z:z+size/2},{x:x-size/2,y:.015,z:z+size/2},color,"rgba(255,255,255,.025)");
-}
-function drawFaces(){
-  faceQueue.sort((a,b)=>a.depth-b.depth);
-  for(const f of faceQueue){
-    ctx.beginPath(); ctx.moveTo(f.points[0].x,f.points[0].y);
-    for(let i=1;i<f.points.length;i++) ctx.lineTo(f.points[i].x,f.points[i].y);
-    ctx.closePath(); ctx.fillStyle=f.color; ctx.fill();
-    if(f.stroke){ctx.strokeStyle=f.stroke;ctx.lineWidth=1;ctx.stroke();}
-  }
-  faceQueue.length=0;
-}
-function textSprite(x,y,z,text,sub,color="#f7fbff",size=12){
-  spriteQueue.push({p:project({x,y,z}),text,sub,color,size,depth:x+z+y*.1});
-}
-function drawSprites(){
-  spriteQueue.sort((a,b)=>a.depth-b.depth);
-  ctx.textAlign="center"; ctx.textBaseline="middle";
-  for(const s of spriteQueue){
-    ctx.font=`800 ${s.size}px Inter,system-ui,sans-serif`;
-    const tw=ctx.measureText(s.text).width;
-    ctx.fillStyle="rgba(4,10,18,.78)"; roundRect(ctx,s.p.x-tw/2-7,s.p.y-9,tw+14,18,7);ctx.fill();
-    ctx.fillStyle=s.color;ctx.fillText(s.text,s.p.x,s.p.y);
-    if(s.sub){ctx.font="700 9px Inter,system-ui,sans-serif";ctx.fillStyle="#a9bbd2";ctx.fillText(s.sub,s.p.x,s.p.y+14);}
-  }
-  spriteQueue.length=0;
-}
-function roundRect(c,x,y,w,h,r){
-  const rr=Math.min(r,w/2,h/2); c.beginPath(); c.moveTo(x+rr,y); c.arcTo(x+w,y,x+w,y+h,rr); c.arcTo(x+w,y+h,x,y+h,rr); c.arcTo(x,y+h,x,y,rr); c.arcTo(x,y,x+w,y,rr); c.closePath();
-}
-
-function renderWorld(){
-  ctx.fillStyle="#07101d";ctx.fillRect(0,0,W,H);
-  const grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,"#142d4c");grad.addColorStop(.5,"#0b1728");grad.addColorStop(1,"#050b13");ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
-  game.camera.x=lerp(game.camera.x,game.player.x*.12,.07); game.camera.z=lerp(game.camera.z,game.player.z*.10,.07);
-
-  for(let x=-8;x<8;x++) for(let z=-6;z<6;z++) addDiamondFloor(x+.5,z+.5,1,(x+z)%2===0?"#24384b":"#213446");
-  quad({x:-8,y:0,z:-5.98},{x:8,y:0,z:-5.98},{x:8,y:3.6,z:-5.98},{x:-8,y:3.6,z:-5.98},"#263b51");
-  quad({x:-7.98,y:0,z:-6},{x:-7.98,y:0,z:6},{x:-7.98,y:3.6,z:6},{x:-7.98,y:3.6,z:-6},"#1d3044");
-  addBox(0,.02,5.92,16,.15,.16,"#38556d"); addBox(7.92,.02,0,.16,.15,12,"#38556d");
-
-  addBox(-5.8,.01,-5.78,3.1,.22,.25,"#58e6b1");
-  addBox(4.5,.9,-5.72,3.0,1.8,.18,"#e8edf2");
-
-  for(const s of stations){
-    addBox(s.x,0,s.z,s.w,s.h,s.d,s.color);
-    if(s.id==="fridge"){addBox(s.x+.34,.18,s.z+.615,.05,1.8,.04,"#dce9ef");addBox(s.x-.28,1.22,s.z+.62,.6,.06,.05,"#92c9e4");}
-    if(s.id==="prep"){addBox(s.x,1.02,s.z,2.25,.08,1.05,"#e4b778"); addBox(s.x-.55,1.11,s.z-.05,.52,.08,.4,"#8ccf79");}
-    if(s.id==="stove"){for(let i=-1;i<=1;i+=2){addBox(s.x+i*.48,1.11,s.z, .62,.06,.62,"#242d35");}}
-    if(s.id==="pass"){addBox(s.x,1.03,s.z,1.1,.1,3.2,"#e5aa6f");}
-    if(s.id==="sink"){addBox(s.x,1.02,s.z,1.08,.08,1.0,"#a9c9d5");}
-    textSprite(s.x,s.h+.22,s.z,`${s.icon} ${s.name}`,null,"#ffffff",10);
-  }
-
-  for(const [i,t] of tables.entries()){
-    addBox(t.x,.02,t.z,t.w,.72,t.d,"#8d6247"); addBox(t.x,.73,t.z,t.w+.08,.08,t.d+.08,"#bc875d");
-    addBox(t.x-.9,.02,t.z,.38,.58,.48,"#536779"); addBox(t.x+.9,.02,t.z,.38,.58,.48,"#536779");
-    if(i===0) textSprite(t.x,1.05,t.z,"DINING",null,"#9eb0c8",9);
-  }
-
-  addBox(7.7,.02,4.8,.18,2.8,2.0,"#a46b4d"); textSprite(7.35,2.9,4.8,"ENTRADA",null,"#ffd166",10);
-  drawPerson(game.player.x,game.player.z,"#58e6b1",true,game.player.dir);
-  for(const c of game.customers) drawCustomer(c);
-
-  drawFaces();
-  drawStationEffects();
-  drawWorldLogo();
-  drawSprites();
-}
-
-function drawPerson(x,z,color,isPlayer=false,dir=0){
-  addBox(x,0,z,.48,.28,.42,"#253548");
-  addBox(x,.28,z,.52,.72,.38,color);
-  addBox(x,.98,z,.44,.42,.44,isPlayer?"#f0c6a4":"#d7aa8c");
-  if(isPlayer){addBox(x,1.39,z,.54,.10,.5,"#f5f7f8");addBox(x+.16,1.49,z,.34,.07,.34,"#f5f7f8");}
-  const step=Math.sin(performance.now()/120)*.08;
-  if(isPlayer && (keys.has("KeyW")||keys.has("KeyA")||keys.has("KeyS")||keys.has("KeyD")||keys.has("ArrowUp")||keys.has("ArrowDown")||keys.has("ArrowLeft")||keys.has("ArrowRight"))){
-    addBox(x-.18,.05,z+step,.14,.38,.15,"#1e2938");addBox(x+.18,.05,z-step,.14,.38,.15,"#1e2938");
-  }
-}
-function drawCustomer(c){
-  const palette=["#e77b72","#6f9fe8","#c58be1","#e4b45e","#68b58a","#d984b0"];
-  drawPerson(c.x,c.z,palette[c.color%palette.length],false,c.dir);
-  const order=game.orders.find(o=>o.id===c.orderId);
-  if(order && (order.status==="waiting"||order.status==="cooking")){
-    const r=recipes[order.recipe];
-    textSprite(c.x,1.72,c.z,`${r.icon} ${Math.max(0,Math.ceil(order.patience))}%`,null,order.patience<25?"#ff858d":order.patience<50?"#ffd166":"#ffffff",10);
-  } else if(c.state==="eating") textSprite(c.x,1.72,c.z,"😋",null,"#5ee17f",12);
-  else if(c.state==="angry") textSprite(c.x,1.72,c.z,"😠",null,"#ff6f78",12);
-}
-function drawStationEffects(){
-  const now=performance.now()/1000;
-  const stove=stationById.stove;
-  for(let i=0;i<3;i++){
-    const p=project({x:stove.x-.45+i*.45+Math.sin(now*2+i)*.08,y:1.42+((now*.35+i*.25)%1)*.75,z:stove.z});
-    ctx.beginPath();ctx.arc(p.x,p.y,3+((now+i)%1)*3,0,Math.PI*2);ctx.fillStyle="rgba(235,241,246,.22)";ctx.fill();
-  }
-  if(game.action){
-    const s=stationById[game.action.station]; if(s){
-      const p=project({x:s.interact.x,y:.08,z:s.interact.z});ctx.strokeStyle="rgba(88,230,177,.9)";ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p.x,p.y,26,12,0,0,Math.PI*2);ctx.stroke();
-    }
-  }
-}
-function drawWorldLogo(){
-  if(!logoImg.complete) return;
-  const p=project({x:4.5,y:2.15,z:-5.85});
-  const size=clamp(Math.min(W,H)*.075,42,76);
-  ctx.save();ctx.fillStyle="rgba(255,255,255,.94)";roundRect(ctx,p.x-size*.62,p.y-size*.62,size*1.24,size*1.24,10);ctx.fill();ctx.drawImage(logoImg,p.x-size*.5,p.y-size*.5,size,size);ctx.restore();
-}
-
-function canMoveTo(x,z){
-  const r=.31; if(x<-7.4||x>7.4||z<-5.35||z>5.35) return false;
-  for(const o of obstacles) if(x>o.x-o.w/2-r&&x<o.x+o.w/2+r&&z>o.z-o.d/2-r&&z<o.z+o.d/2+r) return false;
-  return true;
-}
-function updatePlayer(dt){
-  if(game.action) return;
-  let dx=0,dz=0;
-  if(keys.has("KeyW")||keys.has("ArrowUp")) dz-=1;
-  if(keys.has("KeyS")||keys.has("ArrowDown")) dz+=1;
-  if(keys.has("KeyA")||keys.has("ArrowLeft")) dx-=1;
-  if(keys.has("KeyD")||keys.has("ArrowRight")) dx+=1;
-  if(!dx&&!dz) return;
-  const len=Math.hypot(dx,dz); dx/=len;dz/=len;
-  const sprint=keys.has("ShiftLeft")||keys.has("ShiftRight"); const speed=game.player.speed*(sprint?1.48:1);
-  game.player.dir=Math.atan2(dx,dz);
-  const nx=game.player.x+dx*speed*dt,nz=game.player.z+dz*speed*dt;
-  if(canMoveTo(nx,game.player.z)) game.player.x=nx;
-  if(canMoveTo(game.player.x,nz)) game.player.z=nz;
-}
-function nearestStation(){
-  let best=null,bestD=99;
-  for(const s of stations){const d=dist2(game.player,s.interact);if(d<bestD){best=s;bestD=d;}}
-  return bestD<1.45?best:null;
-}
-function updatePrompt(){
-  if(!game.running||game.paused||game.action){UI.prompt.classList.add("hidden");return;}
-  const s=nearestStation(); if(!s){UI.prompt.classList.add("hidden");return;}
-  UI.prompt.classList.remove("hidden"); UI.promptTitle.textContent=s.name;
-  if(s.id==="fridge"&&!game.carried) UI.promptText.textContent="Tomar el pedido más urgente";
-  else if(s.id==="trash") UI.promptText.textContent=game.carried?"Desechar plato actual":"Sin plato para desechar";
-  else if(game.carried){const o=game.carried;const expected=recipes[o.recipe].route[o.stage];UI.promptText.textContent=expected===s.id?"Continuar receta":"Esta no es la estación siguiente";}
-  else UI.promptText.textContent="No tienes un plato activo";
-}
-
-function interact(){
-  if(!game.running||game.paused||game.action) return;
-  const s=nearestStation(); if(!s) return showToast("Acércate a una estación para interactuar.","bad");
-  if(s.id==="trash"){discardDish();return;}
-  if(s.id==="sink"){showToast("La zona de lavado mantiene la cocina operativa. No necesitas usarla ahora.");return;}
-  if(!game.carried){
-    if(s.id!=="fridge") return showToast("Primero toma un ticket en el refrigerador.","bad");
-    const order=game.orders.filter(o=>o.status==="waiting").sort((a,b)=>a.patience-b.patience)[0];
-    if(!order) return showToast("No hay pedidos pendientes. Aprovecha para moverte o revisar la sala.");
-    game.carried=order;order.status="cooking";order.stage=0;beginAction(s,order);
-    return;
-  }
-  const order=game.carried, recipe=recipes[order.recipe], expected=recipe.route[order.stage];
-  if(expected!==s.id) return showToast(`Ruta incorrecta. Siguiente: ${stationById[expected].name}.`,"bad");
-  beginAction(s,order);
-}
-function stationDuration(s){
-  let t=s.baseTime;
-  if(s.id==="prep") t*=Math.pow(.88,game.upgrades.prep-1);
-  if(s.id==="stove") t*=Math.pow(.88,game.upgrades.stove-1);
-  return Math.max(.35,t);
-}
-function beginAction(station,order){
-  const duration=stationDuration(station); const id=++actionId;
-  game.action={id,station:station.id,orderId:order.id,duration,elapsed:0};
-  UI.actionWrap.classList.remove("hidden");UI.actionBar.style.width="0%";UI.actionText.textContent=`${station.icon} ${station.name}...`;
-  UI.statusTitle.textContent=`Trabajando: ${station.name}`;UI.statusText.textContent="Mantente atento a la paciencia de la cola.";
-}
-function updateAction(dt){
-  if(!game.action) return;
-  game.action.elapsed+=dt; const p=clamp(game.action.elapsed/game.action.duration,0,1);UI.actionBar.style.width=`${p*100}%`;
-  if(p>=1){
-    const a=game.action;game.action=null;UI.actionWrap.classList.add("hidden");
-    const order=game.orders.find(o=>o.id===a.orderId);if(!order||order.status!=="cooking"){updateCarriedUI();return;}
-    const recipe=recipes[order.recipe];order.stage++;
-    if(order.stage>=recipe.route.length){serveOrder(order);} else {
-      const next=stationById[recipe.route[order.stage]];showToast(`${recipe.icon} Paso listo. Ahora: ${next.name}.`,"good");
-      UI.statusTitle.textContent=`${recipe.name} en proceso`;UI.statusText.textContent=`Siguiente estación: ${next.name}.`;
-    }
-    updateCarriedUI();
-  }
-}
-function discardDish(){
-  if(!game.carried) return showToast("No tienes un plato para desechar.");
-  const o=game.carried;o.status="waiting";o.stage=0;o.patience=Math.max(8,o.patience-15);game.carried=null;game.cash=Math.max(-50,game.cash-4);
-  showToast("Plato descartado: -$4 y el cliente perdió paciencia.","bad");updateCarriedUI();updateHUD();
-}
-
-function spawnOrder(){
-  if(game.orders.filter(o=>o.status==="waiting"||o.status==="cooking").length>=7) return;
-  const recipe=recipeKeys[randi(0,recipeKeys.length-1)]; const maxPatience=100+(game.upgrades.decor-1)*5;
-  const customer={id:game.nextCustomerId++,x:7.15,z:4.9,targetX:5.75,targetZ:4.4,state:"queue",speed:1.35,color:randi(0,5),orderId:game.nextOrderId,seat:null,eatTimer:0,dir:Math.PI};
-  const order={id:game.nextOrderId++,recipe,patience:maxPatience,maxPatience,status:"waiting",stage:0,customerId:customer.id,createdAt:game.timeLeft};
-  game.orders.push(order);game.customers.push(customer);reflowQueue();renderOrders();
-}
-function reflowQueue(){
-  const active=game.orders.filter(o=>o.status==="waiting"||o.status==="cooking").sort((a,b)=>a.id-b.id);
-  active.forEach((o,i)=>{const c=game.customers.find(c=>c.id===o.customerId);if(c&&c.state==="queue"){c.targetX=5.9;c.targetZ=3.6-i*.78;}});
-}
-function updateOrders(dt){
-  const drain=1.85+game.day*.10;
-  for(const o of game.orders){
-    if(o.status!=="waiting"&&o.status!=="cooking") continue;
-    o.patience-=drain*dt;
-    if(o.patience<=0) customerWalkout(o);
-  }
-  renderOrders();
-}
-function customerWalkout(order){
-  if(order.status==="angry"||order.status==="served") return;
-  order.status="angry";order.patience=0;
-  if(game.carried&&game.carried.id===order.id){game.carried=null;game.action=null;UI.actionWrap.classList.add("hidden");}
-  const c=game.customers.find(c=>c.id===order.customerId);if(c){c.state="angry";c.targetX=7.3;c.targetZ=4.9;}
-  game.rep=clamp(game.rep-6,0,100);game.strikes++;game.stats.walkouts++;
-  showToast("😠 Un cliente se fue. Reputación -6.","bad");reflowQueue();updateCarriedUI();updateHUD();
-  if(game.strikes>=3){game.strikes=0;loseLife("Tres clientes abandonaron el restaurante sin ser atendidos.");}
-}
-function serveOrder(order,helper=false){
-  if(order.status!=="cooking"&&order.status!=="waiting") return;
-  const r=recipes[order.recipe]; const patienceRatio=clamp(order.patience/order.maxPatience,0,1); const tip=Math.round(r.price*(.05+.25*patienceRatio));
-  const revenue=helper?Math.round((r.price+tip)*.72):r.price+tip;
-  order.status="served";game.cash+=revenue;game.earnedToday+=revenue;game.totalEarned+=revenue;game.servedToday++;game.totalServed++;
-  game.rep=clamp(game.rep+(patienceRatio>.55?2:1),0,100);
-  const c=game.customers.find(c=>c.id===order.customerId);if(c){c.state="eating";c.seat=tableSeats[(c.id-1)%tableSeats.length];c.targetX=c.seat.x;c.targetZ=c.seat.z;c.eatTimer=5+Math.random()*3;}
-  if(game.carried&&game.carried.id===order.id) game.carried=null;
-  showToast(helper?`🧑‍🍳 Ayudante sirvió ${r.name}: +$${revenue}.`:`${r.icon} ${r.name} servido: +$${revenue}.`,"good");
-  reflowQueue();updateCarriedUI();updateHUD();renderOrders();
-}
-function updateCustomers(dt){
-  for(const c of game.customers){
-    let tx=c.targetX,tz=c.targetZ;
-    const dx=tx-c.x,dz=tz-c.z,d=Math.hypot(dx,dz);
-    if(d>.03){const step=Math.min(d,c.speed*dt);c.x+=dx/d*step;c.z+=dz/d*step;c.dir=Math.atan2(dx,dz);}
-    if(c.state==="eating"&&d<.18){c.eatTimer-=dt;if(c.eatTimer<=0){c.state="leaving";c.targetX=7.3;c.targetZ=4.9;}}
-  }
-  game.customers=game.customers.filter(c=>!((c.state==="leaving"||c.state==="angry")&&c.x>7.15&&c.z>4.65));
-}
-
-function updateHelper(dt){
-  if(!game.upgrades.server) return;
-  game.helperTimer-=dt;if(game.helperTimer>0)return;
-  game.helperTimer=Math.max(11,18-game.day*.6);
-  const o=game.orders.filter(o=>o.status==="waiting").sort((a,b)=>a.patience-b.patience)[0];if(!o)return;
-  serveOrder(o,true);
-}
-
-function startCampaign(){
-  resetGame();game.started=true;UI.start.classList.remove("visible");startDay();
-}
-function resetGame(){
-  Object.assign(game,{running:false,paused:true,day:1,timeLeft:75,cash:100,rep:70,lives:3,strikes:0,servedToday:0,earnedToday:0,totalServed:0,totalEarned:0,target:5,spawnTimer:1.4,orders:[],customers:[],nextOrderId:1,nextCustomerId:1,carried:null,action:null,afterQuiz:null,helperTimer:12,upgrades:{prep:1,stove:1,decor:1,server:0},stats:{walkouts:0,quizRight:0,quizTotal:0}});
-  game.player.x=-1.5;game.player.z=.1;game.camera.x=0;game.camera.z=0;
-  [UI.management,UI.quiz,UI.help,UI.end].forEach(o=>o.classList.remove("visible"));updateHUD();updateCarriedUI();renderOrders();
-}
-function startDay(){
-  game.running=true;game.paused=false;game.timeLeft=game.shiftLength;game.servedToday=0;game.earnedToday=0;game.strikes=0;game.target=4+game.day;game.orders=[];game.customers=[];game.carried=null;game.action=null;game.spawnTimer=1.2;game.helperTimer=10;
-  game.player.x=-1.5;game.player.z=.1;UI.management.classList.remove("visible");
-  UI.statusTitle.textContent=`Día ${game.day}: servicio abierto`;UI.statusText.textContent="Toma el primer pedido en el refrigerador y sigue su receta.";
-  showToast(`Día ${game.day}. Objetivo: servir ${game.target} pedidos.`,"good");updateHUD();updateCarriedUI();renderOrders();
-}
-function finishDay(){
-  if(!game.running)return;game.running=false;game.paused=true;game.action=null;UI.actionWrap.classList.add("hidden");
-  const success=game.servedToday>=game.target;
-  if(success){game.rep=clamp(game.rep+4,0,100);showManagement(true);} else {
-    game.rep=clamp(game.rep-5,0,100);
-    loseLife(`No alcanzaste el objetivo del día (${game.servedToday}/${game.target}).`,()=>showManagement(false));
-  }
-}
-function showManagement(success){
-  game.running=false;game.paused=true;UI.management.classList.add("visible");UI.managementCash.textContent=`$${game.cash}`;
-  UI.managementTitle.textContent=game.day>=game.maxDays?"Cierre de campaña":"Administración del restaurante";
-  UI.managementSummary.textContent=success?"Turno completado. Puedes reinvertir antes de continuar.":"El turno quedó por debajo de la meta. Ajusta tu operación para recuperarte.";
-  UI.dayReport.innerHTML=`<div class="report-stat"><span>SERVIDOS</span><strong>${game.servedToday}/${game.target}</strong></div><div class="report-stat"><span>INGRESOS</span><strong>$${game.earnedToday}</strong></div><div class="report-stat"><span>REPUTACIÓN</span><strong>${game.rep}</strong></div><div class="report-stat"><span>VIDAS</span><strong>${"❤️".repeat(game.lives)||"—"}</strong></div>`;
-  UI.nextDay.textContent=game.day>=game.maxDays?"VER RESULTADOS":"COMENZAR SIGUIENTE DÍA";updateUpgradeUI();
-}
-function nextDay(){
-  if(game.day>=game.maxDays){endGame(game.lives>0&&game.rep>=45);return;}
-  game.day++;startDay();
-}
-function loseLife(reason,after=null){
-  if(game.paused&&UI.quiz.classList.contains("visible"))return;
-  game.lives=Math.max(0,game.lives-1);game.paused=true;game.afterQuiz=after;updateHUD();
-  UI.quiz.classList.add("visible");UI.quizFeedback.textContent="";UI.quizFeedback.className="quiz-feedback";UI.continueQuiz.classList.add("hidden");game.quizAnswered=false;
-  const q=quizBank[randi(0,quizBank.length-1)];game.quizQuestion=q;game.stats.quizTotal++;UI.quizTag.textContent=q.tag;UI.questionEn.textContent=q.en;UI.questionEs.textContent=q.es;UI.answerGrid.innerHTML="";
-  q.options.forEach((opt,i)=>{const b=document.createElement("button");b.className="answer-btn";b.type="button";b.textContent=`${String.fromCharCode(65+i)}. ${opt}`;b.onclick=()=>answerQuiz(i,b);UI.answerGrid.appendChild(b);});
-  UI.quizFeedback.textContent=`Motivo: ${reason}`;
-}
-function answerQuiz(index,button){
-  if(game.quizAnswered)return;game.quizAnswered=true;const q=game.quizQuestion;const buttons=[...UI.answerGrid.children];buttons.forEach(b=>b.disabled=true);buttons[q.correct].classList.add("correct");
-  if(index===q.correct){game.lives=Math.min(3,game.lives+1);game.rep=clamp(game.rep+2,0,100);game.stats.quizRight++;for(const o of game.orders)if(o.status==="waiting"||o.status==="cooking")o.patience=Math.min(o.maxPatience,o.patience+15);UI.quizFeedback.className="quiz-feedback good";UI.quizFeedback.textContent=`✓ Vida recuperada. ${q.explain}`;}
-  else{button.classList.add("wrong");UI.quizFeedback.className="quiz-feedback bad";UI.quizFeedback.textContent=`✗ La vida permanece perdida. ${q.explain}`;}
-  updateHUD();UI.continueQuiz.classList.remove("hidden");
-}
-function continueAfterQuiz(){
-  UI.quiz.classList.remove("visible");
-  if(game.lives<=0){endGame(false);return;}
-  const after=game.afterQuiz;game.afterQuiz=null;if(after){after();return;}game.paused=false;
-}
-function endGame(win){
-  game.running=false;game.paused=true;UI.management.classList.remove("visible");UI.quiz.classList.remove("visible");UI.end.classList.add("visible");
-  const score=Math.max(0,Math.round(game.cash+game.rep*7+game.totalServed*28+game.lives*150-game.stats.walkouts*20));if(score>game.best){game.best=score;localStorage.setItem("robledoBistro3DBest",String(score));}
-  UI.endIcon.textContent=win?"🏆":"🍽️";UI.endTitle.textContent=win?"¡Bistro consolidado!":"Fin de operaciones";
-  UI.endText.textContent=win?"Completaste los cinco días manteniendo una operación viable. Tus decisiones de servicio y reinversión sostuvieron el restaurante.":"La campaña terminó, pero puedes reiniciar y cambiar tu estrategia de servicio, mejoras y prioridades.";
-  UI.endStats.innerHTML=`<div class="end-stat"><span>PUNTUACIÓN</span><strong>${score}</strong></div><div class="end-stat"><span>MEJOR</span><strong>${game.best}</strong></div><div class="end-stat"><span>PEDIDOS</span><strong>${game.totalServed}</strong></div><div class="end-stat"><span>CAJA</span><strong>$${game.cash}</strong></div><div class="end-stat"><span>REP</span><strong>${game.rep}</strong></div><div class="end-stat"><span>QUIZ</span><strong>${game.stats.quizRight}/${game.stats.quizTotal}</strong></div>`;
-}
-
-function upgradeCost(type){
-  const l=game.upgrades[type];if(type==="server")return l?0:140;if(type==="prep")return 70+(l-1)*55;if(type==="stove")return 85+(l-1)*65;if(type==="decor")return 65+(l-1)*50;return 999;
-}
-function buyUpgrade(type){
-  if(type==="server"&&game.upgrades.server)return showToast("Ya contrataste al ayudante.");
-  if(type!=="server"&&game.upgrades[type]>=4)return showToast("Esta mejora ya está al máximo.");
-  const cost=upgradeCost(type);if(game.cash<cost)return showToast("No tienes caja suficiente para esa mejora.","bad");
-  game.cash-=cost;if(type==="server")game.upgrades.server=1;else game.upgrades[type]++;UI.managementCash.textContent=`$${game.cash}`;updateUpgradeUI();updateHUD();showToast("Mejora comprada.","good");
-}
-function updateUpgradeUI(){
-  const map=["prep","stove","decor","server"];
-  for(const type of map){const l=game.upgrades[type],cost=upgradeCost(type);const btn=document.querySelector(`[data-upgrade="${type}"]`);const costEl=$(`${type}UpgradeCost`),textEl=$(`${type}UpgradeText`);if(!btn)continue;
-    if(type==="server"){textEl.textContent=l?"Contratado · apoyo automático":"No contratado · apoyo automático";costEl.textContent=l?"LISTO":`$${cost}`;btn.disabled=!!l;}
-    else{const max=l>=4;textEl.textContent=`Nivel ${l} · ${type==="decor"?"+5 paciencia base":"-12% tiempo por nivel"}`;costEl.textContent=max?"MAX":`$${cost}`;btn.disabled=max;}
-  }
-}
-
-function updateHUD(){
-  UI.day.textContent=`${game.day} / ${game.maxDays}`;UI.time.textContent=formatTime(game.timeLeft);UI.cash.textContent=`$${Math.round(game.cash)}`;UI.rep.textContent=Math.round(game.rep);UI.lives.textContent="❤️".repeat(game.lives)||"—";
-  UI.served.textContent=`${game.servedToday} / ${game.target}`;UI.servedProgress.style.width=`${Math.min(100,game.servedToday/game.target*100)}%`;UI.earned.textContent=`$${game.earnedToday}`;UI.strikes.textContent=`${game.strikes} / 3`;
-  const active=game.orders.filter(o=>o.status==="waiting"||o.status==="cooking").length;UI.rush.textContent=active>=5?"RUSH":active>=3?"BUSY":"NORMAL";UI.rush.classList.toggle("hot",active>=3);
-}
-function updateCarriedUI(){
-  const o=game.carried;if(!o){UI.carried.className="carried-dish empty";UI.carried.innerHTML=`<span class="dish-icon">🍽️</span><div><strong>Vacía</strong><small>Ve al refrigerador para tomar un pedido.</small></div>`;UI.route.textContent="FRIDGE → PREP → COOK → PASS";return;}
-  const r=recipes[o.recipe],next=r.route[o.stage];UI.carried.className="carried-dish";UI.carried.innerHTML=`<span class="dish-icon">${r.icon}</span><div><strong>${r.name}</strong><small>Cliente #${o.customerId} · paciencia ${Math.max(0,Math.round(o.patience))}%</small></div>`;
-  UI.route.textContent=r.route.map((id,i)=>`${i<o.stage?"✓ ":i===o.stage?"▶ ":""}${stationById[id].name.toUpperCase()}`).join(" → ");
-}
-function renderOrders(){
-  const active=game.orders.filter(o=>o.status==="waiting"||o.status==="cooking").sort((a,b)=>a.patience-b.patience);if(!active.length){UI.orders.innerHTML=`<div class="order-empty">Esperando clientes…</div>`;return;}
-  UI.orders.innerHTML=active.map(o=>{const r=recipes[o.recipe],pct=clamp(o.patience/o.maxPatience*100,0,100),tone=pct<26?"danger":pct<52?"warning":"",stage=o.status==="cooking"?`EN COCINA · siguiente: ${stationById[r.route[o.stage]]?.name||"entrega"}`:"ESPERANDO";return `<div class="ticket ${tone}"><div class="ticket-top"><strong>${r.icon} #${o.customerId} ${r.name}</strong><span class="ticket-price">$${r.price}</span></div><div class="ticket-stage">${stage}</div><div class="patience"><span style="width:${pct}%"></span></div></div>`;}).join("");
-}
-function formatTime(sec){sec=Math.max(0,Math.ceil(sec));return `${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")}`;}
-function showToast(text,tone=""){clearTimeout(toastTimer);UI.toast.textContent=text;UI.toast.className=`toast ${tone}`;toastTimer=setTimeout(()=>UI.toast.classList.add("hidden"),2200);}
-
-function update(dt){
-  if(game.running&&!game.paused){
-    game.timeLeft-=dt;updatePlayer(dt);updateAction(dt);updateOrders(dt);updateCustomers(dt);updateHelper(dt);
-    game.spawnTimer-=dt;if(game.spawnTimer<=0){spawnOrder();game.spawnTimer=Math.max(4.4,9.4-game.day*.65+rand(-1.1,1.2));}
-    if(game.timeLeft<=0)finishDay();
-    updateHUD();updateCarriedUI();updatePrompt();
-  } else updatePrompt();
-}
-function loop(now){
-  const dt=Math.min(.05,(now-lastTime)/1000);lastTime=now;update(dt);renderWorld();requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-
-addEventListener("keydown",e=>{
-  keys.add(e.code);if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();
-  if(e.repeat)return;if(e.code==="KeyE")interact();if(e.code==="KeyQ")discardDish();
-});
-addEventListener("keyup",e=>keys.delete(e.code));
-
-$("startBtn").onclick=startCampaign;
-$("restartBtn").onclick=()=>{UI.end.classList.remove("visible");UI.start.classList.add("visible");resetGame();};
-$("nextDayBtn").onclick=nextDay;
-$("continueQuizBtn").onclick=continueAfterQuiz;
-$("helpBtn").onclick=()=>{game.paused=true;UI.help.classList.add("visible");};
-$("closeHelpBtn").onclick=()=>{UI.help.classList.remove("visible");if(game.running)game.paused=false;};
-document.querySelectorAll(".upgrade-card").forEach(b=>b.addEventListener("click",()=>buyUpgrade(b.dataset.upgrade)));
-
-updateHUD();updateCarriedUI();renderOrders();
+function drawStation(s){box(s.x,0,s.z,s.w,s.h,s.d,s.color);sprite(s.x,s.h+.18,s.z,(p,sc)=>{ctx.textAlign="center";ctx.font=`${Math.max(14,sc*.52)}px system-ui`;ctx.fillText(s.icon,p.x,p.y);ctx.font=`700 ${Math.max(8,sc*.17)}px system-ui`;ctx.fillStyle="rgba(255,255,255,.86)";ctx.fillText(s.name,p.x,p.y+sc*.45)})}
+function tableSeatPositions(t,count){const arr=[{x:t.x-.78,z:t.z},{x:t.x+.78,z:t.z},{x:t.x,z:t.z-.76},{x:t.x,z:t.z+.76}];return arr.slice(0,Math.min(count,arr.length))}
+function drawTable(t){const s=style(),active=activeTables().some(a=>a.id===t.id);if(!active)return;box(t.x,0,t.z,1.45,.78,1.2,s.table);const seats=tableSeatPositions(t,t.cap);seats.forEach((p,i)=>box(p.x,0,p.z,.48,.56,.48,s.chair));if(t.dirty>0)sprite(t.x,.9,t.z,(p,sc)=>{ctx.font=`${Math.max(12,sc*.38)}px system-ui`;ctx.textAlign="center";ctx.fillText("🧽",p.x,p.y)});
+ const party=game.parties.find(p=>p.id===t.partyId);if(party&&["browsing","waiting","eating"].includes(party.state)){const seated=tableSeatPositions(t,party.size);seated.forEach((sp,i)=>drawPerson(sp.x,sp.z,party.colors[i%party.colors.length],true)); if(party.state==="browsing")bubble(t.x,1.45,t.z,"📖"); else if(party.state==="waiting"){const o=game.orders.find(o=>o.id===party.orderId);bubble(t.x,1.45,t.z,o?`${recipes[o.recipeKey].icon} T${t.id}`:"…")} else bubble(t.x,1.45,t.z,"😋")}}
+function drawPerson(x,z,color,seated=false){sprite(x,seated?.42:.82,z,(p,sc)=>{const r=sc*(seated?.18:.2);ctx.fillStyle=color;ctx.beginPath();ctx.arc(p.x,p.y-r*1.7,r,0,Math.PI*2);ctx.fill();ctx.fillStyle="#f0c8a0";ctx.beginPath();ctx.arc(p.x,p.y-r*2.75,r*.62,0,Math.PI*2);ctx.fill();if(!seated){ctx.strokeStyle="#17232d";ctx.lineWidth=Math.max(1,sc*.035);ctx.beginPath();ctx.moveTo(p.x,p.y-r);ctx.lineTo(p.x-r*.9,p.y+r*.9);ctx.moveTo(p.x,p.y-r);ctx.lineTo(p.x+r*.9,p.y+r*.9);ctx.stroke()}})}
+function bubble(x,y,z,text){sprite(x,y,z,(p,sc)=>{ctx.font=`${Math.max(12,sc*.35)}px system-ui`;const w=ctx.measureText(text).width+12,h=Math.max(20,sc*.42);ctx.fillStyle="rgba(255,255,255,.94)";roundRect(p.x-w/2,p.y-h,w,h,8,true);ctx.fillStyle="#17232d";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(text,p.x,p.y-h/2+1);ctx.textBaseline="alphabetic"},1)}
+function roundRect(x,y,w,h,r,fill){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill)ctx.fill()}
+function drawParties(){for(const p of game.parties){if(["browsing","waiting","eating"].includes(p.state))continue;for(let i=0;i<p.size;i++){const off=(i-(p.size-1)/2)*.35;drawPerson(p.x+off,p.z+off*.35,p.colors[i%p.colors.length],false)} if(p.state==="queued")bubble(p.x,1.5,p.z,"🪑")}}
+function drawStaff(){const positions={host:{x:11.5,z:-6.1},cook:{x:-2.4,z:-4.6},waiter:{x:4.8,z:-.5},cleaner:{x:8.8,z:7.8}},colors={host:"#6aa6d8",cook:"#f0f0ef",waiter:"#d98d68",cleaner:"#8cc68b"};Object.keys(game.staff).forEach(k=>{for(let i=0;i<game.staff[k];i++)drawPerson(positions[k].x+i*.45,positions[k].z+i*.25,colors[k])})}
+function drawPlayer(){sprite(game.player.x,.9,game.player.z,(p,sc)=>{const r=sc*.22;ctx.fillStyle="#f6f6f4";ctx.beginPath();ctx.arc(p.x,p.y-r*1.6,r,0,Math.PI*2);ctx.fill();ctx.fillStyle="#223742";ctx.fillRect(p.x-r*.62,p.y-r*1.5,r*1.24,r*1.8);ctx.fillStyle="#f0c8a0";ctx.beginPath();ctx.arc(p.x,p.y-r*2.65,r*.62,0,Math.PI*2);ctx.fill();ctx.fillStyle="#db4c4c";ctx.beginPath();ctx.arc(p.x,p.y-r*3.17,r*.75,Math.PI,0);ctx.fill();if(game.carried){ctx.font=`${Math.max(12,sc*.38)}px system-ui`;ctx.textAlign="center";ctx.fillText(game.carried.type==="delivery"?recipes[game.carried.recipeKey].icon:"🥣",p.x,p.y-r*3.8)}} ,2)}
+function drawBranding(){sprite(12,1.6,-8.75,(p,sc)=>{if(signImg.complete)ctx.drawImage(signImg,p.x-sc*1.55,p.y-sc*.62,sc*3.1,sc*1.1)},1.5);sprite(-11.8,1.7,-8.65,(p,sc)=>{if(logoImg.complete){ctx.fillStyle="white";roundRect(p.x-sc*.5,p.y-sc*.5,sc,sc,8,true);ctx.drawImage(logoImg,p.x-sc*.44,p.y-sc*.44,sc*.88,sc*.88)}},1.4)}
+function render(){faces=[];sprites=[];drawRoom();activeStations().forEach(drawStation);game.tables.forEach(drawTable);drawParties();drawStaff();drawPlayer();drawBranding();faces.sort((a,b)=>a.depth-b.depth);for(const f of faces){ctx.beginPath();f.points.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.fillStyle=f.color;ctx.fill();ctx.strokeStyle=f.stroke;ctx.lineWidth=1;ctx.stroke()}sprites.sort((a,b)=>a.depth-b.depth);for(const s of sprites)s.draw(s.p,s.p.scale)}
+function tableIsActive(t){return t.zone==="base"||(t.zone==="dining"&&game.expansions.dining)||(t.zone==="terrace"&&game.expansions.terrace)}
+function obstacles(){return activeStations().map(s=>({x:s.x,z:s.z,w:s.w+.45,d:s.d+.45})).concat(activeTables().map(t=>({x:t.x,z:t.z,w:2.4,d:2.1}))).concat([{x:-13,z:-3.5,w:.7,d:11},{x:-4,z:-9,w:18,d:.7},{x:5,z:-5.5,w:.7,d:7}])}
+function blocked(x,z){if(x<-12.4||x>21.6||z<-8.35||z>10.5)return true;if(!game.expansions.terrace&&x>13.7)return true;if(!game.expansions.kitchenWing&&x<-0.1&&z>1.8)return true;if(!game.expansions.dining&&x>=0&&x<5&&z>2)return true;return obstacles().some(o=>Math.abs(x-o.x)<o.w/2+.27&&Math.abs(z-o.z)<o.d/2+.27)}
+function updatePlayer(dt){if(!game.running||game.paused||game.action)return;let dx=0,dz=0;if(keys.has("KeyW")||keys.has("ArrowUp"))dz-=1;if(keys.has("KeyS")||keys.has("ArrowDown"))dz+=1;if(keys.has("KeyA")||keys.has("ArrowLeft"))dx-=1;if(keys.has("KeyD")||keys.has("ArrowRight"))dx+=1;if(dx||dz){const l=Math.hypot(dx,dz);dx/=l;dz/=l;const sp=game.player.speed*(keys.has("ShiftLeft")||keys.has("ShiftRight")?1.65:1),nx=game.player.x+dx*sp*dt,nz=game.player.z+dz*sp*dt;if(!blocked(nx,game.player.z))game.player.x=nx;if(!blocked(game.player.x,nz))game.player.z=nz;game.player.dir=Math.atan2(dx,dz)}game.camera.x=lerp(game.camera.x,game.player.x*.72,clamp(dt*3,0,1));game.camera.z=lerp(game.camera.z,game.player.z*.72,clamp(dt*3,0,1))}
+function moveTo(obj,target,speed,dt){const dx=target.x-obj.x,dz=target.z-obj.z,l=Math.hypot(dx,dz);if(l<.08){obj.x=target.x;obj.z=target.z;return true}obj.x+=dx/l*Math.min(l,speed*dt);obj.z+=dz/l*Math.min(l,speed*dt);return false}
+function openTableFor(size){return activeTables().filter(t=>!t.partyId&&t.dirty<=0&&t.cap>=size).sort((a,b)=>a.cap-b.cap)[0]||null}
+function queueSpot(index){return{x:10.7+(index%2)*.65,z:-6.3+Math.floor(index/2)*.62}}
+function seatParty(p,t){t.partyId=p.id;p.tableId=t.id;p.state="walkingTable";p.target={x:t.x,z:t.z-1.3};p.seatDelay=0;toast(`Mesa ${t.id} asignada a ${p.size} cliente${p.size>1?"s":""}.`)}
+function spawnParty(){const active=activeTables(),maxParty=Math.min(4,Math.max(2,Math.max(...active.map(t=>t.cap))));const size=randi(1,maxParty),types=Object.keys(customerTypes),type=types[randi(0,types.length-1)],basePat=(68+game.day*2+style().patience)*customerTypes[type].patience;const colors=["#e27d60","#85b7d9","#e8b86a","#8dc48d","#a994c7","#d66f85"];game.parties.push({id:game.nextPartyId++,size,type,state:"entering",x:13.3,z:-8.0,target:{x:11.5,z:-6.3},tableId:null,orderId:null,browse:rand(2.3,4.8),patience:basePat,maxPatience:basePat,eat:0,colors:Array.from({length:size},()=>colors[randi(0,colors.length-1)])});game.stats.parties++}
+function chooseRecipe(p){const active=recipeKeys.filter(k=>game.menu[k].unlocked&&game.menu[k].enabled);if(!active.length)return"salad";const typ=customerTypes[p.type];let best=active[0],bestScore=-1e9;for(const k of active){const r=recipes[k],price=r.base*game.menu[k].mult;let score=Math.random()*1.4;score+=r.tags.some(t=>typ.prefs.includes(t))?2.5:0;score-=Math.max(0,price/(25*typ.price)-1)*2.2;score+=stockCanMake(k,p.size)?.4:-2;if(score>bestScore){bestScore=score;best=k}}return best}
+function createOrder(p){const recipeKey=chooseRecipe(p),o={id:game.nextOrderId++,partyId:p.id,tableId:p.tableId,recipeKey,qty:p.size,status:"queued",created:performance.now(),claimed:false};game.orders.push(o);p.orderId=o.id;p.state="waiting";toast(`Mesa ${p.tableId}: ${p.size}× ${recipes[recipeKey].name}`)}
+function walkoutParty(p,reason="Se agotó la paciencia"){if(p.state==="leaving")return;const t=game.tables.find(t=>t.id===p.tableId);if(t){t.partyId=null;t.dirty=6}const o=game.orders.find(o=>o.id===p.orderId);if(o)o.status="cancelled";p.state="leaving";p.target={x:13.5,z:-8.1};game.rep=clamp(game.rep-5,0,100);game.strikes++;game.stats.walkouts++;toast(`${reason}. Walkout en mesa ${p.tableId||"lobby"}.`);if(game.strikes>=3){game.strikes=0;loseLife("Tres clientes/grupos abandonaron el restaurante.")}}
+function updateParties(dt){const queued=game.parties.filter(p=>p.state==="queued");for(const p of game.parties){if(p.state==="entering"){if(moveTo(p,p.target,2.15,dt))p.state="queued"}
+ else if(p.state==="queued"){const idx=queued.indexOf(p),q=queueSpot(Math.max(0,idx));moveTo(p,q,1.6,dt);const host=game.staff.host;p.patience-=dt*(host?0.18:0.42);p.seatDelay=(p.seatDelay||0)+dt*(1+host*1.6);const t=openTableFor(p.size);if(t&&p.seatDelay>(host?0.35:1.4))seatParty(p,t);if(p.patience<=0)walkoutParty(p,"Fila demasiado larga")}
+ else if(p.state==="walkingTable"){if(moveTo(p,p.target,2,dt))p.state="browsing"}
+ else if(p.state==="browsing"){p.browse-=dt;if(p.browse<=0)createOrder(p)}
+ else if(p.state==="waiting"){p.patience-=dt*(.72+game.day*.035);if(p.patience<=0)walkoutParty(p)}
+ else if(p.state==="eating"){p.eat-=dt;if(p.eat<=0){const t=game.tables.find(t=>t.id===p.tableId);if(t){t.partyId=null;t.dirty=7}p.state="leaving";p.target={x:13.5,z:-8.1}}}
+ else if(p.state==="leaving"){if(moveTo(p,p.target,2.2,dt))p.remove=true}}
+ game.parties=game.parties.filter(p=>!p.remove)}
+function updateTables(dt){const cleaner=game.staff.cleaner;for(const t of activeTables())if(t.dirty>0)t.dirty=Math.max(0,t.dirty-dt*(cleaner?1+cleaner*2.1:.45))}
+function stockCanMake(key,qty=1){const need=recipes[key].need;return Object.entries(need).every(([k,v])=>game.stock[k]>=v*qty)}
+function consumeStock(key,qty=1){for(const[k,v]of Object.entries(recipes[key].need))game.stock[k]-=v*qty}
+function cheapestOrder(){return game.orders.filter(o=>o.status==="queued"&&!o.claimed).sort((a,b)=>{const pa=game.parties.find(p=>p.id===a.partyId),pb=game.parties.find(p=>p.id===b.partyId);return(pa?.patience||999)-(pb?.patience||999)})[0]}
+function stationForKind(kind){return activeStations().filter(s=>s.kind===kind).sort((a,b)=>d2(game.player,s.interact)-d2(game.player,b.interact))[0]}
+function getInteraction(){if(game.action)return null;if(game.carried?.type==="delivery"){const o=game.orders.find(o=>o.id===game.carried.orderId),t=game.tables.find(t=>t.id===o?.tableId);if(t&&d2(game.player,t)<1.9)return{type:"deliver",table:t,title:`Servir mesa ${t.id}`,text:`${recipes[o.recipeKey].name} · ${o.qty} porción(es)`}}
+ const dirty=activeTables().filter(t=>t.dirty>0&&d2(game.player,t)<1.75).sort((a,b)=>d2(game.player,a)-d2(game.player,b))[0];if(dirty&&!game.carried)return{type:"clean",table:dirty,title:`Limpiar mesa ${dirty.id}`,text:"Libera esta mesa para nuevos clientes."};
+ const s=activeStations().filter(s=>d2(game.player,s.interact)<1.35).sort((a,b)=>d2(game.player,a.interact)-d2(game.player,b.interact))[0];if(!s)return null;return{type:"station",station:s,title:s.name,text:stationPrompt(s)}}
+function stationPrompt(s){if(s.kind==="fridge")return game.carried?"Ya tienes una comanda en proceso.":"Tomar la comanda más urgente.";if(s.kind==="pantry")return"Comprar paquete de emergencia por $28.";if(s.kind==="pass"){if(game.carried?.type==="kitchen")return"Emplatar y dejar pedido listo.";if(!game.carried&&game.readyOrders.length)return"Recoger el plato listo más urgente.";return"Pase sin platos pendientes."}if(["prep","stove","oven"].includes(s.kind))return game.carried?.type==="kitchen"?`Procesar ${recipes[game.carried.recipeKey].name}.`:"Necesitas una comanda activa.";return"Usar estación."}
+function interact(){if(!game.running||game.paused||game.action)return;const it=getInteraction();if(!it)return toast("No hay nada para interactuar aquí.");if(it.type==="deliver")return serveAtTable(it.table);if(it.type==="clean")return startAction("Limpiando mesa",1.6,()=>{it.table.dirty=0;toast(`Mesa ${it.table.id} limpia.`)});const s=it.station;if(s.kind==="fridge")return takeOrder();if(s.kind==="pantry")return emergencyRestock();if(s.kind==="pass")return passInteract();if(["prep","stove","oven"].includes(s.kind))return processKitchen(s);if(s.kind==="sink")return startAction("Lavando utensilios",1.0,()=>toast("Utensilios listos."))}
+function takeOrder(){if(game.carried)return toast("Primero termina o desecha lo que llevas.");const o=cheapestOrder();if(!o)return toast("No hay comandas nuevas.");if(!stockCanMake(o.recipeKey,o.qty))return toast(`Faltan ingredientes para ${recipes[o.recipeKey].name}. Usa la despensa de emergencia.`);consumeStock(o.recipeKey,o.qty);o.claimed=true;o.status="inKitchen";game.carried={type:"kitchen",orderId:o.id,recipeKey:o.recipeKey,step:1};toast(`Comanda #${o.id} tomada: ${recipes[o.recipeKey].name}.`);updateUI()}
+function expectedKind(){if(!game.carried||game.carried.type!=="kitchen")return null;return recipes[game.carried.recipeKey].route[game.carried.step]}
+function processKitchen(s){if(!game.carried||game.carried.type!=="kitchen")return toast("Toma una comanda en la nevera.");const expected=expectedKind();if(s.kind!==expected)return toast(`Esta receta necesita ${expected.toUpperCase()} ahora.`);const r=recipes[game.carried.recipeKey],mult=s.kind==="prep"?.88:s.kind==="stove"?.94:1,dur=s.time*mult*(1+r.difficulty*.06);startAction(`${s.icon} ${s.name}`,dur,()=>{game.carried.step++;const o=game.orders.find(o=>o.id===game.carried.orderId);if(o)o.status=s.kind;toast(`${s.name} completado.`);updateUI()})}
+function passInteract(){if(game.carried?.type==="kitchen"){if(expectedKind()!=="pass")return toast(`Aún falta ${expectedKind()?.toUpperCase()||"una etapa"}.`);const c={...game.carried};startAction("Emplatando",.55,()=>{const o=game.orders.find(o=>o.id===c.orderId);if(o){o.status="ready";o.readyAt=performance.now();game.readyOrders.push(o.id)}game.carried=null;toast("Plato listo en el pase. Llévalo a la mesa.");updateUI()});return}
+ if(!game.carried&&game.readyOrders.length){const id=game.readyOrders.shift(),o=game.orders.find(o=>o.id===id&&o.status==="ready");if(!o)return passInteract();o.status="delivery";game.carried={type:"delivery",orderId:o.id,recipeKey:o.recipeKey};toast(`Lleva ${recipes[o.recipeKey].name} a la mesa ${o.tableId}.`);updateUI();return}toast("No hay platos listos en el pase.")}
+function serveOrder(o,source="player"){const p=game.parties.find(p=>p.id===o.partyId);if(!p||p.state!=="waiting"){o.status="cancelled";return false}const r=recipes[o.recipeKey],price=r.base*game.menu[o.recipeKey].mult*o.qty,ratio=clamp(p.patience/p.maxPatience,0,1),tip=price*(.03+.16*ratio),total=price+tip;game.cash+=total;game.earnedToday+=total;game.totalEarned+=total;game.servedToday++;game.totalServed++;game.rep=clamp(game.rep+(ratio>.6?1:0),0,100);p.state="eating";p.eat=rand(7,12);o.status="served";o.servedBy=source;toast(`Mesa ${o.tableId} servida · +${money(total)}.`);return true}
+function serveAtTable(t){if(!game.carried||game.carried.type!=="delivery")return;const o=game.orders.find(o=>o.id===game.carried.orderId);if(!o||o.tableId!==t.id)return toast("Este plato pertenece a otra mesa.");serveOrder(o,"player");game.carried=null;updateUI()}
+function emergencyRestock(){if(game.cash<28)return toast("Caja insuficiente para el paquete de emergencia.");game.cash-=28;for(const k of Object.keys(game.stock))game.stock[k]+=4;toast("Despensa +4 de cada ingrediente · -$28.");updateUI()}
+function discard(){if(!game.carried)return;const o=game.orders.find(o=>o.id===game.carried.orderId);if(o&&o.status!=="served"){o.status="queued";o.claimed=false}game.carried=null;game.rep=clamp(game.rep-1,0,100);toast("Preparación descartada · reputación -1.");updateUI()}
+function startAction(label,duration,done){game.action={label,duration,elapsed:0,done};UI.actionWrap.classList.remove("hidden");UI.actionText.textContent=label;UI.actionBar.style.width="0%"}
+function updateAction(dt){if(!game.action)return;game.action.elapsed+=dt;const p=clamp(game.action.elapsed/game.action.duration,0,1);UI.actionBar.style.width=(p*100)+"%";if(p>=1){const done=game.action.done;game.action=null;UI.actionWrap.classList.add("hidden");done?.()}}
+function staffAutomation(dt){const cook=game.staff.cook,waiter=game.staff.waiter;if(cook){game.staffTimers.cook-=dt;if(game.staffTimers.cook<=0){game.staffTimers.cook=Math.max(5.5,15-cook*2.7);const o=cheapestOrder();if(o&&stockCanMake(o.recipeKey,o.qty)){consumeStock(o.recipeKey,o.qty);o.claimed=true;o.status="ready";o.readyAt=performance.now();game.readyOrders.push(o.id);toast(`Cook preparó ${recipes[o.recipeKey].name} para mesa ${o.tableId}.`)}}}
+ if(waiter){game.staffTimers.waiter-=dt;if(game.staffTimers.waiter<=0){game.staffTimers.waiter=Math.max(2.8,7-waiter*1.25);const id=game.readyOrders.shift();if(id){const o=game.orders.find(o=>o.id===id&&o.status==="ready");if(o)serveOrder(o,"waiter")}}}}
+function spawnLogic(dt){game.spawnTimer-=dt;const activeCount=game.parties.filter(p=>p.state!=="leaving").length,max=Math.max(6,activeTables().length+game.day);if(game.spawnTimer<=0&&activeCount<max){spawnParty();const rush=game.timeLeft<game.shiftLength*.52;game.spawnTimer=rand(rush?3.6:5.5,rush?6.0:8.4)*Math.max(.65,1-game.day*.035)}}
+function updateGame(dt){if(!game.running||game.paused)return;game.timeLeft=Math.max(0,game.timeLeft-dt);updatePlayer(dt);updateAction(dt);updateParties(dt);updateTables(dt);staffAutomation(dt);spawnLogic(dt);if(game.timeLeft<=0)endDay();updateUI();updatePrompt()}
+function updatePrompt(){const it=getInteraction();if(!it||!game.running||game.paused){UI.prompt.classList.add("hidden");return}UI.prompt.classList.remove("hidden");UI.promptTitle.textContent=it.title;UI.promptText.textContent=it.text||""}
+function loseLife(reason){if(game.paused&&game.quiz.classList.contains("active"))return;game.lives=Math.max(0,game.lives-1);game.paused=true;game.afterQuiz=()=>{if(game.lives<=0)finishGame(false,reason);else game.paused=false};showQuiz(reason)}
+function showQuiz(reason){const q=quizBank[randi(0,quizBank.length-1)];game.quizQuestion=q;game.quizAnswered=false;game.stats.quizTotal++;UI.quizTag.textContent=q.tag;UI.questionEn.textContent=q.en;UI.questionEs.textContent=q.es;UI.answerGrid.innerHTML="";UI.quizFeedback.textContent=`${reason} Responde para intentar recuperar la vida.`;UI.continueQuiz.classList.add("hidden");q.options.forEach((op,i)=>{const b=document.createElement("button");b.className="answer-btn";b.textContent=op;b.onclick=()=>answerQuiz(i,b);UI.answerGrid.appendChild(b)});openOverlay(UI.quiz)}
+function answerQuiz(i,button){if(game.quizAnswered)return;game.quizAnswered=true;const q=game.quizQuestion,buttons=[...UI.answerGrid.children];buttons.forEach((b,idx)=>{b.disabled=true;if(idx===q.correct)b.classList.add("correct")});if(i===q.correct){game.lives=Math.min(3,game.lives+1);game.stats.quizRight++;UI.quizFeedback.textContent=`Correct! ${q.explain} Recuperaste la vida.`}else{button.classList.add("wrong");UI.quizFeedback.textContent=`Incorrect. ${q.explain} La vida permanece perdida.`}UI.continueQuiz.classList.remove("hidden");updateUI()}
+function continueQuiz(){closeOverlay(UI.quiz);const cb=game.afterQuiz;game.afterQuiz=null;cb?.()}
+function endDay(){if(!game.running)return;game.running=false;game.paused=true;const unfinished=game.orders.filter(o=>!["served","cancelled"].includes(o.status)).length;const wage=dailyWages();const targetMet=game.servedToday>=game.target;game.cash-=wage;if(!targetMet)game.rep=clamp(game.rep-4,0,100);else game.rep=clamp(game.rep+2,0,100);game.lastReport={served:game.servedToday,target:game.target,earned:game.earnedToday,wage,unfinished,targetMet,rep:game.rep};cleanupShift();if(!targetMet){game.lives=Math.max(0,game.lives-1);game.afterQuiz=afterEndDay;showQuiz("No alcanzaste la meta diaria y perdiste una vida.");return}afterEndDay()}
+function afterEndDay(){if(game.lives<=0)return finishGame(false,"La operación se quedó sin vidas.");if(game.day>=game.maxDays)return finishGame(true,"Completaste la campaña de siete días.");game.day++;renderManagement();saveCampaign();openOverlay(UI.management)}
+function cleanupShift(){game.parties=[];game.orders=[];game.readyOrders=[];game.carried=null;game.action=null;game.tables.forEach(t=>{t.partyId=null;t.dirty=0})}
+function dailyWages(){return Object.entries(game.staff).reduce((s,[k,l])=>s+staffDefs[k].wage*l,0)}
+function shiftSettings(){game.shiftLength=95+Math.min(25,(game.day-1)*4);game.timeLeft=game.shiftLength;game.target=6+(game.day-1);game.spawnTimer=2;game.strikes=0;game.servedToday=0;game.earnedToday=0;game.player.x=0;game.player.z=-1;game.camera.x=0;game.camera.z=0;game.staffTimers={cook:8,waiter:5}}
+function beginDay(){closeOverlay(UI.management);closeOverlay(UI.start);shiftSettings();game.started=true;game.running=true;game.paused=false;saveCampaign();toast(`Día ${game.day}: servicio abierto.`);updateUI()}
+function newCampaign(){const best=game.best;game=baseState();game.best=best;localStorage.removeItem("robledoBistroSeniorSave");beginDay()}
+function finishGame(survived,reason){game.running=false;game.paused=true;localStorage.removeItem("robledoBistroSeniorSave");const score=Math.max(0,Math.round(game.totalEarned*4+game.totalServed*55+game.rep*18+game.cash*2+game.lives*180-game.stats.walkouts*70));if(score>game.best){game.best=score;localStorage.setItem("robledoBistroSeniorBest",String(score))}UI.endIcon.textContent=survived?"🏆":"💔";UI.endTitle.textContent=survived?"Robledo Bistro consolidado":"Restaurante cerrado";UI.endText.textContent=reason;UI.endStats.innerHTML=[['Puntaje',score],['Ingresos',money(game.totalEarned)],['Mesas',game.totalServed],['Reputación',game.rep],['Walkouts',game.stats.walkouts],['Quiz',`${game.stats.quizRight}/${game.stats.quizTotal}`],['Caja',money(game.cash)],['Récord',game.best]].map(([a,b])=>`<div class="end-stat"><span>${a}</span><strong>${b}</strong></div>`).join("");openOverlay(UI.end)}
+function updateUI(){UI.day.textContent=`${game.day} / ${game.maxDays}`;UI.time.textContent=`${String(Math.floor(game.timeLeft/60)).padStart(2,"0")}:${String(Math.floor(game.timeLeft%60)).padStart(2,"0")}`;UI.cash.textContent=money(game.cash);UI.rep.textContent=Math.round(game.rep);UI.lives.textContent="❤️".repeat(game.lives)+"🖤".repeat(3-game.lives);UI.capacity.textContent=restaurantCapacity();UI.staff.textContent=staffCount();UI.served.textContent=`${game.servedToday} / ${game.target}`;UI.servedProgress.style.width=`${clamp(game.servedToday/game.target*100,0,100)}%`;UI.earned.textContent=money(game.earnedToday);UI.strikes.textContent=`${game.strikes} / 3`;UI.tables.textContent=`${activeTables().filter(t=>t.partyId).length} / ${activeTables().length}`;UI.rush.textContent=game.timeLeft<game.shiftLength*.5?"RUSH":"NORMAL";renderOrders();renderCarried();renderInventoryMini();renderLiveMenu()}
+function renderOrders(){const active=game.orders.filter(o=>!["served","cancelled"].includes(o.status));if(!active.length){UI.orders.innerHTML='<div class="order-ticket"><div class="order-meta">Sin comandas activas. Los clientes leerán la carta después de sentarse.</div></div>';return}UI.orders.innerHTML=active.slice(0,7).map(o=>{const p=game.parties.find(p=>p.id===o.partyId),pct=p?clamp(p.patience/p.maxPatience*100,0,100):0;return`<div class="order-ticket"><div class="order-top"><strong>${recipes[o.recipeKey].icon} ${o.qty}× ${recipes[o.recipeKey].name}</strong><span>MESA ${o.tableId}</span></div><div class="order-meta"><span>${o.status.toUpperCase()}</span><span>${Math.round(pct)}% paciencia</span></div><div class="patience"><span style="width:${pct}%"></span></div></div>`}).join("")}
+function renderCarried(){if(!game.carried){UI.carried.className="carried-dish empty";UI.carried.innerHTML='<span class="dish-icon">🍽️</span><div><strong>Vacía</strong><small>Toma una comanda o recoge un plato del pase.</small></div>';UI.route.textContent=game.readyOrders.length?`${game.readyOrders.length} PLATO(S) LISTO(S) EN PASS`:'ORDER → PREP → COOK → PASS → TABLE';return}const o=game.orders.find(o=>o.id===game.carried.orderId),r=recipes[game.carried.recipeKey];UI.carried.className="carried-dish";UI.carried.innerHTML=`<span class="dish-icon">${r.icon}</span><div><strong>${r.name}</strong><small>${game.carried.type==="delivery"?`Entrega a mesa ${o?.tableId}`:`Comanda #${o?.id||"-"}`}</small></div>`;UI.route.textContent=game.carried.type==="delivery"?`PASS → TABLE ${o?.tableId}`:`SIGUIENTE: ${(expectedKind()||"-").toUpperCase()}`}
+function renderInventoryMini(){UI.inventoryMini.innerHTML=Object.entries(game.stock).map(([k,v])=>`<div class="inv-chip"><span>${ingredients[k].icon} ${ingredients[k].name}</span><strong>${v}</strong></div>`).join("")}
+function renderLiveMenu(){if(!UI.liveMenuGrid)return;UI.liveMenuGrid.innerHTML=recipeKeys.filter(k=>game.menu[k].unlocked&&game.menu[k].enabled).map(k=>{const r=recipes[k],m=game.menu[k];return`<div class="live-dish"><img src="${r.asset}" alt="${r.name}"><div><strong>${r.name}</strong><small>${r.icon} ${money(r.base*m.mult)} · dificultad ${r.difficulty}</small></div></div>`}).join("")||'<p>No hay platos activos.</p>'}
+function renderManagement(){UI.managementCash.textContent=money(game.cash);UI.managementSummary.textContent=`Día ${game.day-1} cerrado. Decide carta, personal, inventario, expansión y estilo antes del día ${game.day}.`;const r=game.lastReport;UI.dayReport.innerHTML=r?[['Mesas',`${r.served}/${r.target}`],['Ingresos',money(r.earned)],['Salarios',`-${money(r.wage)}`],['Sin terminar',r.unfinished],['Reputación',r.rep]].map(([a,b])=>`<div class="report-stat"><span>${a}</span><strong>${b}</strong></div>`).join(""):'<div class="report-stat"><span>Campaña</span><strong>Lista</strong></div>';renderInventoryManagement();renderOperationSummary();renderMenuManagement();renderTeam();renderExpansions();renderStyles();renderMiniMap();UI.nextDay.textContent=game.day>game.maxDays?"FINALIZAR":"COMENZAR SIGUIENTE DÍA"}
+function renderInventoryManagement(){UI.inventoryManagement.innerHTML=Object.entries(game.stock).map(([k,v])=>`<div class="inventory-row"><span>${ingredients[k].icon} ${ingredients[k].name}</span><small>stock</small><strong>${v}</strong></div>`).join("")}
+function renderOperationSummary(){UI.operationSummary.innerHTML=[['Capacidad',`${restaurantCapacity()} personas`],['Mesas',activeTables().length],['Empleados',staffCount()],['Salarios/día',money(dailyWages())],['Platos activos',recipeKeys.filter(k=>game.menu[k].unlocked&&game.menu[k].enabled).length],['Estilo',styles[game.style].name]].map(([a,b])=>`<div class="operation-row"><span>${a}</span><strong>${b}</strong><span></span></div>`).join("")}
+function renderMenuManagement(){UI.menuManagementGrid.innerHTML=recipeKeys.map(k=>{const r=recipes[k],m=game.menu[k],locked=!m.unlocked;return`<article class="recipe-card ${m.enabled?'':'inactive'}"><img src="${r.asset}" alt="Asset ${r.name}"><div><h4>${r.icon} ${r.name} <span class="price-pill">${money(r.base*m.mult)}</span></h4><p>${Object.entries(r.need).map(([i,v])=>`${ingredients[i].icon}${v}`).join(' ')} · ruta ${r.route.slice(1).join(' → ')}</p><div class="recipe-actions">${locked?`<button data-menu-action="unlock" data-recipe="${k}">Desbloquear ${money(r.unlock)}</button>`:`<button data-menu-action="toggle" data-recipe="${k}">${m.enabled?'Quitar':'Activar'}</button><button data-menu-action="down" data-recipe="${k}">Precio −</button><button data-menu-action="up" data-recipe="${k}">Precio +</button>`}</div></div></article>`}).join("")}
+function renderTeam(){UI.teamGrid.innerHTML=Object.entries(staffDefs).map(([k,d])=>{const lvl=game.staff[k],next=lvl?Math.round(d.hire*(.7+lvl*.55)):d.hire;return`<article class="team-card"><div class="icon">${d.icon}</div><h3>${d.name} · Lv ${lvl}</h3><p>${d.desc}</p><div class="card-footer"><span>Salario ${money(d.wage*lvl)}/día</span><button data-staff="${k}" ${lvl>=3?'disabled':''}>${lvl>=3?'MAX':`${lvl?'Entrenar':'Contratar'} ${money(next)}`}</button></div></article>`}).join("")}
+function renderExpansions(){UI.expansionGrid.innerHTML=Object.entries(expansionDefs).map(([k,d])=>`<article class="expansion-card"><div class="icon">${d.icon}</div><h3>${d.name}</h3><p>${d.desc}</p><div class="card-footer"><span>${game.expansions[k]?'ADQUIRIDA':money(d.cost)}</span><button data-expansion="${k}" ${game.expansions[k]?'disabled':''}>${game.expansions[k]?'LISTO':'COMPRAR'}</button></div></article>`).join("")}
+function renderStyles(){UI.styleGrid.innerHTML=Object.entries(styles).map(([k,s])=>`<article class="style-card ${game.style===k?'selected':''}" data-style="${k}"><h4>${s.name}</h4><div class="swatches">${s.sw.map(c=>`<i style="background:${c}"></i>`).join('')}</div><small>${s.patience?`+${s.patience} paciencia base`:'Estilo inicial'}</small><p>${game.ownedStyles[k]?'Disponible':`Desbloquear ${money(s.cost)}`}</p></article>`).join("")}
+function renderMiniMap(){const zones=[{n:"Kitchen",l:3,t:18,w:42,h:38,c:"#5d7380",lock:false},{n:"Dining A",l:49,t:18,w:28,h:52,c:"#a88c66",lock:false},{n:"Lobby",l:78,t:18,w:18,h:24,c:"#849aa5",lock:false},{n:"Kitchen Wing",l:3,t:59,w:26,h:34,c:"#5d7380",lock:!game.expansions.kitchenWing},{n:"Dining B",l:31,t:59,w:28,h:34,c:"#a88c66",lock:!game.expansions.dining},{n:"Terrace",l:63,t:48,w:33,h:45,c:"#769d72",lock:!game.expansions.terrace}];UI.miniMap.innerHTML=zones.map(z=>`<div class="map-zone ${z.lock?'locked':''}" style="left:${z.l}%;top:${z.t}%;width:${z.w}%;height:${z.h}%;background:${z.c}">${z.n}</div>`).join('')+`<div class="map-dot" style="left:${clamp((game.player.x+13)/35*100,1,98)}%;top:${clamp((game.player.z+9)/20*100,1,98)}%"></div>`}
+function restockAll(){if(game.cash<55)return toast("Caja insuficiente.");game.cash-=55;for(const k in game.stock)game.stock[k]+=12;toast("Inventario reabastecido.");renderManagement();updateUI();saveCampaign()}
+function menuAction(action,k){const m=game.menu[k],r=recipes[k],activeCount=recipeKeys.filter(x=>game.menu[x].unlocked&&game.menu[x].enabled).length;if(action==="unlock"){if(game.cash<r.unlock)return toast("Caja insuficiente.");game.cash-=r.unlock;m.unlocked=true;m.enabled=activeCount<6&&(!r.route.includes("oven")||game.expansions.kitchenWing);if(r.route.includes("oven")&&!game.expansions.kitchenWing)toast("Receta desbloqueada. Necesitas Kitchen Wing para activarla.")}
+ else if(action==="toggle"){if(m.enabled&&activeCount<=1)return toast("Debes mantener al menos un plato activo.");if(!m.enabled&&activeCount>=6)return toast("Máximo 6 platos activos.");if(!m.enabled&&r.route.includes("oven")&&!game.expansions.kitchenWing)return toast("Compra Kitchen Wing para activar recetas de horno.");m.enabled=!m.enabled}
+ else if(action==="up")m.mult=clamp(Number((m.mult+.05).toFixed(2)),.85,1.4);else if(action==="down")m.mult=clamp(Number((m.mult-.05).toFixed(2)),.85,1.4);renderManagement();updateUI();saveCampaign()}
+function hireStaff(k){const lvl=game.staff[k],cost=lvl?Math.round(staffDefs[k].hire*(.7+lvl*.55)):staffDefs[k].hire;if(lvl>=3)return;if(game.cash<cost)return toast("Caja insuficiente.");game.cash-=cost;game.staff[k]++;toast(`${staffDefs[k].name} ahora nivel ${game.staff[k]}.`);renderManagement();updateUI();saveCampaign()}
+function buyExpansion(k){const d=expansionDefs[k];if(game.expansions[k])return;if(game.cash<d.cost)return toast("Caja insuficiente.");game.cash-=d.cost;game.expansions[k]=true;toast(`${d.name} construida.`);renderManagement();updateUI();saveCampaign()}
+function selectStyle(k){const s=styles[k];if(!game.ownedStyles[k]){if(game.cash<s.cost)return toast("Caja insuficiente.");game.cash-=s.cost;game.ownedStyles[k]=true}game.style=k;toast(`Estilo: ${s.name}.`);renderManagement();saveCampaign()}
+function saveCampaign(){const data={day:game.day,cash:game.cash,rep:game.rep,lives:game.lives,totalServed:game.totalServed,totalEarned:game.totalEarned,stock:game.stock,menu:game.menu,staff:game.staff,expansions:game.expansions,style:game.style,ownedStyles:game.ownedStyles,stats:game.stats,lastReport:game.lastReport};localStorage.setItem("robledoBistroSeniorSave",JSON.stringify(data));UI.continueBtn?.classList.remove("hidden")}
+function loadCampaign(){try{const d=JSON.parse(localStorage.getItem("robledoBistroSeniorSave")||"null");if(!d)return false;const best=game.best;game=baseState();Object.assign(game,d);game.best=best;game.tables=tableDefs.map(t=>({...t,partyId:null,dirty:0}));game.started=true;game.running=false;game.paused=true;closeOverlay(UI.start);renderManagement();openOverlay(UI.management);updateUI();return true}catch(e){console.warn(e);return false}}
+function toast(text){UI.toast.textContent=text;UI.toast.classList.remove("hidden");clearTimeout(toastTimer);toastTimer=setTimeout(()=>UI.toast.classList.add("hidden"),2200)}
+function openOverlay(el){el.classList.add("active");game.paused=true}
+function closeOverlay(el){el.classList.remove("active");el.classList.remove("visible");if(game.running&&!UI.quiz.classList.contains("active")&&!UI.management.classList.contains("active")&&!UI.start.classList.contains("visible"))game.paused=false}
+function toggleMenu(){if(UI.menu.classList.contains("active")){closeOverlay(UI.menu)}else{renderLiveMenu();openOverlay(UI.menu)}}
+function toggleMap(){if(UI.map.classList.contains("active")){closeOverlay(UI.map)}else{renderMiniMap();openOverlay(UI.map)}}
+function setupEvents(){addEventListener("keydown",e=>{if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Space"].includes(e.code))e.preventDefault();keys.add(e.code);if(e.repeat)return;if(e.code==="KeyE")interact();if(e.code==="KeyQ")discard();if(e.code==="KeyM")toggleMenu();if(e.code==="Tab"){e.preventDefault();toggleMap()}if(e.code==="Escape"){if(UI.menu.classList.contains("active"))closeOverlay(UI.menu);if(UI.map.classList.contains("active"))closeOverlay(UI.map);if(UI.help.classList.contains("active"))closeOverlay(UI.help)}});addEventListener("keyup",e=>keys.delete(e.code));
+ $("startBtn").onclick=newCampaign;UI.continueBtn.onclick=loadCampaign;$("helpBtn").onclick=()=>openOverlay(UI.help);$("closeHelpBtn").onclick=()=>closeOverlay(UI.help);$("menuQuickBtn").onclick=toggleMenu;$("closeMenuBtn").onclick=()=>closeOverlay(UI.menu);$("closeMapBtn").onclick=()=>closeOverlay(UI.map);UI.continueQuiz.onclick=continueQuiz;$("restartBtn").onclick=()=>location.reload();$("restockBtn").onclick=restockAll;$("saveBtn").onclick=()=>{saveCampaign();toast("Partida guardada localmente.")};UI.nextDay.onclick=beginDay;
+ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));$(`tab${b.dataset.tab[0].toUpperCase()+b.dataset.tab.slice(1)}`).classList.add('active')});
+ UI.menuManagementGrid.addEventListener('click',e=>{const b=e.target.closest('[data-menu-action]');if(b)menuAction(b.dataset.menuAction,b.dataset.recipe)});UI.teamGrid.addEventListener('click',e=>{const b=e.target.closest('[data-staff]');if(b)hireStaff(b.dataset.staff)});UI.expansionGrid.addEventListener('click',e=>{const b=e.target.closest('[data-expansion]');if(b)buyExpansion(b.dataset.expansion)});UI.styleGrid.addEventListener('click',e=>{const c=e.target.closest('[data-style]');if(c)selectStyle(c.dataset.style)})}
+function loop(now){const dt=Math.min(.04,(now-last)/1000||0);last=now;updateGame(dt);render();requestAnimationFrame(loop)}
+setupEvents();if(localStorage.getItem("robledoBistroSeniorSave"))UI.continueBtn.classList.remove("hidden");updateUI();requestAnimationFrame(loop);

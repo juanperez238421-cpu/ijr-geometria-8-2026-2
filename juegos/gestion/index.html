@@ -3,48 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Robledo Bistro 3D: juego offline de gestión de restaurante. El cuestionario de Geometría aparece únicamente al perder una vida." />
-  <title>Robledo Bistro 3D | Geometría 8°</title>
+  <meta name="description" content="Robledo Bistro 3D Senior: simulador offline de restaurante 3D con clientes sentados, menú configurable, empleados y expansión." />
+  <title>Robledo Bistro 3D Senior | Geometría 8°</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main id="gameShell" class="game-shell">
-    <canvas id="gameCanvas" aria-label="Entorno 3D del restaurante"></canvas>
+    <canvas id="gameCanvas" aria-label="Restaurante tridimensional interactivo"></canvas>
 
     <header class="hud-top">
       <div class="brand-panel glass">
         <img src="../../assets/logo_colegio_transparente.png" alt="Logo oficial Instituto Jorge Robledo" class="school-logo" />
         <div>
           <p class="eyebrow">GEOMETRÍA 8° · ALTERNATIVE MANAGEMENT GAME</p>
-          <h1>Robledo Bistro 3D</h1>
-          <p class="subtitle">Gestiona una cocina 3D, atiende pedidos y mejora el restaurante.</p>
+          <h1>Robledo Bistro 3D <span>SENIOR</span></h1>
+          <p class="subtitle">Opera, personaliza y expande un restaurante 3D completo.</p>
         </div>
       </div>
-
       <div class="hud-stats glass">
-        <div class="stat"><span>DÍA</span><strong id="dayValue">1 / 5</strong></div>
-        <div class="stat"><span>TIEMPO</span><strong id="timeValue">01:15</strong></div>
-        <div class="stat"><span>CAJA</span><strong id="cashValue">$100</strong></div>
-        <div class="stat"><span>REP</span><strong id="repValue">70</strong></div>
+        <div class="stat"><span>DÍA</span><strong id="dayValue">1 / 7</strong></div>
+        <div class="stat"><span>TIEMPO</span><strong id="timeValue">01:35</strong></div>
+        <div class="stat"><span>CAJA</span><strong id="cashValue">$180</strong></div>
+        <div class="stat"><span>REP</span><strong id="repValue">72</strong></div>
         <div class="stat"><span>VIDAS</span><strong id="livesValue">❤️❤️❤️</strong></div>
+        <div class="stat"><span>CAP.</span><strong id="capacityValue">12</strong></div>
+        <div class="stat"><span>EQUIPO</span><strong id="staffValue">0</strong></div>
       </div>
     </header>
 
     <section class="left-stack">
       <article class="glass objective-card">
         <p class="eyebrow">OBJETIVO DEL TURNO</p>
-        <div class="objective-row"><span>Pedidos servidos</span><strong id="servedValue">0 / 5</strong></div>
+        <div class="objective-row"><span>Mesas atendidas</span><strong id="servedValue">0 / 6</strong></div>
         <div class="progress-line"><span id="servedProgress"></span></div>
         <div class="small-row"><span>Ingresos hoy</span><strong id="earnedValue">$0</strong></div>
-        <div class="small-row"><span>Clientes molestos</span><strong id="strikeValue">0 / 3</strong></div>
+        <div class="small-row"><span>Walkouts</span><strong id="strikeValue">0 / 3</strong></div>
+        <div class="small-row"><span>Mesas ocupadas</span><strong id="tablesValue">0 / 6</strong></div>
       </article>
 
       <article class="glass orders-card">
         <div class="panel-heading">
-          <div>
-            <p class="eyebrow">COLA DE PEDIDOS</p>
-            <h2>Tickets activos</h2>
-          </div>
+          <div><p class="eyebrow">COMANDAS</p><h2>Pedidos de las mesas</h2></div>
           <span id="rushBadge" class="rush-badge">NORMAL</span>
         </div>
         <div id="orderList" class="order-list"></div>
@@ -55,117 +54,85 @@
       <article class="glass carried-card">
         <p class="eyebrow">TU BANDEJA</p>
         <div id="carriedDish" class="carried-dish empty">
-          <span class="dish-icon">🍽️</span>
-          <div><strong>Vacía</strong><small>Ve al refrigerador para tomar un pedido.</small></div>
+          <span class="dish-icon">🍽️</span><div><strong>Vacía</strong><small>Revisa comandas o platos listos.</small></div>
         </div>
-        <div class="station-route" id="stationRoute">FRIDGE → PREP → COOK → PASS</div>
+        <div class="station-route" id="stationRoute">ORDER → PREP → COOK → PASS → TABLE</div>
+      </article>
+
+      <article class="glass inventory-card">
+        <div class="panel-heading compact"><div><p class="eyebrow">DESPENSA</p><h2>Inventario rápido</h2></div><button id="menuQuickBtn" class="mini-btn" type="button">CARTA</button></div>
+        <div id="inventoryMini" class="inventory-mini"></div>
       </article>
 
       <article class="glass status-card">
         <p class="eyebrow">ESTADO</p>
         <h2 id="statusTitle">Preparando apertura</h2>
-        <p id="statusText">Muévete con WASD. Acércate a una estación y presiona E.</p>
-        <div id="actionProgressWrap" class="action-progress hidden">
-          <div class="action-progress-bar"><span id="actionProgress"></span></div>
-          <small id="actionProgressText">Trabajando...</small>
-        </div>
+        <p id="statusText">WASD para moverte. E para interactuar. M para abrir la carta.</p>
+        <div id="actionProgressWrap" class="action-progress hidden"><div class="action-progress-bar"><span id="actionProgress"></span></div><small id="actionProgressText">Trabajando...</small></div>
       </article>
     </section>
 
     <section class="controls glass">
-      <div><kbd>WASD</kbd><span>Mover</span></div>
-      <div><kbd>SHIFT</kbd><span>Correr</span></div>
-      <div><kbd>E</kbd><span>Interactuar</span></div>
-      <div><kbd>Q</kbd><span>Desechar plato</span></div>
+      <div><kbd>WASD</kbd><span>Mover</span></div><div><kbd>SHIFT</kbd><span>Correr</span></div><div><kbd>E</kbd><span>Interactuar</span></div><div><kbd>Q</kbd><span>Desechar</span></div><div><kbd>M</kbd><span>Carta</span></div><div><kbd>TAB</kbd><span>Mapa</span></div>
       <button id="helpBtn" class="icon-btn" type="button">?</button>
     </section>
 
-    <div id="interactionPrompt" class="interaction-prompt hidden">
-      <span id="promptKey">E</span>
-      <div><strong id="promptTitle">Interactuar</strong><small id="promptText"></small></div>
-    </div>
-
+    <div id="interactionPrompt" class="interaction-prompt hidden"><span id="promptKey">E</span><div><strong id="promptTitle">Interactuar</strong><small id="promptText"></small></div></div>
     <div id="toast" class="toast hidden" aria-live="polite"></div>
 
     <section id="startOverlay" class="overlay visible">
-      <div class="modal-card intro-card">
-        <img src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo" class="intro-logo" />
-        <p class="eyebrow">3D KITCHEN MANAGEMENT</p>
-        <h2>Robledo Bistro 3D</h2>
-        <p>Un juego de gestión en un entorno tridimensional estilo cocina rápida: camina por el restaurante, toma pedidos, prepara platos en estaciones y evita que los clientes pierdan la paciencia.</p>
-        <div class="feature-grid">
-          <div><span>🧊</span><strong>Ingredientes</strong><small>Recoge el ticket en la nevera.</small></div>
-          <div><span>🔪</span><strong>Preparación</strong><small>Corta y arma en la mesa.</small></div>
-          <div><span>🔥</span><strong>Cocción</strong><small>Usa la estufa cuando la receta lo requiera.</small></div>
-          <div><span>🔔</span><strong>Entrega</strong><small>Lleva el plato al pase antes de que se agote la paciencia.</small></div>
+      <div class="modal-card intro-card wide">
+        <div class="intro-brand"><img src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo" class="intro-logo" /><div><p class="eyebrow">3D RESTAURANT MANAGEMENT</p><h2>Robledo Bistro 3D Senior</h2><p>Un restaurante mucho más grande: cocina, salón principal, lobby, almacén, zona de expansión y terraza desbloqueable.</p></div></div>
+        <div class="feature-grid six">
+          <div><span>🪑</span><strong>Clientes sentados</strong><small>Las familias entran, ocupan mesa, leen la carta y eligen platos.</small></div>
+          <div><span>📖</span><strong>Carta configurable</strong><small>Activa platos, fija precio, desbloquea recetas y gestiona costos.</small></div>
+          <div><span>👨‍🍳</span><strong>Equipo real</strong><small>Contrata host, cook, waiter y cleaner con salarios diarios.</small></div>
+          <div><span>🏗️</span><strong>Expansión</strong><small>Compra comedor adicional, terraza y ala de cocina.</small></div>
+          <div><span>🎨</span><strong>Personalización</strong><small>Elige estilo visual y mejora ambiente para aumentar paciencia.</small></div>
+          <div><span>📐</span><strong>Geometry Rescue</strong><small>Solo aparece cuando pierdes una vida.</small></div>
         </div>
-        <p class="rule-note"><strong>Geometría:</strong> no interrumpe el juego normal. Solo aparece una pregunta cuando pierdes una vida.</p>
-        <button id="startBtn" class="primary-btn" type="button">ABRIR RESTAURANTE</button>
+        <div class="start-actions"><button id="startBtn" class="primary-btn" type="button">NUEVA CAMPAÑA</button><button id="continueBtn" class="secondary-btn hidden" type="button">CONTINUAR PARTIDA</button></div>
+      </div>
+    </section>
+
+    <section id="menuOverlay" class="overlay soft">
+      <div class="modal-card menu-preview-card wide">
+        <button id="closeMenuBtn" class="close-btn" type="button">×</button>
+        <div class="modal-header"><div><p class="eyebrow">CARTA ACTUAL</p><h2>Robledo Bistro · Menu</h2><p>Los clientes seleccionan únicamente platos activos de esta carta.</p></div><img src="assets/menu-board.svg" alt="Ilustración original de carta del restaurante" class="menu-board-art" /></div>
+        <div id="liveMenuGrid" class="live-menu-grid"></div>
       </div>
     </section>
 
     <section id="managementOverlay" class="overlay">
-      <div class="modal-card management-card">
-        <div class="modal-header">
-          <div>
-            <p class="eyebrow">ENTRE TURNOS</p>
-            <h2 id="managementTitle">Administración del restaurante</h2>
-            <p id="managementSummary">Invierte las ganancias antes del siguiente día.</p>
-          </div>
-          <div class="bank-box"><span>CAJA</span><strong id="managementCash">$100</strong></div>
+      <div class="modal-card management-card xl">
+        <div class="modal-header"><div><p class="eyebrow">ENTRE TURNOS</p><h2 id="managementTitle">Dirección del restaurante</h2><p id="managementSummary">Revisa resultados y decide cómo crecer.</p></div><div class="bank-box"><span>CAJA</span><strong id="managementCash">$180</strong></div></div>
+        <div class="management-tabs" role="tablist">
+          <button class="tab-btn active" data-tab="overview" type="button">Resumen</button>
+          <button class="tab-btn" data-tab="menu" type="button">Carta & recetas</button>
+          <button class="tab-btn" data-tab="team" type="button">Personal</button>
+          <button class="tab-btn" data-tab="expansion" type="button">Expansión</button>
+          <button class="tab-btn" data-tab="style" type="button">Personalización</button>
         </div>
-        <div class="upgrade-grid">
-          <button class="upgrade-card" data-upgrade="prep" type="button"><span>🔪</span><div><strong>Mesa de preparación</strong><small id="prepUpgradeText">Nivel 1 · -12% tiempo</small></div><b id="prepUpgradeCost">$70</b></button>
-          <button class="upgrade-card" data-upgrade="stove" type="button"><span>🔥</span><div><strong>Estufa profesional</strong><small id="stoveUpgradeText">Nivel 1 · -12% tiempo</small></div><b id="stoveUpgradeCost">$85</b></button>
-          <button class="upgrade-card" data-upgrade="decor" type="button"><span>✨</span><div><strong>Ambiente del local</strong><small id="decorUpgradeText">Nivel 1 · +5 paciencia base</small></div><b id="decorUpgradeCost">$65</b></button>
-          <button class="upgrade-card" data-upgrade="server" type="button"><span>🧑‍🍳</span><div><strong>Ayudante de cocina</strong><small id="serverUpgradeText">No contratado · apoyo automático</small></div><b id="serverUpgradeCost">$140</b></button>
+        <div id="tabOverview" class="tab-panel active">
+          <div id="dayReport" class="day-report"></div>
+          <div class="management-grid two"><article class="manage-section"><h3>Inventario</h3><div id="inventoryManagement"></div><button id="restockBtn" class="secondary-btn full" type="button">REABASTECER TODO · $55</button></article><article class="manage-section"><h3>Operación</h3><div id="operationSummary"></div></article></div>
         </div>
-        <div class="day-report" id="dayReport"></div>
-        <button id="nextDayBtn" class="primary-btn" type="button">COMENZAR SIGUIENTE DÍA</button>
+        <div id="tabMenu" class="tab-panel"><div class="menu-management-layout"><img src="assets/menu-board.svg" alt="Asset visual de carta" class="menu-board-large" /><div><div class="section-note">Máximo 6 platos activos. Los clientes eligen según precio, personalidad y disponibilidad.</div><div id="menuManagementGrid" class="recipe-grid"></div></div></div></div>
+        <div id="tabTeam" class="tab-panel"><div class="section-note">Cada empleado tiene costo de contratación y salario diario. El salario se descuenta al cierre.</div><div id="teamGrid" class="team-grid"></div></div>
+        <div id="tabExpansion" class="tab-panel"><div class="section-note">Las expansiones modifican físicamente el mapa 3D y aumentan capacidad/productividad.</div><div id="expansionGrid" class="expansion-grid"></div></div>
+        <div id="tabStyle" class="tab-panel"><div class="style-layout"><div><h3>Identidad del restaurante</h3><div id="styleGrid" class="style-grid"></div></div><div class="style-preview"><img src="assets/restaurant-sign.svg" alt="Letrero original Robledo Bistro" /><p>El estilo modifica mobiliario, colores y paciencia base.</p></div></div></div>
+        <div class="management-footer"><button id="saveBtn" class="ghost-btn" type="button">GUARDAR</button><button id="nextDayBtn" class="primary-btn" type="button">COMENZAR SIGUIENTE DÍA</button></div>
       </div>
     </section>
 
-    <section id="quizOverlay" class="overlay">
-      <div class="modal-card quiz-card">
-        <div class="quiz-top"><span class="life-pill">VIDA PERDIDA</span><span id="quizTag" class="topic-pill">Shaded Area</span></div>
-        <h2>Geometry Rescue</h2>
-        <p class="quiz-rule">Acierta para recuperar la vida. El restaurante queda pausado mientras respondes.</p>
-        <div class="question-box"><p id="questionEn" class="question-en"></p><p id="questionEs" class="question-es"></p></div>
-        <div id="answerGrid" class="answer-grid"></div>
-        <div id="quizFeedback" class="quiz-feedback"></div>
-        <button id="continueQuizBtn" class="primary-btn hidden" type="button">VOLVER A LA COCINA</button>
-      </div>
-    </section>
+    <section id="mapOverlay" class="overlay soft"><div class="modal-card map-card"><button id="closeMapBtn" class="close-btn" type="button">×</button><p class="eyebrow">PLANO OPERATIVO</p><h2>Robledo Bistro</h2><div id="miniMap" class="mini-map"></div><p class="map-note">Las zonas bloqueadas se habilitan al comprarlas entre turnos.</p></div></section>
 
-    <section id="helpOverlay" class="overlay">
-      <div class="modal-card help-card">
-        <button id="closeHelpBtn" class="close-btn" type="button">×</button>
-        <p class="eyebrow">CONTROLES Y FLUJO</p>
-        <h2>Cómo jugar</h2>
-        <ol>
-          <li>Muévete por la cocina 3D con <strong>WASD</strong> o flechas. Mantén <strong>Shift</strong> para correr.</li>
-          <li>Cuando aparezca el indicador <strong>E</strong>, presiona E para usar la estación cercana.</li>
-          <li>En la <strong>nevera</strong> tomas el pedido más urgente disponible.</li>
-          <li>Sigue la ruta de la receta: preparación, cocción si aplica y finalmente el <strong>pase</strong>.</li>
-          <li>Cada cliente tiene una barra de paciencia. Servir rápido da mejores propinas y reputación.</li>
-          <li>Tres clientes molestos hacen perder una vida. Solo entonces aparece una pregunta de Geometría.</li>
-          <li>Al terminar cada día invierte tu dinero en mejoras. El objetivo es sobrevivir 5 días con buena reputación.</li>
-        </ol>
-      </div>
-    </section>
+    <section id="quizOverlay" class="overlay"><div class="modal-card quiz-card"><div class="quiz-top"><span class="life-pill">VIDA PERDIDA</span><span id="quizTag" class="topic-pill">Shaded Area</span></div><h2>Geometry Rescue</h2><p class="quiz-rule">Acierta para recuperar la vida. El restaurante queda pausado.</p><div class="question-box"><p id="questionEn" class="question-en"></p><p id="questionEs" class="question-es"></p></div><div id="answerGrid" class="answer-grid"></div><div id="quizFeedback" class="quiz-feedback"></div><button id="continueQuizBtn" class="primary-btn hidden" type="button">VOLVER AL RESTAURANTE</button></div></section>
 
-    <section id="endOverlay" class="overlay">
-      <div class="modal-card end-card">
-        <div id="endIcon" class="end-icon">🏆</div>
-        <p class="eyebrow">FIN DE LA CAMPAÑA</p>
-        <h2 id="endTitle">Restaurante consolidado</h2>
-        <p id="endText"></p>
-        <div id="endStats" class="end-stats"></div>
-        <button id="restartBtn" class="primary-btn" type="button">JUGAR DE NUEVO</button>
-      </div>
-    </section>
+    <section id="helpOverlay" class="overlay"><div class="modal-card help-card"><button id="closeHelpBtn" class="close-btn" type="button">×</button><p class="eyebrow">CONTROLES</p><h2>Cómo jugar</h2><ol><li>Los clientes entran por el lobby, esperan mesa, se sientan y <strong>leen la carta</strong>.</li><li>Al elegir un plato aparece una comanda vinculada a su mesa.</li><li>Ve a la <strong>nevera</strong> para tomar la comanda más urgente. Sigue PREP → STOVE/OVEN → PASS.</li><li>En el pase dejas platos terminados. Puedes recogerlos y llevarlos físicamente a la mesa; un waiter contratado también puede hacerlo.</li><li>El host acelera el seating, el cook produce algunos pedidos y el cleaner libera mesas sucias.</li><li>Entre días cambia la carta, desbloquea recetas, ajusta precios, repone inventario, contrata personal y compra expansiones.</li><li>Solo cuando pierdes una vida aparece Geometry Rescue.</li></ol></div></section>
+
+    <section id="endOverlay" class="overlay"><div class="modal-card end-card"><div id="endIcon" class="end-icon">🏆</div><p class="eyebrow">FIN DE LA CAMPAÑA</p><h2 id="endTitle">Restaurante consolidado</h2><p id="endText"></p><div id="endStats" class="end-stats"></div><button id="restartBtn" class="primary-btn" type="button">JUGAR DE NUEVO</button></div></section>
   </main>
-
   <script src="game.js"></script>
 </body>
 </html>
