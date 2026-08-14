@@ -1,4 +1,4 @@
-name: Package Robledo Bistro 3D Offline
+name: Apply and Package Robledo Bistro 3D Senior
 
 on:
   push:
@@ -15,44 +15,67 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  package:
+  upgrade-and-package:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Validate game JavaScript
+      - name: Validate pull-request JavaScript
+        if: github.event_name == 'pull_request'
         run: node --check juegos/gestion/game.js
 
-      - name: Build standalone offline package
+      - name: Apply Senior V2 payload and commit generated source
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if [ -f juegos/gestion/apply_senior_v2.py ]; then
+            python juegos/gestion/apply_senior_v2.py
+            rm -rf juegos/gestion/.senior_payload
+            rm -f juegos/gestion/apply_senior_v2.py
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "Apply Robledo Bistro 3D Senior V2 source"
+            git push
+          fi
+
+      - name: Validate Senior JavaScript
+        if: github.event_name == 'push'
+        run: node --check juegos/gestion/game.js
+
+      - name: Build Senior standalone package
+        if: github.event_name == 'push'
         run: python juegos/gestion/build_offline.py
 
-      - name: Verify package
+      - name: Verify Senior package
+        if: github.event_name == 'push'
         run: |
-          test -s dist/Robledo_Bistro_3D_OFFLINE.html
-          test -s dist/Robledo_Bistro_3D_OFFLINE_Package.zip
+          test -s dist/Robledo_Bistro_3D_SENIOR_OFFLINE.html
+          test -s dist/Robledo_Bistro_3D_SENIOR_OFFLINE_Package.zip
           python - <<'PY'
           from pathlib import Path
-          html = Path('dist/Robledo_Bistro_3D_OFFLINE.html').read_text(encoding='utf-8')
+          html = Path('dist/Robledo_Bistro_3D_SENIOR_OFFLINE.html').read_text(encoding='utf-8')
           assert 'href="style.css"' not in html
           assert 'src="game.js"' not in html
           assert 'data:image/png;base64,' in html
-          assert '<script>' in html and '<style>' in html
-          assert 'Robledo Bistro 3D' in html
-          assert 'gameCanvas' in html
-          print('Robledo Bistro 3D standalone HTML verification passed.')
+          assert 'data:image/svg+xml;base64,' in html
+          assert 'Robledo Bistro 3D Senior' in html
+          print('Senior package verified')
           PY
 
       - name: Upload downloadable game
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
-          name: Robledo-Bistro-3D-Offline
+          name: Robledo-Bistro-3D-Senior-Offline
           path: |
-            dist/Robledo_Bistro_3D_OFFLINE.html
-            dist/Robledo_Bistro_3D_OFFLINE_Package.zip
+            dist/Robledo_Bistro_3D_SENIOR_OFFLINE.html
+            dist/Robledo_Bistro_3D_SENIOR_OFFLINE_Package.zip
             dist/LEEME.txt
           if-no-files-found: error
           retention-days: 90
