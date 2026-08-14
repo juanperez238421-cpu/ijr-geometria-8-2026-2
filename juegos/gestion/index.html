@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Juego alternativo de gestión para Geometría 8°. Las preguntas de geometría aparecen únicamente al perder una vida." />
+  <title>Pixel Plaza Manager | Geometría 8°</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="game-shell">
+    <header class="topbar">
+      <div class="brand">
+        <img src="../../assets/logo_ijr.svg" alt="Instituto Jorge Robledo" class="logo" />
+        <div>
+          <p class="eyebrow">Geometría 8° · Alternate Game</p>
+          <h1>Pixel Plaza Manager</h1>
+          <p class="subtitle">Gestiona un pequeño distrito comercial. Las preguntas de geometría solo aparecen si pierdes una vida.</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="helpBtn" class="ghost-btn" type="button">¿Cómo jugar?</button>
+        <button id="restartBtn" class="ghost-btn danger" type="button">Reiniciar</button>
+      </div>
+    </header>
+
+    <section class="hud" aria-label="Estado de la partida">
+      <div class="hud-item"><span>📅 Día</span><strong id="dayValue">1 / 12</strong></div>
+      <div class="hud-item"><span>💵 Caja</span><strong id="cashValue">$120</strong></div>
+      <div class="hud-item"><span>⭐ Reputación</span><strong id="repValue">55</strong></div>
+      <div class="hud-item"><span>⚡ Energía equipo</span><strong id="energyValue">80</strong></div>
+      <div class="hud-item"><span>🧠 Puntos de gestión</span><strong id="apValue">2</strong></div>
+      <div class="hud-item lives"><span>Vidas</span><strong id="livesValue" aria-label="3 vidas">❤️❤️❤️</strong></div>
+      <div class="hud-item quiz-score"><span>📐 Quiz</span><strong id="quizValue">0 / 0</strong></div>
+    </section>
+
+    <section class="mission-strip">
+      <div>
+        <span class="mission-label">OBJETIVO</span>
+        <strong>Completa 12 días con reputación ≥ 55 y caja ≥ $180.</strong>
+      </div>
+      <div class="best-score" id="bestScore">Mejor partida: —</div>
+    </section>
+
+    <section class="main-grid">
+      <div class="left-panel">
+        <article class="panel event-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Noticias del día</p>
+              <h2 id="eventTitle">Un día normal en la plaza</h2>
+            </div>
+            <span id="eventBadge" class="event-badge neutral">NORMAL</span>
+          </div>
+          <p id="eventText">Demanda estable. Es un buen momento para mejorar tu operación.</p>
+          <div id="eventEffects" class="effect-row"></div>
+        </article>
+
+        <article class="panel businesses-panel">
+          <div class="panel-heading compact">
+            <div>
+              <p class="eyebrow">Tus negocios</p>
+              <h2>Selecciona un local para administrarlo</h2>
+            </div>
+            <div class="pulse-legend"><span class="pulse-dot"></span> Clientes durante la simulación</div>
+          </div>
+
+          <div id="businessGrid" class="business-grid"></div>
+        </article>
+
+        <article class="panel simulation-panel">
+          <div class="panel-heading compact">
+            <div>
+              <p class="eyebrow">Turno operativo</p>
+              <h2 id="simulationTitle">Prepara el día</h2>
+            </div>
+            <div class="price-control">
+              <label for="priceMode">Estrategia de precios</label>
+              <select id="priceMode">
+                <option value="budget">Económica</option>
+                <option value="standard" selected>Estándar</option>
+                <option value="premium">Premium</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="simulationTrack" class="simulation-track" aria-live="polite">
+            <div class="track-line"></div>
+            <div id="customerFlow" class="customer-flow"></div>
+            <div id="simStatus" class="sim-status">Usa tus puntos de gestión y luego abre la plaza.</div>
+          </div>
+
+          <div class="open-day-row">
+            <div class="forecast">
+              <span>Pronóstico de demanda</span>
+              <strong id="demandForecast">Media</strong>
+            </div>
+            <button id="openDayBtn" class="primary-btn" type="button">ABRIR LA PLAZA →</button>
+          </div>
+        </article>
+      </div>
+
+      <aside class="right-panel">
+        <article class="panel actions-panel">
+          <p class="eyebrow">Centro de decisiones</p>
+          <h2 id="selectedName">Snack Lab</h2>
+          <p id="selectedHint" class="muted">Las acciones locales se aplican al negocio seleccionado.</p>
+
+          <div class="actions-grid">
+            <button class="action-btn" data-action="restock" type="button">
+              <span class="action-icon">📦</span>
+              <span><strong>Reabastecer</strong><small>+$8 stock · -$20</small></span>
+            </button>
+            <button class="action-btn" data-action="maintenance" type="button">
+              <span class="action-icon">🔧</span>
+              <span><strong>Mantenimiento</strong><small>+25 condición · -$18</small></span>
+            </button>
+            <button class="action-btn" data-action="hire" type="button">
+              <span class="action-icon">👤</span>
+              <span><strong>Contratar</strong><small>+1 personal · -$28</small></span>
+            </button>
+            <button class="action-btn" data-action="upgrade" type="button">
+              <span class="action-icon">⬆️</span>
+              <span><strong>Mejorar local</strong><small id="upgradeCostText">Nivel +1 · desde $45</small></span>
+            </button>
+            <button class="action-btn global" data-action="marketing" type="button">
+              <span class="action-icon">📣</span>
+              <span><strong>Campaña</strong><small>Demanda +20% por 2 días · -$25</small></span>
+            </button>
+            <button class="action-btn global" data-action="break" type="button">
+              <span class="action-icon">☕</span>
+              <span><strong>Pausa del equipo</strong><small>+25 energía global</small></span>
+            </button>
+          </div>
+
+          <div class="management-note">
+            Cada día tienes <strong>2 puntos de gestión</strong>. Gastarlos bien suele ser más importante que maximizar ventas en un solo turno.
+          </div>
+        </article>
+
+        <article class="panel ledger-panel">
+          <div class="panel-heading compact">
+            <div>
+              <p class="eyebrow">Libro diario</p>
+              <h2>Últimos movimientos</h2>
+            </div>
+          </div>
+          <div id="ledger" class="ledger"></div>
+        </article>
+
+        <article class="panel milestones-panel">
+          <p class="eyebrow">Metas</p>
+          <div class="milestone"><span id="mCash" class="check">○</span><span>Caja ≥ $180</span></div>
+          <div class="milestone"><span id="mRep" class="check">○</span><span>Reputación ≥ 55</span></div>
+          <div class="milestone"><span id="mDay" class="check">○</span><span>Llegar al día 12</span></div>
+        </article>
+      </aside>
+    </section>
+
+    <footer class="footer">
+      <span>Instituto Jorge Robledo · Geometría 8° · 2026</span>
+      <span>Sin anuncios · sin registro · progreso local del navegador</span>
+    </footer>
+  </main>
+
+  <div id="quizModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="quizTitle">
+    <div class="modal-card quiz-card">
+      <div class="quiz-topline">
+        <span class="danger-pill">VIDA PERDIDA</span>
+        <span id="quizTag" class="topic-pill">Shaded Area</span>
+      </div>
+      <h2 id="quizTitle">Geometry Rescue</h2>
+      <p class="quiz-rule">Responde correctamente para recuperar la vida y estabilizar la plaza.</p>
+      <div class="question-box">
+        <p id="questionEn" class="question-en"></p>
+        <p id="questionEs" class="question-es"></p>
+      </div>
+      <div id="answerGrid" class="answer-grid"></div>
+      <div id="quizFeedback" class="quiz-feedback" aria-live="polite"></div>
+      <button id="continueQuizBtn" class="primary-btn hidden" type="button">CONTINUAR PARTIDA</button>
+    </div>
+  </div>
+
+  <div id="helpModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="modal-card help-card">
+      <button class="close-btn" id="closeHelpBtn" type="button" aria-label="Cerrar">×</button>
+      <p class="eyebrow">Guía rápida</p>
+      <h2 id="helpTitle">Cómo jugar Pixel Plaza Manager</h2>
+      <ol class="help-list">
+        <li><strong>Selecciona un negocio</strong> para revisar stock, personal, condición y nivel.</li>
+        <li><strong>Usa hasta 2 acciones</strong> antes de abrir la plaza. Cada acción consume 1 punto de gestión.</li>
+        <li><strong>Elige tu estrategia de precios.</strong> Precio bajo atrae más clientes; Premium deja más margen pero reduce demanda.</li>
+        <li><strong>Abre la plaza.</strong> Se simulan clientes, ventas, salarios, desgaste y el evento del día.</li>
+        <li><strong>Evita crisis.</strong> Caja muy negativa, reputación crítica o infraestructura deteriorada pueden hacerte perder una vida.</li>
+        <li><strong>Si pierdes una vida</strong>, el juego se pausa y aparece una pregunta de geometría. Si aciertas, recuperas la vida.</li>
+      </ol>
+      <div class="tip-box"><strong>Tip:</strong> no gastes todo en un solo local. Un gerente fuerte mantiene equilibrio entre inventario, condición, personal, reputación y caja.</div>
+    </div>
+  </div>
+
+  <div id="endModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+    <div class="modal-card end-card">
+      <div id="endIcon" class="end-icon">🏆</div>
+      <h2 id="endTitle">¡Plaza consolidada!</h2>
+      <p id="endText"></p>
+      <div id="endStats" class="end-stats"></div>
+      <button id="playAgainBtn" class="primary-btn" type="button">JUGAR DE NUEVO</button>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
