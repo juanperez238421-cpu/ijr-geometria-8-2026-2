@@ -1,5 +1,4 @@
-name: Apply and Package Robledo Bistro 3D Senior
-
+name: Package Robledo Bistro 3D Senior Offline
 on:
   push:
     branches: [main]
@@ -13,47 +12,19 @@ on:
       - 'assets/logo_colegio_transparente.png'
       - '.github/workflows/package-management-game.yml'
   workflow_dispatch:
-
 permissions:
-  contents: write
-
+  contents: read
 jobs:
-  upgrade-and-package:
+  package:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Validate pull-request JavaScript
-        if: github.event_name == 'pull_request'
+      - name: Validate JavaScript
         run: node --check juegos/gestion/game.js
-
-      - name: Apply Senior V2 payload and commit generated source
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          if [ -f juegos/gestion/apply_senior_v2.py ]; then
-            python juegos/gestion/apply_senior_v2.py
-            rm -rf juegos/gestion/.senior_payload
-            rm -f juegos/gestion/apply_senior_v2.py
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "Apply Robledo Bistro 3D Senior V2 source"
-            git push
-          fi
-
-      - name: Validate Senior JavaScript
-        if: github.event_name == 'push'
-        run: node --check juegos/gestion/game.js
-
-      - name: Build Senior standalone package
-        if: github.event_name == 'push'
+      - name: Build standalone offline package
         run: python juegos/gestion/build_offline.py
-
-      - name: Verify Senior package
-        if: github.event_name == 'push'
+      - name: Verify senior package
         run: |
           test -s dist/Robledo_Bistro_3D_SENIOR_OFFLINE.html
           test -s dist/Robledo_Bistro_3D_SENIOR_OFFLINE_Package.zip
@@ -65,11 +36,10 @@ jobs:
           assert 'data:image/png;base64,' in html
           assert 'data:image/svg+xml;base64,' in html
           assert 'Robledo Bistro 3D Senior' in html
-          print('Senior package verified')
+          assert 'menuManagementGrid' in html and 'teamGrid' in html and 'expansionGrid' in html
+          print('Senior standalone verification passed.')
           PY
-
       - name: Upload downloadable game
-        if: github.event_name == 'push'
         uses: actions/upload-artifact@v4
         with:
           name: Robledo-Bistro-3D-Senior-Offline
