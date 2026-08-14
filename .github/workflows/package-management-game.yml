@@ -1,0 +1,48 @@
+name: Package Pixel Plaza Manager Offline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'juegos/gestion/**'
+      - 'assets/logo_ijr.svg'
+      - '.github/workflows/package-management-game.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build standalone offline package
+        run: python juegos/gestion/build_offline.py
+
+      - name: Verify package
+        run: |
+          test -s dist/Pixel_Plaza_Manager_OFFLINE.html
+          test -s dist/Pixel_Plaza_Manager_OFFLINE_Package.zip
+          python - <<'PY'
+          from pathlib import Path
+          html = Path('dist/Pixel_Plaza_Manager_OFFLINE.html').read_text(encoding='utf-8')
+          assert 'style.css' not in html
+          assert 'src="game.js"' not in html
+          assert 'data:image/svg+xml;base64,' in html
+          assert '<script>' in html and '<style>' in html
+          print('Standalone HTML verification passed.')
+          PY
+
+      - name: Upload downloadable game
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pixel-Plaza-Manager-Offline
+          path: |
+            dist/Pixel_Plaza_Manager_OFFLINE.html
+            dist/Pixel_Plaza_Manager_OFFLINE_Package.zip
+            dist/LEEME.txt
+          if-no-files-found: error
+          retention-days: 90
