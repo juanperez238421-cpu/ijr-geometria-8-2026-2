@@ -5,7 +5,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 STAGING = ROOT / "juegos" / "robledo_bistro_godot_staging"
 TARGET = ROOT / "juegos" / "robledo_bistro_godot"
-payload = (STAGING / "payload.b64").read_text(encoding="utf-8").strip()
+parts_dir = STAGING / "fixed_payload"
+if parts_dir.is_dir():
+    payload = "".join((parts_dir / f"p{i}.txt").read_text(encoding="utf-8").strip() for i in range(4))
+else:
+    payload = (STAGING / "payload.b64").read_text(encoding="utf-8").strip()
 data = base64.b64decode(payload)
 with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tf:
     tf.extractall(ROOT)
