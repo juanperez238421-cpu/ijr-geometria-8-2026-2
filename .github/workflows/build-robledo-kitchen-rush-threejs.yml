@@ -25,6 +25,9 @@ jobs:
       - name: Apply checksum-verified Autonomous Service V6 source
         run: python juegos/robledo_kitchen_rush_3d/apply_autonomous_v6.py
 
+      - name: Normalize production loop and deterministic V6 QA harness
+        run: python juegos/robledo_kitchen_rush_3d/fix_v6_deterministic_qa.py
+
       - name: Node 22
         uses: actions/setup-node@v4
         with:
