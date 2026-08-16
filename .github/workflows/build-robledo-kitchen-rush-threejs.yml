@@ -5,17 +5,15 @@ on:
     branches: [main]
     paths:
       - 'juegos/robledo_kitchen_rush_3d/**'
-      - 'juegos/robledo_kitchen_rush_3d_staging/**'
       - '.github/workflows/build-robledo-kitchen-rush-threejs.yml'
   pull_request:
     paths:
       - 'juegos/robledo_kitchen_rush_3d/**'
-      - 'juegos/robledo_kitchen_rush_3d_staging/**'
       - '.github/workflows/build-robledo-kitchen-rush-threejs.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-offline-game:
@@ -23,17 +21,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Expand staged full game source
-        run: |
-          set -euxo pipefail
-          if [ -f juegos/robledo_kitchen_rush_3d_staging/apply_payload.py ]; then
-            python juegos/robledo_kitchen_rush_3d_staging/apply_payload.py
-          fi
-          test -s juegos/robledo_kitchen_rush_3d/src/game.js
-          test -s juegos/robledo_kitchen_rush_3d/package.json
 
       - name: Node 22
         uses: actions/setup-node@v4
@@ -42,7 +29,7 @@ jobs:
 
       - name: Install pinned Three.js build dependencies
         working-directory: juegos/robledo_kitchen_rush_3d
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Validate source and core mechanics
         working-directory: juegos/robledo_kitchen_rush_3d
@@ -75,7 +62,68 @@ jobs:
           print('Embedded bundle bytes:', len(bundle.encode('utf-8')))
           PY
           node --check /tmp/robledo-kitchen-bundle.js
-          du -h dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
+
+      - name: Real browser startup smoke test
+        working-directory: juegos/robledo_kitchen_rush_3d
+        run: |
+          set -euxo pipefail
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$CHROME_BIN"
+          rm -rf /tmp/rkr-chrome-profile
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory dist >/tmp/rkr-http.log 2>&1 &
+          HTTP_PID=$!
+          xvfb-run -a "$CHROME_BIN" \
+            --no-sandbox \
+            --disable-dev-shm-usage \
+            --no-first-run \
+            --no-default-browser-check \
+            --user-data-dir=/tmp/rkr-chrome-profile \
+            --remote-debugging-port=9333 \
+            --remote-allow-origins='*' \
+            --window-size=1280,800 \
+            --enable-unsafe-swiftshader \
+            --use-angle=swiftshader \
+            http://127.0.0.1:8765/index.html >/tmp/rkr-chrome.log 2>&1 &
+          CHROME_PID=$!
+          cleanup() { kill "$CHROME_PID" "$HTTP_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          if ! CDP_PORT=9333 node scripts/smoke.mjs; then
+            cat /tmp/rkr-chrome.log || true
+            exit 1
+          fi
+
+      - name: Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.x'
+          cache: false
+
+      - name: Build portable localhost launchers
+        working-directory: juegos/robledo_kitchen_rush_3d
+        run: |
+          set -euxo pipefail
+          cp dist/Robledo_Kitchen_Rush_3D_OFFLINE.html launcher/game.html
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags='-s -w -H=windowsgui' -o dist/RobledoKitchenRush3D_Windows.exe ./launcher
+          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o dist/RobledoKitchenRush3D_Linux ./launcher
+          test -s dist/RobledoKitchenRush3D_Windows.exe
+          test -s dist/RobledoKitchenRush3D_Linux
+
+      - name: Verify portable launcher serves the game
+        working-directory: juegos/robledo_kitchen_rush_3d
+        run: |
+          set -euxo pipefail
+          chmod +x dist/RobledoKitchenRush3D_Linux
+          dist/RobledoKitchenRush3D_Linux --no-open --port 8766 >/tmp/rkr-launcher.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8766/__health | grep -q OK; then break; fi
+            sleep .2
+          done
+          curl -fsS http://127.0.0.1:8766/__health | grep -q OK
+          curl -fsS http://127.0.0.1:8766/ -o /tmp/rkr-served.html
+          grep -q 'ROBLEDO KITCHEN RUSH 3D' /tmp/rkr-served.html
+          test $(wc -c </tmp/rkr-served.html) -gt 500000
 
       - name: Package ready-to-play game plus editable source
         working-directory: juegos/robledo_kitchen_rush_3d
@@ -83,29 +131,17 @@ jobs:
           set -euxo pipefail
           rm -rf package
           mkdir -p package/Robledo_Kitchen_Rush_3D/PLAY package/Robledo_Kitchen_Rush_3D/SOURCE
-          cp dist/Robledo_Kitchen_Rush_3D_OFFLINE.html dist/README_FIRST.txt package/Robledo_Kitchen_Rush_3D/PLAY/
-          cp index.html style.css package.json package-lock.json README.md package/Robledo_Kitchen_Rush_3D/SOURCE/
-          cp -a src scripts package/Robledo_Kitchen_Rush_3D/SOURCE/
+          cp dist/RobledoKitchenRush3D_Windows.exe dist/RobledoKitchenRush3D_Linux dist/Robledo_Kitchen_Rush_3D_OFFLINE.html dist/README_FIRST.txt package/Robledo_Kitchen_Rush_3D/PLAY/
+          cp index.html style.css package.json package-lock.json README.md go.mod package/Robledo_Kitchen_Rush_3D/SOURCE/
+          cp -a src scripts launcher package/Robledo_Kitchen_Rush_3D/SOURCE/
           cd package
-          zip -qr Robledo_Kitchen_Rush_3D_FULL_LOCAL.zip Robledo_Kitchen_Rush_3D
-          test -s Robledo_Kitchen_Rush_3D_FULL_LOCAL.zip
+          zip -qr Robledo_Kitchen_Rush_3D_SENIOR_STARTUP_FIXED.zip Robledo_Kitchen_Rush_3D
+          test -s Robledo_Kitchen_Rush_3D_SENIOR_STARTUP_FIXED.zip
 
-      - name: Upload downloadable full local game
+      - name: Upload downloadable senior build
         uses: actions/upload-artifact@v4
         with:
-          name: Robledo-Kitchen-Rush-3D-Full-Local
-          path: juegos/robledo_kitchen_rush_3d/package/Robledo_Kitchen_Rush_3D_FULL_LOCAL.zip
+          name: Robledo-Kitchen-Rush-3D-Senior-Startup-Fixed
+          path: juegos/robledo_kitchen_rush_3d/package/Robledo_Kitchen_Rush_3D_SENIOR_STARTUP_FIXED.zip
           if-no-files-found: error
           retention-days: 90
-
-      - name: Commit expanded editable source to main
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('juegos/robledo_kitchen_rush_3d_staging/apply_payload.py') != ''
-        run: |
-          set -euxo pipefail
-          rm -rf juegos/robledo_kitchen_rush_3d_staging
-          rm -rf juegos/robledo_kitchen_rush_3d/node_modules juegos/robledo_kitchen_rush_3d/dist juegos/robledo_kitchen_rush_3d/package
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add juegos/robledo_kitchen_rush_3d juegos/robledo_kitchen_rush_3d_staging
-          git commit -m "Expand Robledo Kitchen Rush Three.js full source"
-          git push
