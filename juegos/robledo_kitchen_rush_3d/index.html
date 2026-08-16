@@ -3,58 +3,106 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Robledo Kitchen Rush 3D</title>
+  <title>Robledo Kitchen Rush 3D — Dynamic Crew Edition</title>
   <link rel="stylesheet" href="./style.css" />
-  <!-- Regression guard: the menu layout uses an ID-level display rule. When gameplay
-       adds .hidden, this more-specific selector guarantees the overlay is physically
-       removed from layout and cannot continue intercepting clicks. -->
-  <style>#menu-screen.hidden{display:none!important}</style>
 </head>
 <body>
   <div id="game-shell">
     <canvas id="game-canvas"></canvas>
 
     <header id="hud" class="hidden">
-      <div class="hud-brand"><img id="hud-logo" src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo"/><div><b>ROBLEDO KITCHEN RUSH 3D</b><span id="level-name">Bistro Basics</span></div></div>
-      <div class="hud-stat"><span>TIME</span><b id="timer">03:00</b></div>
-      <div class="hud-stat"><span>SCORE</span><b id="score">0</b></div>
-      <div class="hud-stat"><span>COMBO</span><b id="combo">x1</b></div>
-      <div class="hud-stat"><span>LIVES</span><b id="lives">❤❤❤</b></div>
+      <div class="hud-brand glass"><img id="hud-logo" src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo"/><div><b>ROBLEDO KITCHEN RUSH 3D</b><span id="level-name">Bistro Basics</span></div></div>
+      <div class="hud-stat glass"><span>TIME</span><b id="timer">03:00</b></div>
+      <div class="hud-stat glass"><span>SCORE</span><b id="score">0</b></div>
+      <div class="hud-stat glass"><span>COMBO</span><b id="combo">x1</b></div>
+      <div class="hud-stat glass"><span>LIVES</span><b id="lives">❤❤❤</b></div>
+      <div class="hud-stat glass camera-stat"><span>CAMERA</span><b id="camera-mode-label">DYNAMIC</b></div>
     </header>
 
     <section id="orders" class="hidden"></section>
     <div id="message" class="hidden"></div>
     <div id="interaction-hint" class="hidden">INTERACT</div>
-
-    <aside id="player-hud" class="hidden">
-      <div class="player-chip p1"><b>P1</b><span id="p1-held">empty hands</span></div>
-      <div class="player-chip p2"><b>P2</b><span id="p2-held">empty hands</span></div>
-      <div class="player-chip p3"><b>P3</b><span id="p3-held">empty hands</span></div>
-    </aside>
+    <aside id="player-hud" class="hidden"></aside>
 
     <div id="menu-screen" class="overlay screen">
-      <div class="menu-card hero-card">
-        <img id="school-logo" src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo" />
-        <div class="eyebrow">THREE-PLAYER LOCAL CO-OP • ISOMETRIC 3D</div>
-        <h1>ROBLEDO<br/><span>KITCHEN RUSH 3D</span></h1>
-        <p>Cook together. Carry, chop, fry, bake, assemble and deliver real orders to seated customers before their patience runs out.</p>
-        <div class="menu-actions">
-          <button id="start-btn" class="primary">START 3-PLAYER SHIFT</button>
-          <button id="recipes-btn">RECIPE BOOK</button>
-          <button id="controls-btn">CONTROLS</button>
+      <div class="menu-stage">
+        <div class="menu-card hero-card">
+          <img id="school-logo" src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo" />
+          <div class="eyebrow">LOCAL CO-OP • 1–3 HUMAN PLAYERS • DYNAMIC 3D</div>
+          <h1>ROBLEDO<br/><span>KITCHEN RUSH 3D</span></h1>
+          <p>Build your kitchen, choose the crew, assign roles, configure the menu and then survive a real-time restaurant rush with customers, cooking timers and team AI.</p>
+          <div class="menu-actions">
+            <button id="start-btn" class="primary xl">PLAN A NEW SHIFT</button>
+            <button id="tutorial-btn">TUTORIAL</button>
+            <button id="recipes-btn">RECIPE BOOK</button>
+            <button id="controls-btn">CONTROLS</button>
+          </div>
+          <div class="level-row" id="level-row"></div>
+          <div class="feature-strip">
+            <span>🧑‍🍳 Human + bot crews</span><span>🧱 Build-mode kitchen</span><span>🎥 3D orbit camera</span><span>🍽 Real seated customers</span>
+          </div>
+          <small>Fully local build • no accounts • progress and preferences stored on this PC</small>
         </div>
-        <div class="level-row" id="level-row"></div>
-        <small>Offline build • no accounts • progress stored locally</small>
+        <div class="menu-card side-card">
+          <h2>SHIFT FLOW</h2>
+          <div class="flow-step"><b>1</b><div><strong>Choose crew</strong><span>1, 2 or 3 human players. Empty seats become active bots.</span></div></div>
+          <div class="flow-step"><b>2</b><div><strong>Assign roles</strong><span>Head Chef, Prep Specialist or Service Captain.</span></div></div>
+          <div class="flow-step"><b>3</b><div><strong>Design kitchen</strong><span>Spend the starting budget on tables, crates and stations.</span></div></div>
+          <div class="flow-step"><b>4</b><div><strong>Open service</strong><span>Cook, plate, deliver, wash and coordinate under pressure.</span></div></div>
+          <div class="controller-note"><b>Best setup:</b> one controller per human player. Keyboard layouts remain available.</div>
+        </div>
       </div>
-      <div class="menu-card side-card">
-        <h2>LOCAL CREW</h2>
-        <div class="join-slot p1"><b>PLAYER 1</b><span>WASD • E • Q • Shift</span></div>
-        <div class="join-slot p2"><b>PLAYER 2</b><span>Arrows • Enter • / • Right Shift</span></div>
-        <div class="join-slot p3"><b>PLAYER 3</b><span>IJKL • O • U • P</span></div>
-        <div class="controller-note"><b>Gamepads supported.</b><br/>The first three connected controllers automatically control P1–P3. Keyboard controls remain available.</div>
-        <h3>CORE LOOP</h3>
-        <ol><li>Read customer tickets.</li><li>Get ingredients from crates.</li><li>Prep and cook them.</li><li>Assemble on a clean plate.</li><li>Deliver to the correct table.</li><li>Wash returned dishes.</li></ol>
+    </div>
+
+    <div id="crew-screen" class="overlay screen hidden">
+      <div class="book-card crew-card">
+        <div class="screen-title"><div><span class="eyebrow">PRE-SHIFT MANAGEMENT</span><h2>BUILD YOUR CREW</h2></div><button id="crew-back-btn">BACK</button></div>
+        <div class="crew-top-grid">
+          <section class="setup-panel">
+            <h3>HUMAN PLAYERS</h3>
+            <div id="human-count" class="segmented"><button data-count="1">1 PLAYER</button><button data-count="2">2 PLAYERS</button><button data-count="3">3 PLAYERS</button></div>
+            <p class="micro">Any unused crew slot becomes an autonomous bot. Bots physically move through the kitchen and complete tasks according to their assigned role.</p>
+          </section>
+          <section class="setup-panel">
+            <h3>CAMERA</h3>
+            <div id="camera-choice" class="segmented"><button data-camera="dynamic">DYNAMIC</button><button data-camera="classic">CLASSIC</button><button data-camera="top">TOP</button></div>
+            <p class="micro">Dynamic camera follows the crew centroid, adds gentle gyroscope lean and allows mouse orbit + wheel zoom.</p>
+          </section>
+        </div>
+        <div id="crew-slots" class="crew-slots"></div>
+        <div class="menu-planner">
+          <div><span class="eyebrow">ACTIVE MENU</span><h3>CHOOSE 3–5 DISHES FOR THIS SHIFT</h3><p class="micro">Your ingredient requirements in Build Mode are generated from this menu.</p></div>
+          <div id="menu-toggle-grid" class="menu-toggle-grid"></div>
+        </div>
+        <div class="footer-actions"><div id="crew-warning" class="warning"></div><button id="crew-continue-btn" class="primary xl">CONTINUE TO TRAINING</button></div>
       </div>
+    </div>
+
+    <div id="tutorial-screen" class="overlay screen hidden">
+      <div class="tutorial-card">
+        <div class="tutorial-progress"><span id="tutorial-step-label">STEP 1 / 7</span><div><i id="tutorial-progress-fill"></i></div></div>
+        <div id="tutorial-visual" class="tutorial-visual"></div>
+        <span class="eyebrow">INTERACTIVE BRIEFING</span>
+        <h2 id="tutorial-title">Welcome to the kitchen</h2>
+        <div id="tutorial-body" class="tutorial-body"></div>
+        <div class="tutorial-actions"><button id="tutorial-skip-btn">SKIP</button><button id="tutorial-prev-btn">BACK</button><button id="tutorial-next-btn" class="primary">NEXT</button></div>
+      </div>
+    </div>
+
+    <div id="build-ui" class="hidden">
+      <div class="build-panel left-panel glass-strong">
+        <div class="eyebrow">KITCHEN PLANNER</div><h2>BUILD MODE</h2>
+        <div class="budget-line"><span>STARTING BUDGET</span><b id="build-budget">$0</b></div>
+        <div id="build-requirements" class="requirements"></div>
+        <h3>PLACE FIXTURES</h3>
+        <div id="fixture-palette" class="fixture-palette"></div>
+        <div class="build-help"><b>Mouse:</b> point + left click to place<br/><b>Right drag:</b> rotate camera • <b>Wheel:</b> zoom<br/><b>R:</b> rotate fixture • <b>Delete:</b> remove highlighted fixture</div>
+      </div>
+      <div class="build-panel bottom-panel glass-strong">
+        <div><b id="selected-fixture-label">Select a fixture</b><span id="build-status">Tables belong in the dining zone; cooking equipment belongs in the kitchen zone.</span></div>
+        <div class="build-actions"><button id="clear-plan-btn">CLEAR</button><button id="auto-layout-btn">RECOMMENDED LAYOUT</button><button id="open-restaurant-btn" class="primary xl">OPEN RESTAURANT</button></div>
+      </div>
+      <div class="zone-legend glass"><span><i class="zone kitchen"></i> Kitchen zone</span><span><i class="zone dining"></i> Dining zone</span></div>
     </div>
 
     <div id="recipe-screen" class="overlay screen hidden">
@@ -66,21 +114,20 @@
 
     <div id="controls-screen" class="overlay screen hidden">
       <div class="book-card narrow">
-        <div class="screen-title"><div><span class="eyebrow">ONE PC • THREE PLAYERS</span><h2>CONTROLS</h2></div><button class="close-overlay">CLOSE</button></div>
+        <div class="screen-title"><div><span class="eyebrow">ONE PC • FLEXIBLE CREW</span><h2>CONTROLS</h2></div><button class="close-overlay">CLOSE</button></div>
         <div class="controls-grid">
           <article class="p1"><h3>PLAYER 1</h3><p><b>Move:</b> WASD<br/><b>Interact / work:</b> E<br/><b>Throw / drop:</b> Q<br/><b>Dash:</b> Left Shift</p></article>
-          <article class="p2"><h3>PLAYER 2</h3><p><b>Move:</b> Arrow keys<br/><b>Interact / work:</b> Enter<br/><b>Throw / drop:</b> /<br/><b>Dash:</b> Right Shift</p></article>
-          <article class="p3"><h3>PLAYER 3</h3><p><b>Move:</b> IJKL<br/><b>Interact / work:</b> O<br/><b>Throw / drop:</b> U<br/><b>Dash:</b> P</p></article>
+          <article class="p2"><h3>PLAYER 2</h3><p><b>Move:</b> Arrow keys<br/><b>Interact / work:</b> Enter<br/><b>Throw:</b> /<br/><b>Dash:</b> Right Shift</p></article>
+          <article class="p3"><h3>PLAYER 3</h3><p><b>Move:</b> IJKL<br/><b>Interact / work:</b> O<br/><b>Throw:</b> U<br/><b>Dash:</b> P</p></article>
+          <article><h3>CAMERA</h3><p><b>Orbit:</b> right mouse drag<br/><b>Zoom:</b> mouse wheel<br/><b>Preset:</b> C<br/><b>Reset:</b> Home</p></article>
           <article><h3>GAMEPAD</h3><p><b>Move:</b> left stick<br/><b>Interact:</b> A / Cross<br/><b>Throw:</b> X / Square<br/><b>Dash:</b> B / Circle</p></article>
+          <article><h3>BUILD MODE</h3><p><b>Place:</b> left click<br/><b>Rotate:</b> R<br/><b>Delete:</b> Delete key<br/><b>Camera:</b> right drag + wheel</p></article>
         </div>
-        <p class="tip">Tip: controllers are recommended for true simultaneous three-player play because some keyboards have key-ghosting limits.</p>
       </div>
     </div>
 
-    <div id="pause-screen" class="overlay screen hidden"><div class="modal-card"><span class="eyebrow">SHIFT PAUSED</span><h2>TAKE FIVE</h2><button id="resume-btn" class="primary">RESUME</button><button id="restart-btn">RESTART LEVEL</button><button id="quit-btn">MAIN MENU</button></div></div>
-
-    <div id="result-screen" class="overlay screen hidden"><div class="modal-card result-card"><span class="eyebrow">SHIFT COMPLETE</span><h2 id="result-title">DINNER SERVICE COMPLETE</h2><div id="result-stars" class="stars">★★★</div><div id="result-stats"></div><button id="next-btn" class="primary">NEXT KITCHEN</button><button id="replay-btn">REPLAY</button><button id="result-menu-btn">MAIN MENU</button></div></div>
-
+    <div id="pause-screen" class="overlay screen hidden"><div class="modal-card"><span class="eyebrow">SHIFT PAUSED</span><h2>TAKE FIVE</h2><button id="resume-btn" class="primary">RESUME</button><button id="restart-btn">RESTART SERVICE</button><button id="quit-btn">MAIN MENU</button></div></div>
+    <div id="result-screen" class="overlay screen hidden"><div class="modal-card result-card"><span class="eyebrow">SHIFT COMPLETE</span><h2 id="result-title">SERVICE COMPLETE</h2><div id="result-stars" class="stars">★★★</div><div id="result-stats"></div><button id="next-btn" class="primary">PLAN NEXT KITCHEN</button><button id="replay-btn">REPLAN THIS LEVEL</button><button id="result-menu-btn">MAIN MENU</button></div></div>
     <div id="geometry-screen" class="overlay screen hidden"><div class="modal-card geometry-card"><span class="eyebrow">TEAM LIFE LOST</span><h2>GEOMETRY RESCUE</h2><p id="geometry-question"></p><div id="geometry-options" class="geometry-options"></div><small>Correct answer restores the lost team life. Normal cooking is paused.</small></div></div>
   </div>
   <script src="./game.js"></script>
