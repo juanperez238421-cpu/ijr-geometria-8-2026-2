@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-offline-game:
@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Apply staged Progressive V5 source
+        run: python juegos/robledo_kitchen_rush_3d/apply_progressive_v5.py
 
       - name: Node 22
         uses: actions/setup-node@v4
@@ -31,7 +34,7 @@ jobs:
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Validate Dynamic V4 source and mechanics
+      - name: Validate Progressive Growth V5 source and mechanics
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm run check
 
@@ -39,34 +42,31 @@ jobs:
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm run build
 
-      - name: Verify standalone output and embedded bundle syntax
+      - name: Verify Progressive V5 standalone output
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          test -s dist/Robledo_Kitchen_Rush_3D_DYNAMIC_V4_OFFLINE.html
+          test -s dist/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html
           test -s dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
           python - <<'PY'
           from pathlib import Path
-          html = Path('dist/Robledo_Kitchen_Rush_3D_DYNAMIC_V4_OFFLINE.html').read_text(encoding='utf-8')
-          assert 'ROBLEDO KITCHEN RUSH 3D' in html
-          assert 'BUILD YOUR CREW' in html
-          assert 'KITCHEN PLANNER' in html
-          assert 'data:image/png;base64' in html
+          html = Path('dist/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html').read_text(encoding='utf-8')
+          for token in ['ROBLEDO KITCHEN RUSH 3D','PROGRESSIVE RESTAURANT MANAGEMENT','BUSINESS CASH','EXPAND RESTAURANT','data:image/png;base64']:
+              assert token in html, token
           assert 'href="./style.css"' not in html
           assert '<script src="./game.js"></script>' not in html
-          assert html.count('<script') == 1, f'unexpected script openings: {html.count("<script")}'
-          assert html.count('</script>') == 1, f'unexpected script closings: {html.count("</script>")}'
+          assert html.count('<script') == 1
+          assert html.count('</script>') == 1
           start = html.index('<script>') + len('<script>')
           end = html.rindex('</script>')
           bundle = html[start:end]
-          assert bundle.strip(), 'embedded game bundle is empty'
+          assert bundle.strip()
           Path('/tmp/robledo-kitchen-bundle.js').write_text(bundle, encoding='utf-8')
-          print('Dynamic V4 standalone bytes:', len(html.encode('utf-8')))
-          print('Embedded bundle bytes:', len(bundle.encode('utf-8')))
+          print('Progressive V5 standalone bytes:', len(html.encode('utf-8')))
           PY
           node --check /tmp/robledo-kitchen-bundle.js
 
-      - name: Real browser Dynamic V4 end-to-end test
+      - name: Real browser Progressive V5 end-to-end test
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
@@ -101,22 +101,22 @@ jobs:
           go-version: '1.23.x'
           cache: false
 
-      - name: Build portable localhost launchers
+      - name: Build Progressive V5 portable launchers
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          cp dist/Robledo_Kitchen_Rush_3D_DYNAMIC_V4_OFFLINE.html launcher/game.html
-          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags='-s -w -H=windowsgui' -o dist/RobledoKitchenRush3D_DynamicV4_Windows.exe ./launcher
-          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o dist/RobledoKitchenRush3D_DynamicV4_Linux ./launcher
-          test -s dist/RobledoKitchenRush3D_DynamicV4_Windows.exe
-          test -s dist/RobledoKitchenRush3D_DynamicV4_Linux
+          cp dist/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html launcher/game.html
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags='-s -w -H=windowsgui' -o dist/RobledoKitchenRush3D_ProgressiveV5_Windows.exe ./launcher
+          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o dist/RobledoKitchenRush3D_ProgressiveV5_Linux ./launcher
+          test -s dist/RobledoKitchenRush3D_ProgressiveV5_Windows.exe
+          test -s dist/RobledoKitchenRush3D_ProgressiveV5_Linux
 
-      - name: Verify portable launcher serves Dynamic V4
+      - name: Verify portable launcher serves Progressive V5
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          chmod +x dist/RobledoKitchenRush3D_DynamicV4_Linux
-          dist/RobledoKitchenRush3D_DynamicV4_Linux --no-open --port 8766 >/tmp/rkr-launcher.log 2>&1 &
+          chmod +x dist/RobledoKitchenRush3D_ProgressiveV5_Linux
+          dist/RobledoKitchenRush3D_ProgressiveV5_Linux --no-open --port 8766 >/tmp/rkr-launcher.log 2>&1 &
           PID=$!
           trap 'kill "$PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 30); do
@@ -125,27 +125,49 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8766/__health | grep -q OK
           curl -fsS http://127.0.0.1:8766/ -o /tmp/rkr-served.html
-          grep -q 'BUILD YOUR CREW' /tmp/rkr-served.html
-          grep -q 'KITCHEN PLANNER' /tmp/rkr-served.html
+          grep -q 'BUSINESS CASH' /tmp/rkr-served.html
+          grep -q 'EXPAND RESTAURANT' /tmp/rkr-served.html
           test $(wc -c </tmp/rkr-served.html) -gt 550000
 
-      - name: Package ready-to-play Dynamic V4 plus editable source
+      - name: Package Progressive V5 plus editable source
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
           rm -rf package
-          mkdir -p package/Robledo_Kitchen_Rush_3D_DYNAMIC_V4/PLAY package/Robledo_Kitchen_Rush_3D_DYNAMIC_V4/SOURCE
-          cp dist/RobledoKitchenRush3D_DynamicV4_Windows.exe dist/RobledoKitchenRush3D_DynamicV4_Linux dist/Robledo_Kitchen_Rush_3D_DYNAMIC_V4_OFFLINE.html dist/README_FIRST.txt package/Robledo_Kitchen_Rush_3D_DYNAMIC_V4/PLAY/
-          cp index.html style.css package.json package-lock.json README.md README_DYNAMIC_V4.txt SENIOR_DYNAMIC_V4_NOTES.md go.mod package/Robledo_Kitchen_Rush_3D_DYNAMIC_V4/SOURCE/
-          cp -a src scripts launcher package/Robledo_Kitchen_Rush_3D_DYNAMIC_V4/SOURCE/
+          mkdir -p package/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5/PLAY package/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5/SOURCE
+          cp dist/RobledoKitchenRush3D_ProgressiveV5_Windows.exe dist/RobledoKitchenRush3D_ProgressiveV5_Linux dist/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html dist/README_FIRST.txt package/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5/PLAY/
+          cp index.html style.css package.json package-lock.json README.md README_PROGRESSIVE_V5.txt SENIOR_PROGRESSIVE_V5_NOTES.md go.mod package/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5/SOURCE/
+          cp -a src scripts launcher package/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5/SOURCE/
           cd package
-          zip -qr Robledo_Kitchen_Rush_3D_SENIOR_DYNAMIC_V4_FULL_LOCAL.zip Robledo_Kitchen_Rush_3D_DYNAMIC_V4
-          test -s Robledo_Kitchen_Rush_3D_SENIOR_DYNAMIC_V4_FULL_LOCAL.zip
+          zip -qr Robledo_Kitchen_Rush_3D_SENIOR_PROGRESSIVE_V5_FULL_LOCAL.zip Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5
+          test -s Robledo_Kitchen_Rush_3D_SENIOR_PROGRESSIVE_V5_FULL_LOCAL.zip
 
-      - name: Upload Dynamic V4 downloadable build
+      - name: Commit clean Progressive V5 source to main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euxo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add juegos/robledo_kitchen_rush_3d/src/game.js \
+                  juegos/robledo_kitchen_rush_3d/index.html \
+                  juegos/robledo_kitchen_rush_3d/style.css \
+                  juegos/robledo_kitchen_rush_3d/scripts/check.mjs \
+                  juegos/robledo_kitchen_rush_3d/scripts/smoke.mjs \
+                  juegos/robledo_kitchen_rush_3d/scripts/build.mjs \
+                  juegos/robledo_kitchen_rush_3d/README_PROGRESSIVE_V5.txt \
+                  juegos/robledo_kitchen_rush_3d/SENIOR_PROGRESSIVE_V5_NOTES.md
+          git rm -r --ignore-unmatch juegos/robledo_kitchen_rush_3d/.v5_payload juegos/robledo_kitchen_rush_3d/apply_progressive_v5.py
+          if git diff --cached --quiet; then
+            echo "Progressive V5 source already clean on main."
+          else
+            git commit -m "Apply Robledo Kitchen Rush 3D Progressive Growth V5 source"
+            git push origin HEAD:main
+          fi
+
+      - name: Upload Progressive V5 downloadable build
         uses: actions/upload-artifact@v4
         with:
-          name: Robledo-Kitchen-Rush-3D-Senior-Dynamic-V4
-          path: juegos/robledo_kitchen_rush_3d/package/Robledo_Kitchen_Rush_3D_SENIOR_DYNAMIC_V4_FULL_LOCAL.zip
+          name: Robledo-Kitchen-Rush-3D-Senior-Progressive-V5
+          path: juegos/robledo_kitchen_rush_3d/package/Robledo_Kitchen_Rush_3D_SENIOR_PROGRESSIVE_V5_FULL_LOCAL.zip
           if-no-files-found: error
           retention-days: 90
