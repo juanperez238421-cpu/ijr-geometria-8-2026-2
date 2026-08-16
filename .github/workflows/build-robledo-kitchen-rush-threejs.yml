@@ -31,7 +31,7 @@ jobs:
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Validate source and core mechanics
+      - name: Validate Dynamic V4 source and mechanics
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm run check
 
@@ -43,11 +43,14 @@ jobs:
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
+          test -s dist/Robledo_Kitchen_Rush_3D_DYNAMIC_V4_OFFLINE.html
           test -s dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
           python - <<'PY'
           from pathlib import Path
-          html = Path('dist/Robledo_Kitchen_Rush_3D_OFFLINE.html').read_text(encoding='utf-8')
+          html = Path('dist/Robledo_Kitchen_Rush_3D_DYNAMIC_V4_OFFLINE.html').read_text(encoding='utf-8')
           assert 'ROBLEDO KITCHEN RUSH 3D' in html
+          assert 'BUILD YOUR CREW' in html
+          assert 'KITCHEN PLANNER' in html
           assert 'data:image/png;base64' in html
           assert 'href="./style.css"' not in html
           assert '<script src="./game.js"></script>' not in html
@@ -58,12 +61,12 @@ jobs:
           bundle = html[start:end]
           assert bundle.strip(), 'embedded game bundle is empty'
           Path('/tmp/robledo-kitchen-bundle.js').write_text(bundle, encoding='utf-8')
-          print('Standalone HTML bytes:', len(html.encode('utf-8')))
+          print('Dynamic V4 standalone bytes:', len(html.encode('utf-8')))
           print('Embedded bundle bytes:', len(bundle.encode('utf-8')))
           PY
           node --check /tmp/robledo-kitchen-bundle.js
 
-      - name: Real browser startup smoke test
+      - name: Real browser Dynamic V4 end-to-end test
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
@@ -102,18 +105,18 @@ jobs:
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          cp dist/Robledo_Kitchen_Rush_3D_OFFLINE.html launcher/game.html
-          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags='-s -w -H=windowsgui' -o dist/RobledoKitchenRush3D_Windows.exe ./launcher
-          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o dist/RobledoKitchenRush3D_Linux ./launcher
-          test -s dist/RobledoKitchenRush3D_Windows.exe
-          test -s dist/RobledoKitchenRush3D_Linux
+          cp dist/Robledo_Kitchen_Rush_3D_DYNAMIC_V4_OFFLINE.html launcher/game.html
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags='-s -w -H=windowsgui' -o dist/RobledoKitchenRush3D_DynamicV4_Windows.exe ./launcher
+          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o dist/RobledoKitchenRush3D_DynamicV4_Linux ./launcher
+          test -s dist/RobledoKitchenRush3D_DynamicV4_Windows.exe
+          test -s dist/RobledoKitchenRush3D_DynamicV4_Linux
 
-      - name: Verify portable launcher serves the game
+      - name: Verify portable launcher serves Dynamic V4
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          chmod +x dist/RobledoKitchenRush3D_Linux
-          dist/RobledoKitchenRush3D_Linux --no-open --port 8766 >/tmp/rkr-launcher.log 2>&1 &
+          chmod +x dist/RobledoKitchenRush3D_DynamicV4_Linux
+          dist/RobledoKitchenRush3D_DynamicV4_Linux --no-open --port 8766 >/tmp/rkr-launcher.log 2>&1 &
           PID=$!
           trap 'kill "$PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 30); do
@@ -122,26 +125,27 @@ jobs:
           done
           curl -fsS http://127.0.0.1:8766/__health | grep -q OK
           curl -fsS http://127.0.0.1:8766/ -o /tmp/rkr-served.html
-          grep -q 'ROBLEDO KITCHEN RUSH 3D' /tmp/rkr-served.html
-          test $(wc -c </tmp/rkr-served.html) -gt 500000
+          grep -q 'BUILD YOUR CREW' /tmp/rkr-served.html
+          grep -q 'KITCHEN PLANNER' /tmp/rkr-served.html
+          test $(wc -c </tmp/rkr-served.html) -gt 550000
 
-      - name: Package ready-to-play game plus editable source
+      - name: Package ready-to-play Dynamic V4 plus editable source
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
           rm -rf package
-          mkdir -p package/Robledo_Kitchen_Rush_3D/PLAY package/Robledo_Kitchen_Rush_3D/SOURCE
-          cp dist/RobledoKitchenRush3D_Windows.exe dist/RobledoKitchenRush3D_Linux dist/Robledo_Kitchen_Rush_3D_OFFLINE.html dist/README_FIRST.txt package/Robledo_Kitchen_Rush_3D/PLAY/
-          cp index.html style.css package.json package-lock.json README.md go.mod package/Robledo_Kitchen_Rush_3D/SOURCE/
-          cp -a src scripts launcher package/Robledo_Kitchen_Rush_3D/SOURCE/
+          mkdir -p package/Robledo_Kitchen_Rush_3D_DYNAMIC_V4/PLAY package/Robledo_Kitchen_Rush_3D_DYNAMIC_V4/SOURCE
+          cp dist/RobledoKitchenRush3D_DynamicV4_Windows.exe dist/RobledoKitchenRush3D_DynamicV4_Linux dist/Robledo_Kitchen_Rush_3D_DYNAMIC_V4_OFFLINE.html dist/README_FIRST.txt package/Robledo_Kitchen_Rush_3D_DYNAMIC_V4/PLAY/
+          cp index.html style.css package.json package-lock.json README.md README_DYNAMIC_V4.txt SENIOR_DYNAMIC_V4_NOTES.md go.mod package/Robledo_Kitchen_Rush_3D_DYNAMIC_V4/SOURCE/
+          cp -a src scripts launcher package/Robledo_Kitchen_Rush_3D_DYNAMIC_V4/SOURCE/
           cd package
-          zip -qr Robledo_Kitchen_Rush_3D_SENIOR_STARTUP_FIXED.zip Robledo_Kitchen_Rush_3D
-          test -s Robledo_Kitchen_Rush_3D_SENIOR_STARTUP_FIXED.zip
+          zip -qr Robledo_Kitchen_Rush_3D_SENIOR_DYNAMIC_V4_FULL_LOCAL.zip Robledo_Kitchen_Rush_3D_DYNAMIC_V4
+          test -s Robledo_Kitchen_Rush_3D_SENIOR_DYNAMIC_V4_FULL_LOCAL.zip
 
-      - name: Upload downloadable senior build
+      - name: Upload Dynamic V4 downloadable build
         uses: actions/upload-artifact@v4
         with:
-          name: Robledo-Kitchen-Rush-3D-Senior-Startup-Fixed
-          path: juegos/robledo_kitchen_rush_3d/package/Robledo_Kitchen_Rush_3D_SENIOR_STARTUP_FIXED.zip
+          name: Robledo-Kitchen-Rush-3D-Senior-Dynamic-V4
+          path: juegos/robledo_kitchen_rush_3d/package/Robledo_Kitchen_Rush_3D_SENIOR_DYNAMIC_V4_FULL_LOCAL.zip
           if-no-files-found: error
           retention-days: 90
