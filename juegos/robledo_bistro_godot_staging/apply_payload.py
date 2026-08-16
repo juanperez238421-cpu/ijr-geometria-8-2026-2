@@ -2,7 +2,7 @@ from __future__ import annotations
 import base64, io, shutil, tarfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[2]
 STAGING = ROOT / "juegos" / "robledo_bistro_godot_staging"
 payload = (STAGING / "payload.b64").read_text(encoding="utf-8").strip()
 data = base64.b64decode(payload)
