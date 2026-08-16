@@ -19,6 +19,7 @@ class CDP {
     this.next = 1;
     this.pending = new Map();
     this.exceptions = [];
+    this.consoleErrors = [];
     this.ws.onmessage = event => {
       const msg = JSON.parse(event.data);
       if (msg.id && this.pending.has(msg.id)) {
@@ -28,6 +29,8 @@ class CDP {
         else resolve(msg.result);
       } else if (msg.method === 'Runtime.exceptionThrown') {
         this.exceptions.push(msg.params?.exceptionDetails?.text || 'Runtime exception');
+      } else if (msg.method === 'Runtime.consoleAPICalled' && msg.params?.type === 'error') {
+        this.consoleErrors.push((msg.params.args || []).map(x => x.value ?? x.description ?? '').join(' '));
       }
     };
   }
@@ -70,12 +73,15 @@ for (let i = 0; i < 100; i++) {
 const preflight = await cdp.eval(`(() => {
   const canvas = document.getElementById('game-canvas');
   const start = document.getElementById('start-btn');
+  const menu = document.getElementById('menu-screen');
   return {
     title: document.title,
     startExists: !!start,
     startEnabled: !!start && !start.disabled,
     canvasExists: !!canvas,
-    menuVisible: !document.getElementById('menu-screen').classList.contains('hidden'),
+    menuClassHidden: menu.classList.contains('hidden'),
+    menuDisplay: getComputedStyle(menu).display,
+    menuVisible: getComputedStyle(menu).display !== 'none',
     webgl: !!(canvas && (canvas.getContext('webgl2') || canvas.getContext('webgl'))),
   };
 })()`);
@@ -86,18 +92,30 @@ if (!preflight.startExists || !preflight.startEnabled || !preflight.canvasExists
 await cdp.eval(`document.getElementById('start-btn').click()`);
 await new Promise(r => setTimeout(r, 1400));
 
-const started = await cdp.eval(`(() => ({
-  menuHidden: document.getElementById('menu-screen').classList.contains('hidden'),
-  hudVisible: !document.getElementById('hud').classList.contains('hidden'),
-  playerHudVisible: !document.getElementById('player-hud').classList.contains('hidden'),
-  timer: document.getElementById('timer').textContent,
-  lives: document.getElementById('lives').textContent,
-  canvasWidth: document.getElementById('game-canvas').width,
-  canvasHeight: document.getElementById('game-canvas').height,
-}))()`);
+const started = await cdp.eval(`(() => {
+  const menu = document.getElementById('menu-screen');
+  const hud = document.getElementById('hud');
+  const playerHud = document.getElementById('player-hud');
+  const canvas = document.getElementById('game-canvas');
+  const cx = Math.floor(window.innerWidth / 2);
+  const cy = Math.floor(window.innerHeight / 2);
+  const topAtCenter = document.elementFromPoint(cx, cy);
+  return {
+    menuClassHidden: menu.classList.contains('hidden'),
+    menuDisplay: getComputedStyle(menu).display,
+    menuActuallyHidden: getComputedStyle(menu).display === 'none' && menu.getClientRects().length === 0,
+    menuInterceptsCenter: !!topAtCenter?.closest?.('#menu-screen'),
+    hudVisible: getComputedStyle(hud).display !== 'none',
+    playerHudVisible: getComputedStyle(playerHud).display !== 'none',
+    timer: document.getElementById('timer').textContent,
+    lives: document.getElementById('lives').textContent,
+    canvasWidth: canvas.width,
+    canvasHeight: canvas.height,
+  };
+})()`);
 
-if (!started.menuHidden || !started.hudVisible || !started.playerHudVisible) {
-  throw new Error(`Start button did not enter gameplay: ${JSON.stringify(started)}`);
+if (!started.menuClassHidden || !started.menuActuallyHidden || started.menuInterceptsCenter || !started.hudVisible || !started.playerHudVisible) {
+  throw new Error(`Start button did not visually enter gameplay: ${JSON.stringify(started)}`);
 }
 if (!started.timer || started.timer === '03:00') {
   throw new Error(`Gameplay timer did not advance: ${JSON.stringify(started)}`);
@@ -108,6 +126,9 @@ if (started.canvasWidth < 640 || started.canvasHeight < 360) {
 if (cdp.exceptions.length) {
   throw new Error(`Runtime exceptions detected: ${cdp.exceptions.join(' | ')}`);
 }
+if (cdp.consoleErrors.length) {
+  throw new Error(`Console errors detected: ${cdp.consoleErrors.join(' | ')}`);
+}
 
-console.log('Browser startup smoke test passed:', JSON.stringify({ preflight, started }));
+console.log('Browser startup visual regression test passed:', JSON.stringify({ preflight, started }));
 cdp.ws.close();
