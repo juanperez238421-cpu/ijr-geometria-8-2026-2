@@ -30,6 +30,20 @@ with tarfile.open(fileobj=io.BytesIO(archive), mode='r:gz') as tf:
 game_js = ROOT / 'juegos/robledo_kitchen_rush_3d/src/game.js'
 text = game_js.read_text(encoding='utf-8')
 text = text.replace("kitchen'1", 'grocery:1')
+
+# Senior QA correction: a Prep bot was able to claim a waiter task before the Service Captain
+# simply because player updates run in index order. Give an available Service bot strict first
+# refusal; non-service bots only cover waiter duty when there is no autonomous Service Captain.
+old = "chooseTask(){const g=this.game,m=this.member,role=ROLE_META[m.role];const ready=g.parties.filter(p=>p.state==='readyToOrder'&&!p.orderClaim).sort((a,b)=>b.orderWaitElapsed-a.orderWaitElapsed);if(ready.length&&(role.botBias==='service'||ready[0].orderWaitElapsed>3)){"
+new = "chooseTask(){const g=this.game,m=this.member,role=ROLE_META[m.role],hasServiceBot=g.players.some(p=>!p.human&&ROLE_META[p.role]?.botBias==='service');const ready=g.parties.filter(p=>p.state==='readyToOrder'&&!p.orderClaim).sort((a,b)=>b.orderWaitElapsed-a.orderWaitElapsed);if(ready.length&&(role.botBias==='service'||(!hasServiceBot&&ready[0].orderWaitElapsed>3))){"
+if old not in text:
+    raise SystemExit('Could not apply V6 waiter-priority correction: chooseTask signature not found')
+text = text.replace(old, new, 1)
+old_fallback = "if(ready.length){const party=ready[0];party.orderClaim=this.id;this.task={kind:'order',party,table:party.table,actions:[{kind:'takeOrder',table:party.table,duration:.8}]};this.record('bot-order-claim',{table:party.table.id+1});}"
+new_fallback = "if(ready.length&&(role.botBias==='service'||!hasServiceBot)){const party=ready[0];party.orderClaim=this.id;this.task={kind:'order',party,table:party.table,actions:[{kind:'takeOrder',table:party.table,duration:.8}]};this.record('bot-order-claim',{table:party.table.id+1});}"
+if old_fallback not in text:
+    raise SystemExit('Could not apply V6 waiter-priority correction: fallback not found')
+text = text.replace(old_fallback, new_fallback, 1)
 game_js.write_text(text, encoding='utf-8')
 
 print(f'Applied Robledo Kitchen Rush Autonomous Service V6 ({len(archive)} bytes, sha256={digest}).')
