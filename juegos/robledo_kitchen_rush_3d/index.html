@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Robledo Kitchen Rush 3D</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="game-shell">
+    <canvas id="game-canvas"></canvas>
+
+    <header id="hud" class="hidden">
+      <div class="hud-brand"><img id="hud-logo" src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo"/><div><b>ROBLEDO KITCHEN RUSH 3D</b><span id="level-name">Bistro Basics</span></div></div>
+      <div class="hud-stat"><span>TIME</span><b id="timer">03:00</b></div>
+      <div class="hud-stat"><span>SCORE</span><b id="score">0</b></div>
+      <div class="hud-stat"><span>COMBO</span><b id="combo">x1</b></div>
+      <div class="hud-stat"><span>LIVES</span><b id="lives">❤❤❤</b></div>
+    </header>
+
+    <section id="orders" class="hidden"></section>
+    <div id="message" class="hidden"></div>
+    <div id="interaction-hint" class="hidden">INTERACT</div>
+
+    <aside id="player-hud" class="hidden">
+      <div class="player-chip p1"><b>P1</b><span id="p1-held">empty hands</span></div>
+      <div class="player-chip p2"><b>P2</b><span id="p2-held">empty hands</span></div>
+      <div class="player-chip p3"><b>P3</b><span id="p3-held">empty hands</span></div>
+    </aside>
+
+    <div id="menu-screen" class="overlay screen visible">
+      <div class="menu-card hero-card">
+        <img id="school-logo" src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo" />
+        <div class="eyebrow">THREE-PLAYER LOCAL CO-OP • ISOMETRIC 3D</div>
+        <h1>ROBLEDO<br/><span>KITCHEN RUSH 3D</span></h1>
+        <p>Cook together. Carry, chop, fry, bake, assemble and deliver real orders to seated customers before their patience runs out.</p>
+        <div class="menu-actions">
+          <button id="start-btn" class="primary">START 3-PLAYER SHIFT</button>
+          <button id="recipes-btn">RECIPE BOOK</button>
+          <button id="controls-btn">CONTROLS</button>
+        </div>
+        <div class="level-row" id="level-row"></div>
+        <small>Offline build • no accounts • progress stored locally</small>
+      </div>
+      <div class="menu-card side-card">
+        <h2>LOCAL CREW</h2>
+        <div class="join-slot p1"><b>PLAYER 1</b><span>WASD • E • Q • Shift</span></div>
+        <div class="join-slot p2"><b>PLAYER 2</b><span>Arrows • Enter • / • Right Shift</span></div>
+        <div class="join-slot p3"><b>PLAYER 3</b><span>IJKL • O • U • P</span></div>
+        <div class="controller-note"><b>Gamepads supported.</b><br/>The first three connected controllers automatically control P1–P3. Keyboard controls remain available.</div>
+        <h3>CORE LOOP</h3>
+        <ol><li>Read customer tickets.</li><li>Get ingredients from crates.</li><li>Prep and cook them.</li><li>Assemble on a clean plate.</li><li>Deliver to the correct table.</li><li>Wash returned dishes.</li></ol>
+      </div>
+    </div>
+
+    <div id="recipe-screen" class="overlay screen hidden">
+      <div class="book-card">
+        <div class="screen-title"><div><span class="eyebrow">KITCHEN REFERENCE</span><h2>RECIPE BOOK</h2></div><button class="close-overlay">CLOSE</button></div>
+        <div id="recipe-grid" class="recipe-grid"></div>
+      </div>
+    </div>
+
+    <div id="controls-screen" class="overlay screen hidden">
+      <div class="book-card narrow">
+        <div class="screen-title"><div><span class="eyebrow">ONE PC • THREE PLAYERS</span><h2>CONTROLS</h2></div><button class="close-overlay">CLOSE</button></div>
+        <div class="controls-grid">
+          <article class="p1"><h3>PLAYER 1</h3><p><b>Move:</b> WASD<br/><b>Interact / work:</b> E<br/><b>Throw / drop:</b> Q<br/><b>Dash:</b> Left Shift</p></article>
+          <article class="p2"><h3>PLAYER 2</h3><p><b>Move:</b> Arrow keys<br/><b>Interact / work:</b> Enter<br/><b>Throw / drop:</b> /<br/><b>Dash:</b> Right Shift</p></article>
+          <article class="p3"><h3>PLAYER 3</h3><p><b>Move:</b> IJKL<br/><b>Interact / work:</b> O<br/><b>Throw / drop:</b> U<br/><b>Dash:</b> P</p></article>
+          <article><h3>GAMEPAD</h3><p><b>Move:</b> left stick<br/><b>Interact:</b> A / Cross<br/><b>Throw:</b> X / Square<br/><b>Dash:</b> B / Circle</p></article>
+        </div>
+        <p class="tip">Tip: controllers are recommended for true simultaneous three-player play because some keyboards have key-ghosting limits.</p>
+      </div>
+    </div>
+
+    <div id="pause-screen" class="overlay screen hidden"><div class="modal-card"><span class="eyebrow">SHIFT PAUSED</span><h2>TAKE FIVE</h2><button id="resume-btn" class="primary">RESUME</button><button id="restart-btn">RESTART LEVEL</button><button id="quit-btn">MAIN MENU</button></div></div>
+
+    <div id="result-screen" class="overlay screen hidden"><div class="modal-card result-card"><span class="eyebrow">SHIFT COMPLETE</span><h2 id="result-title">DINNER SERVICE COMPLETE</h2><div id="result-stars" class="stars">★★★</div><div id="result-stats"></div><button id="next-btn" class="primary">NEXT KITCHEN</button><button id="replay-btn">REPLAY</button><button id="result-menu-btn">MAIN MENU</button></div></div>
+
+    <div id="geometry-screen" class="overlay screen hidden"><div class="modal-card geometry-card"><span class="eyebrow">TEAM LIFE LOST</span><h2>GEOMETRY RESCUE</h2><p id="geometry-question"></p><div id="geometry-options" class="geometry-options"></div><small>Correct answer restores the lost team life. Normal cooking is paused.</small></div></div>
+  </div>
+  <script src="./game.js"></script>
+</body>
+</html>
