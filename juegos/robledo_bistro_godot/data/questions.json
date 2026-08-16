@@ -1,0 +1,132 @@
+[
+  {
+    "tag": "Area",
+    "en": "A rectangle is 12 cm by 7 cm. What is its area?",
+    "es": "Un rectángulo mide 12 cm por 7 cm. ¿Cuál es su área?",
+    "options": [
+      "19 cm²",
+      "38 cm²",
+      "84 cm²",
+      "96 cm²"
+    ],
+    "correct": 2,
+    "explain": "A = b × h = 12 × 7 = 84 cm²."
+  },
+  {
+    "tag": "Triangle",
+    "en": "A triangle has base 14 cm and height 8 cm. Find its area.",
+    "es": "Un triángulo tiene base 14 cm y altura 8 cm. Halla su área.",
+    "options": [
+      "44 cm²",
+      "56 cm²",
+      "88 cm²",
+      "112 cm²"
+    ],
+    "correct": 1,
+    "explain": "A = (b × h)/2 = 56 cm²."
+  },
+  {
+    "tag": "Circle",
+    "en": "A circle has radius 4 cm. What is its exact area?",
+    "es": "Un círculo tiene radio 4 cm. ¿Cuál es su área exacta?",
+    "options": [
+      "4π cm²",
+      "8π cm²",
+      "16π cm²",
+      "32π cm²"
+    ],
+    "correct": 2,
+    "explain": "A = πr² = 16π cm²."
+  },
+  {
+    "tag": "Shaded Area",
+    "en": "A 10×8 rectangle contains an unshaded 4×3 rectangle. What is the shaded area?",
+    "es": "Un rectángulo 10×8 contiene un rectángulo sin sombrear 4×3. ¿Área sombreada?",
+    "options": [
+      "12 cm²",
+      "56 cm²",
+      "68 cm²",
+      "80 cm²"
+    ],
+    "correct": 2,
+    "explain": "80 − 12 = 68 cm²."
+  },
+  {
+    "tag": "Perimeter",
+    "en": "A rectangle measures 9 cm by 5 cm. What is its perimeter?",
+    "es": "Un rectángulo mide 9 cm por 5 cm. ¿Cuál es su perímetro?",
+    "options": [
+      "14 cm",
+      "28 cm",
+      "45 cm",
+      "90 cm"
+    ],
+    "correct": 1,
+    "explain": "P = 2(9 + 5) = 28 cm."
+  },
+  {
+    "tag": "Trapezoid",
+    "en": "A trapezoid has bases 8 cm and 14 cm and height 5 cm. Find the area.",
+    "es": "Un trapecio tiene bases 8 cm y 14 cm y altura 5 cm. Halla el área.",
+    "options": [
+      "44 cm²",
+      "50 cm²",
+      "55 cm²",
+      "110 cm²"
+    ],
+    "correct": 2,
+    "explain": "A = ((B+b)h)/2 = 55 cm²."
+  },
+  {
+    "tag": "Sector",
+    "en": "A 90° sector has radius 8 cm. What is its exact area?",
+    "es": "Un sector de 90° tiene radio 8 cm. ¿Cuál es su área exacta?",
+    "options": [
+      "8π cm²",
+      "16π cm²",
+      "32π cm²",
+      "64π cm²"
+    ],
+    "correct": 1,
+    "explain": "90° is one quarter of a circle, so the area is 16π cm²."
+  },
+  {
+    "tag": "Shaded Area",
+    "en": "A ring has outer radius 5 cm and inner radius 2 cm. Find its area.",
+    "es": "Un anillo tiene radio exterior 5 cm e interior 2 cm. Halla su área.",
+    "options": [
+      "3π cm²",
+      "7π cm²",
+      "21π cm²",
+      "29π cm²"
+    ],
+    "correct": 2,
+    "explain": "π(5² − 2²) = 21π cm²."
+  },
+  {
+    "tag": "Concept",
+    "en": "Which unit is appropriate for area?",
+    "es": "¿Qué unidad es apropiada para medir área?",
+    "options": [
+      "cm",
+      "cm²",
+      "cm³",
+      "degrees"
+    ],
+    "correct": 1,
+    "explain": "Area uses square units such as cm²."
+  },
+  {
+    "tag": "Composite",
+    "en": "Two non-overlapping rectangles are 6×4 and 3×2. What is the total area?",
+    "es": "Dos rectángulos sin superposición miden 6×4 y 3×2. ¿Área total?",
+    "options": [
+      "18",
+      "24",
+      "30",
+      "36"
+    ],
+    "correct": 2,
+    "explain": "24 + 6 = 30 square units."
+  }
+]

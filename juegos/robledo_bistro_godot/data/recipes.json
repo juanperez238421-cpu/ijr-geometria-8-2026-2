@@ -1,0 +1,140 @@
+{
+  "salad": {
+    "name": "Garden Salad",
+    "icon": "🥗",
+    "asset": "res://assets/food/salad.svg",
+    "unlock_cost": 0,
+    "route": [
+      "fridge",
+      "prep",
+      "pass"
+    ],
+    "ingredients": {
+      "greens": 2,
+      "tomato": 1,
+      "cheese": 1
+    }
+  },
+  "burger": {
+    "name": "Bistro Burger",
+    "icon": "🍔",
+    "asset": "res://assets/food/burger.svg",
+    "unlock_cost": 0,
+    "route": [
+      "fridge",
+      "prep",
+      "stove",
+      "pass"
+    ],
+    "ingredients": {
+      "bread": 1,
+      "beef": 1,
+      "cheese": 1,
+      "tomato": 1
+    }
+  },
+  "pasta": {
+    "name": "House Pasta",
+    "icon": "🍝",
+    "asset": "res://assets/food/pasta.svg",
+    "unlock_cost": 0,
+    "route": [
+      "fridge",
+      "prep",
+      "stove",
+      "pass"
+    ],
+    "ingredients": {
+      "pasta": 2,
+      "tomato": 1,
+      "sauce": 1,
+      "cheese": 1
+    }
+  },
+  "soup": {
+    "name": "Tomato Soup",
+    "icon": "🍲",
+    "asset": "res://assets/food/soup.svg",
+    "unlock_cost": 0,
+    "route": [
+      "fridge",
+      "prep",
+      "stove",
+      "pass"
+    ],
+    "ingredients": {
+      "tomato": 2,
+      "broth": 1,
+      "milk": 1
+    }
+  },
+  "toast": {
+    "name": "Chef Toast",
+    "icon": "🥪",
+    "asset": "res://assets/food/toast.svg",
+    "unlock_cost": 80,
+    "route": [
+      "fridge",
+      "prep",
+      "stove",
+      "pass"
+    ],
+    "ingredients": {
+      "bread": 2,
+      "cheese": 1,
+      "tomato": 1
+    }
+  },
+  "pizza": {
+    "name": "Garden Pizza",
+    "icon": "🍕",
+    "asset": "res://assets/food/pizza.svg",
+    "unlock_cost": 160,
+    "route": [
+      "fridge",
+      "prep",
+      "oven",
+      "pass"
+    ],
+    "ingredients": {
+      "flour": 2,
+      "cheese": 2,
+      "tomato": 2,
+      "sauce": 1
+    }
+  },
+  "chicken": {
+    "name": "Roast Chicken",
+    "icon": "🍗",
+    "asset": "res://assets/food/chicken.svg",
+    "unlock_cost": 130,
+    "route": [
+      "fridge",
+      "prep",
+      "stove",
+      "pass"
+    ],
+    "ingredients": {
+      "chicken": 2,
+      "greens": 1,
+      "sauce": 1
+    }
+  },
+  "waffle": {
+    "name": "Bistro Waffle",
+    "icon": "🧇",
+    "asset": "res://assets/food/waffle.svg",
+    "unlock_cost": 100,
+    "route": [
+      "fridge",
+      "prep",
+      "stove",
+      "pass"
+    ],
+    "ingredients": {
+      "flour": 2,
+      "egg": 1,
+      "milk": 1
+    }
+  }
+}
