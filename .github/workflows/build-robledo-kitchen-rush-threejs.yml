@@ -22,6 +22,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Apply reachable interaction-ring navigation correction
+        run: python juegos/robledo_kitchen_rush_3d/fix_v6_interaction_ring.py
+
       - name: Node 22
         uses: actions/setup-node@v4
         with:
