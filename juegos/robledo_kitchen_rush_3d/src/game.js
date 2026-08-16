@@ -2,381 +2,333 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 const COLORS = {
-  ink: 0x223038, cream: 0xfff4dc, floorA: 0xe7d6bb, floorB: 0xd8c7aa,
+  ink: 0x223038, cream: 0xfff4dc, floorA: 0xe5d7bd, floorB: 0xd8c8ad,
   red: 0xe34f51, blue: 0x4387db, yellow: 0xf2bd3f, green: 0x4d9a67,
   orange: 0xef7c38, wood: 0x9b6946, steel: 0xaab6b8, darkSteel: 0x66767a,
   wall: 0xf2e8d7, counter: 0xf7f0e5, trim: 0x41545b, water: 0x4fb7dc,
+  kitchenZone: 0x79b9bd, diningZone: 0xd9aa61,
+};
+
+const ROLE_META = {
+  chef: {
+    id: 'chef', name: 'Head Chef', icon: '🔥',
+    description: 'Cooks, fries and bakes 35% faster. Burn windows are more forgiving.',
+    cook: 1.35, prep: 1.0, wash: 1.0, move: 1.0, tip: 1.0, botBias: 'hot',
+  },
+  prep: {
+    id: 'prep', name: 'Prep Specialist', icon: '🔪',
+    description: 'Chops 55% faster and moves slightly faster while carrying ingredients.',
+    cook: 1.0, prep: 1.55, wash: 1.0, move: 1.06, tip: 1.0, botBias: 'prep',
+  },
+  service: {
+    id: 'service', name: 'Service Captain', icon: '🍽',
+    description: 'Moves 15% faster, washes 40% faster and earns 15% more service tips.',
+    cook: 1.0, prep: 1.0, wash: 1.4, move: 1.15, tip: 1.15, botBias: 'service',
+  },
 };
 
 const RECIPES = {
-  burger: {
-    id: 'burger', name: 'Rush Burger', icon: '🍔',
-    components: ['bun:raw', 'meat:cooked', 'tomato:chopped'],
-    steps: ['Take bun, meat and tomato', 'Chop tomato', 'Cook meat on stove', 'Place everything on a clean plate'],
-    color: '#e46f3d', price: 180,
-  },
-  salad: {
-    id: 'salad', name: 'Garden Salad', icon: '🥗',
-    components: ['lettuce:chopped', 'tomato:chopped'],
-    steps: ['Take lettuce and tomato', 'Chop both ingredients', 'Assemble on a clean plate'],
-    color: '#56a65f', price: 140,
-  },
-  fries: {
-    id: 'fries', name: 'Golden Fries', icon: '🍟',
-    components: ['potato:fried'],
-    steps: ['Take a potato', 'Chop potato', 'Cook it in the fryer', 'Plate before it burns'],
-    color: '#e8b23f', price: 150,
-  },
-  pizza: {
-    id: 'pizza', name: 'Mini Pizza', icon: '🍕',
-    components: ['dough:raw', 'tomato:chopped', 'cheese:raw'], baked: true,
-    steps: ['Take dough, tomato and cheese', 'Chop tomato', 'Assemble on a plate', 'Bake in oven until ready'],
-    color: '#d95945', price: 210,
-  },
-  grill: {
-    id: 'grill', name: 'Grill Plate', icon: '🍗',
-    components: ['meat:cooked', 'lettuce:chopped'],
-    steps: ['Take meat and lettuce', 'Cook meat on stove', 'Chop lettuce', 'Assemble on a clean plate'],
-    color: '#8b563e', price: 200,
-  },
-  toast: {
-    id: 'toast', name: 'Cheesy Toast', icon: '🥪',
-    components: ['bun:raw', 'cheese:raw'], baked: true,
-    steps: ['Take bun and cheese', 'Assemble on a plate', 'Bake until golden'],
-    color: '#e2a037', price: 165,
-  },
+  burger: { id:'burger', name:'Rush Burger', icon:'🍔', components:['bun:raw','meat:cooked','tomato:chopped'], color:'#e46f3d', price:180, steps:['Take bun, meat and tomato','Chop tomato','Cook meat on stove','Assemble on a clean plate'] },
+  salad: { id:'salad', name:'Garden Salad', icon:'🥗', components:['lettuce:chopped','tomato:chopped'], color:'#56a65f', price:140, steps:['Take lettuce and tomato','Chop both ingredients','Assemble on a clean plate'] },
+  fries: { id:'fries', name:'Golden Fries', icon:'🍟', components:['potato:fried'], color:'#e8b23f', price:150, steps:['Take potato','Chop potato','Fry until golden','Plate before it burns'] },
+  pizza: { id:'pizza', name:'Mini Pizza', icon:'🍕', components:['dough:raw','tomato:chopped','cheese:raw'], baked:true, color:'#d95945', price:210, steps:['Take dough, tomato and cheese','Chop tomato','Assemble on a clean plate','Bake until ready'] },
+  grill: { id:'grill', name:'Grill Plate', icon:'🍗', components:['meat:cooked','lettuce:chopped'], color:'#8b563e', price:200, steps:['Take meat and lettuce','Cook meat','Chop lettuce','Assemble on a clean plate'] },
+  toast: { id:'toast', name:'Cheesy Toast', icon:'🥪', components:['bun:raw','cheese:raw'], baked:true, color:'#e2a037', price:165, steps:['Take bun and cheese','Assemble on a clean plate','Bake until golden'] },
 };
 
 const INGREDIENT_META = {
-  tomato: { name: 'Tomato', emoji: '🍅', choppable: true },
-  lettuce: { name: 'Lettuce', emoji: '🥬', choppable: true },
-  meat: { name: 'Meat', emoji: '🥩', cook: 'stove' },
-  potato: { name: 'Potato', emoji: '🥔', choppable: true, cook: 'fryer' },
-  dough: { name: 'Dough', emoji: '🫓' },
-  cheese: { name: 'Cheese', emoji: '🧀' },
-  bun: { name: 'Bun', emoji: '🥯' },
+  tomato:{name:'Tomato',emoji:'🍅',choppable:true}, lettuce:{name:'Lettuce',emoji:'🥬',choppable:true},
+  meat:{name:'Meat',emoji:'🥩',cook:'stove'}, potato:{name:'Potato',emoji:'🥔',choppable:true,cook:'fryer'},
+  dough:{name:'Dough',emoji:'🫓'}, cheese:{name:'Cheese',emoji:'🧀'}, bun:{name:'Bun',emoji:'🥯'},
 };
 
 const LEVELS = [
-  { id: 0, name: 'Bistro Basics', duration: 180, spawnEvery: 17, patience: 65, seats: 4, recipes: ['burger', 'salad', 'fries'], thresholds: [800, 1450, 2200], tint: 0xb9d8c5 },
-  { id: 1, name: 'Split Service', duration: 210, spawnEvery: 14, patience: 58, seats: 5, recipes: ['burger', 'salad', 'fries', 'toast'], thresholds: [1100, 1900, 2900], tint: 0xc9d6e8 },
-  { id: 2, name: 'Dinner Rush', duration: 240, spawnEvery: 11, patience: 52, seats: 6, recipes: ['burger', 'salad', 'fries', 'pizza', 'grill', 'toast'], thresholds: [1500, 2600, 3900], tint: 0xe5c9bd },
+  {id:0,name:'Bistro Basics',duration:210,spawnEvery:18,patience:76,thresholds:[950,1700,2600],tint:0xb9d8c5,budget:860},
+  {id:1,name:'Split Service',duration:240,spawnEvery:14,patience:66,thresholds:[1300,2250,3400],tint:0xc9d6e8,budget:900},
+  {id:2,name:'Dinner Rush',duration:270,spawnEvery:11,patience:58,thresholds:[1800,3100,4550],tint:0xe5c9bd,budget:950},
 ];
+
+const CUSTOMER_TYPES = [
+  {id:'student',label:'STUDENTS',patience:1.12,tip:.9,color:0x4d70ae},
+  {id:'family',label:'FAMILY',patience:1.25,tip:1.0,color:0x7a4f9e},
+  {id:'quick',label:'QUICK LUNCH',patience:.82,tip:1.15,color:0xc6604b},
+  {id:'foodie',label:'FOODIE',patience:1.0,tip:1.35,color:0x3d8b75},
+];
+
+const FIXTURES = {
+  table:{id:'table',label:'Dining Table',icon:'🍽',cost:48,zone:'dining',w:2.5,d:2.5},
+  counter:{id:'counter',label:'Counter',icon:'▰',cost:22,zone:'kitchen',w:1.45,d:1.2},
+  prep:{id:'prep',label:'Prep Board',icon:'🔪',cost:38,zone:'kitchen',w:1.45,d:1.2},
+  stove:{id:'stove',label:'Stove',icon:'🔥',cost:48,zone:'kitchen',w:1.45,d:1.2},
+  fryer:{id:'fryer',label:'Fryer',icon:'🍟',cost:52,zone:'kitchen',w:1.45,d:1.2},
+  oven:{id:'oven',label:'Oven',icon:'♨️',cost:62,zone:'kitchen',w:1.45,d:1.2},
+  sink:{id:'sink',label:'Sink',icon:'🚿',cost:34,zone:'kitchen',w:1.45,d:1.2},
+  plate:{id:'plate',label:'Plate Rack',icon:'🥣',cost:24,zone:'kitchen',w:1.45,d:1.2},
+  trash:{id:'trash',label:'Trash',icon:'🗑',cost:16,zone:'kitchen',w:1.45,d:1.2},
+  tomato:{id:'tomato',label:'Tomato Crate',icon:'🍅',cost:16,zone:'kitchen',w:1.25,d:1.05,kind:'tomato'},
+  lettuce:{id:'lettuce',label:'Lettuce Crate',icon:'🥬',cost:16,zone:'kitchen',w:1.25,d:1.05,kind:'lettuce'},
+  meat:{id:'meat',label:'Meat Crate',icon:'🥩',cost:18,zone:'kitchen',w:1.25,d:1.05,kind:'meat'},
+  potato:{id:'potato',label:'Potato Crate',icon:'🥔',cost:16,zone:'kitchen',w:1.25,d:1.05,kind:'potato'},
+  bun:{id:'bun',label:'Bun Crate',icon:'🥯',cost:15,zone:'kitchen',w:1.25,d:1.05,kind:'bun'},
+  cheese:{id:'cheese',label:'Cheese Crate',icon:'🧀',cost:17,zone:'kitchen',w:1.25,d:1.05,kind:'cheese'},
+  dough:{id:'dough',label:'Dough Crate',icon:'🫓',cost:16,zone:'kitchen',w:1.25,d:1.05,kind:'dough'},
+};
 
 const GEOMETRY_QUESTIONS = [
-  { q: 'A rectangle measures 8 m by 5 m. What is its area?', a: ['13 m²', '26 m²', '40 m²', '80 m²'], c: 2 },
-  { q: 'A square has side length 6 cm. What is its perimeter?', a: ['12 cm', '24 cm', '36 cm', '18 cm'], c: 1 },
-  { q: 'A triangle has base 10 cm and height 7 cm. What is its area?', a: ['17 cm²', '35 cm²', '70 cm²', '140 cm²'], c: 1 },
-  { q: 'A circle has radius 4 cm. Which expression gives its area?', a: ['4π', '8π', '16π', '32π'], c: 2 },
-  { q: 'A trapezoid has bases 6 cm and 10 cm and height 4 cm. Its area is…', a: ['16 cm²', '24 cm²', '32 cm²', '64 cm²'], c: 2 },
+  {q:'A rectangle measures 8 m by 5 m. What is its area?',a:['13 m²','26 m²','40 m²','80 m²'],c:2},
+  {q:'A square has side length 6 cm. What is its perimeter?',a:['12 cm','24 cm','36 cm','18 cm'],c:1},
+  {q:'A triangle has base 10 cm and height 7 cm. What is its area?',a:['17 cm²','35 cm²','70 cm²','140 cm²'],c:1},
+  {q:'A circle has radius 4 cm. Which expression gives its area?',a:['4π','8π','16π','32π'],c:2},
+  {q:'A trapezoid has bases 6 cm and 10 cm and height 4 cm. Its area is…',a:['16 cm²','24 cm²','32 cm²','64 cm²'],c:2},
 ];
 
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const lerp = (a, b, t) => a + (b - a) * t;
-const dist2 = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
-const signature = (item) => `${item.kind}:${item.state}`;
-const fmtTime = (s) => `${String(Math.max(0, Math.floor(s / 60))).padStart(2, '0')}:${String(Math.max(0, Math.floor(s % 60))).padStart(2, '0')}`;
+const TUTORIAL = [
+  {title:'One kitchen, one team',visual:'👨‍🍳 👩‍🍳 🧑‍🍳',body:'Choose 1, 2 or 3 human players. Every unused crew slot becomes an autonomous bot, so the restaurant always operates with three crew members.'},
+  {title:'Move, interact and throw',visual:'keys',body:'Move to a station and hold your Interact button to work. Throw transfers ingredients quickly across the room. Dash is useful, but collisions can make you drop time and positioning.'},
+  {title:'Read the order tickets',visual:'🧾 ⏱️ 🍔',body:'Customers physically enter, sit, browse the menu and order. Each ticket has a patience timer. Fast complete tables produce larger tips and preserve your combo.'},
+  {title:'Food has real states',visual:'🥔 → 🔪 → 🍟',body:'Ingredients are physical objects. Chop what needs preparation, cook or fry the correct items, assemble them on clean plates, and bake recipes that require the oven.'},
+  {title:'Design before service',visual:'🧱 🪑 🔥',body:'Before opening, you receive a budget and an empty floor. Place tables, ingredient crates and equipment. The game checks the minimum requirements generated from your selected menu.'},
+  {title:'Roles change the strategy',visual:'🔥  🔪  🍽',body:'Head Chef accelerates hot stations, Prep Specialist dominates chopping, and Service Captain moves and washes faster while earning better tips. Roles affect bots too.'},
+  {title:'Camera and teamwork',visual:'🎥 ↻',body:'Right-drag the mouse to orbit, use the wheel to zoom, press C to cycle camera presets and Home to reset. Dynamic mode follows the crew centroid and adds a subtle gyroscope lean.'},
+];
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const dist2=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+const signature=(item)=>`${item.kind}:${item.state}`;
+const fmtTime=(s)=>`${String(Math.max(0,Math.floor(s/60))).padStart(2,'0')}:${String(Math.max(0,Math.floor(s%60))).padStart(2,'0')}`;
+const snap=(v,g=.5)=>Math.round(v/g)*g;
 
 class Sfx {
-  constructor() { this.ctx = null; }
-  tone(freq = 440, dur = .07, type = 'sine', gain = .045) {
-    try {
-      if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
-      o.type = type; o.frequency.value = freq; g.gain.value = gain;
-      o.connect(g); g.connect(this.ctx.destination); o.start();
-      g.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + dur);
-      o.stop(this.ctx.currentTime + dur);
-    } catch (_) {}
-  }
-  pickup() { this.tone(520, .06, 'triangle'); }
-  chop() { this.tone(200, .035, 'square', .028); }
-  cook() { this.tone(360, .05, 'sine', .025); }
-  serve() { this.tone(620, .08, 'triangle'); setTimeout(() => this.tone(820, .1, 'triangle'), 70); }
-  bad() { this.tone(130, .16, 'sawtooth', .04); }
-  order() { this.tone(760, .05, 'square', .025); setTimeout(() => this.tone(920, .06, 'square', .025), 55); }
+  constructor(){this.ctx=null;}
+  tone(freq=440,dur=.07,type='sine',gain=.04){try{if(!this.ctx)this.ctx=new(window.AudioContext||window.webkitAudioContext)();const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type=type;o.frequency.value=freq;g.gain.value=gain;o.connect(g);g.connect(this.ctx.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,this.ctx.currentTime+dur);o.stop(this.ctx.currentTime+dur);}catch(_){}}
+  pickup(){this.tone(520,.06,'triangle');} chop(){this.tone(205,.035,'square',.025);} cook(){this.tone(350,.05,'sine',.022);} serve(){this.tone(620,.08,'triangle');setTimeout(()=>this.tone(830,.1,'triangle'),65);} bad(){this.tone(130,.16,'sawtooth',.04);} order(){this.tone(760,.05,'square',.024);setTimeout(()=>this.tone(930,.06,'square',.024),50);} build(){this.tone(410,.045,'triangle',.02);}
 }
 
 class InputManager {
-  constructor() {
-    this.keys = new Set();
-    this.prevKeys = new Set();
-    this.layouts = [
-      { up: 'KeyW', down: 'KeyS', left: 'KeyA', right: 'KeyD', interact: 'KeyE', throw: 'KeyQ', dash: 'ShiftLeft' },
-      { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight', interact: 'Enter', throw: 'Slash', dash: 'ShiftRight' },
-      { up: 'KeyI', down: 'KeyK', left: 'KeyJ', right: 'KeyL', interact: 'KeyO', throw: 'KeyU', dash: 'KeyP' },
+  constructor(){
+    this.keys=new Set();
+    this.layouts=[
+      {up:'KeyW',down:'KeyS',left:'KeyA',right:'KeyD',interact:'KeyE',throw:'KeyQ',dash:'ShiftLeft'},
+      {up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight',interact:'Enter',throw:'Slash',dash:'ShiftRight'},
+      {up:'KeyI',down:'KeyK',left:'KeyJ',right:'KeyL',interact:'KeyO',throw:'KeyU',dash:'KeyP'},
     ];
-    window.addEventListener('keydown', e => { this.keys.add(e.code); if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault(); });
-    window.addEventListener('keyup', e => this.keys.delete(e.code));
+    window.addEventListener('keydown',e=>{this.keys.add(e.code);if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();});
+    window.addEventListener('keyup',e=>this.keys.delete(e.code));
   }
-  pollGamepad(index) {
-    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-    const p = pads[index]; if (!p) return null;
-    const dz = .22; const ax = Math.abs(p.axes[0] || 0) > dz ? p.axes[0] : 0; const ay = Math.abs(p.axes[1] || 0) > dz ? p.axes[1] : 0;
-    return { x: ax, y: ay, interact: !!p.buttons[0]?.pressed, throw: !!p.buttons[2]?.pressed, dash: !!p.buttons[1]?.pressed };
-  }
-  state(i) {
-    const l = this.layouts[i]; const gp = this.pollGamepad(i);
-    let x = (this.keys.has(l.right) ? 1 : 0) - (this.keys.has(l.left) ? 1 : 0);
-    let y = (this.keys.has(l.down) ? 1 : 0) - (this.keys.has(l.up) ? 1 : 0);
-    if (gp && (Math.abs(gp.x) + Math.abs(gp.y) > .05)) { x = gp.x; y = gp.y; }
-    const interact = this.keys.has(l.interact) || !!gp?.interact;
-    const throwBtn = this.keys.has(l.throw) || !!gp?.throw;
-    const dash = this.keys.has(l.dash) || !!gp?.dash;
-    return { x, y, interact, throw: throwBtn, dash };
-  }
-  endFrame() { this.prevKeys = new Set(this.keys); }
+  pollGamepad(index){const pads=navigator.getGamepads?navigator.getGamepads():[];const p=pads[index];if(!p)return null;const dz=.2,ax=Math.abs(p.axes[0]||0)>dz?p.axes[0]:0,ay=Math.abs(p.axes[1]||0)>dz?p.axes[1]:0;return{x:ax,y:ay,interact:!!p.buttons[0]?.pressed,throw:!!p.buttons[2]?.pressed,dash:!!p.buttons[1]?.pressed};}
+  state(i){const l=this.layouts[i],gp=this.pollGamepad(i);let x=(this.keys.has(l.right)?1:0)-(this.keys.has(l.left)?1:0),y=(this.keys.has(l.down)?1:0)-(this.keys.has(l.up)?1:0);if(gp&&(Math.abs(gp.x)+Math.abs(gp.y)>.05)){x=gp.x;y=gp.y;}return{x,y,interact:this.keys.has(l.interact)||!!gp?.interact,throw:this.keys.has(l.throw)||!!gp?.throw,dash:this.keys.has(l.dash)||!!gp?.dash};}
 }
 
-function mat(color, rough = .82, metal = 0) {
-  return new THREE.MeshStandardMaterial({ color, roughness: rough, metalness: metal });
-}
-function mesh(geo, material, x = 0, y = 0, z = 0) {
-  const m = new THREE.Mesh(geo, material); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true; return m;
-}
-function rounded(w, h, d, r = .12, s = 3) { return new RoundedBoxGeometry(w, h, d, s, r); }
-
-function makeLabel(text, bg = '#27343b', fg = '#fff') {
-  const c = document.createElement('canvas'); c.width = 320; c.height = 86; const x = c.getContext('2d');
-  x.fillStyle = bg; x.beginPath(); x.roundRect(5, 5, 310, 76, 18); x.fill();
-  x.fillStyle = fg; x.font = '900 30px system-ui'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, 160, 43);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true })); sp.scale.set(2.3, .62, 1); return sp;
-}
+function mat(color,rough=.78,metal=0,emissive=0){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal,emissive,emissiveIntensity:emissive?0.22:0});}
+function mesh(geo,material,x=0,y=0,z=0){const m=new THREE.Mesh(geo,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;return m;}
+function rounded(w,h,d,r=.1,s=3){return new RoundedBoxGeometry(w,h,d,s,r);}
+function makeLabel(text,bg='#27343b',fg='#fff',wide=360){const c=document.createElement('canvas');c.width=wide;c.height=88;const x=c.getContext('2d');x.fillStyle=bg;x.beginPath();x.roundRect(5,5,wide-10,78,18);x.fill();x.fillStyle=fg;x.font='900 29px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(text,wide/2,44);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthTest:false}));sp.scale.set(2.55,.63,1);return sp;}
 
 class AssetFactory {
-  constructor() {
-    this.skin = [0xf2bd95, 0xd99a73, 0x9a624a, 0xe7ae84, 0x7a4934];
+  constructor(){this.skin=[0xf2bd95,0xd99a73,0x9a624a,0xe7ae84,0x7a4934,0xc98464];this.hair=[0x2c211d,0x543720,0x16191b,0x76543c,0xa06e36];}
+  chef(color,role='chef',index=0,isBot=false){
+    const g=new THREE.Group(),skin=this.skin[index%this.skin.length],dark=mat(0x26343a),skinMat=mat(skin),white=mat(0xfffdf6),accent=mat(color);
+    const ring=mesh(new THREE.TorusGeometry(.47,.055,8,28),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.75}),0,.045,0);ring.rotation.x=Math.PI/2;g.add(ring);
+    const torso=mesh(rounded(.65,.82,.43,.18),white,0,.92,0);g.add(torso);
+    const sideA=mesh(rounded(.14,.72,.445,.06),accent,-.26,.92,0);const sideB=sideA.clone();sideB.position.x=.26;g.add(sideA,sideB);
+    const apron=mesh(rounded(.44,.53,.035,.05),mat(0xf3eee4),0,.83,.235);g.add(apron);
+    const belt=mesh(rounded(.5,.07,.05,.025),dark,0,.67,.245);g.add(belt);
+    for(const y of[.93,1.08])g.add(mesh(new THREE.SphereGeometry(.025,8,8),dark,0,y,.235));
+    const neck=mesh(new THREE.CylinderGeometry(.09,.1,.12,12),skinMat,0,1.36,0);g.add(neck);
+    const head=mesh(new THREE.SphereGeometry(.3,22,16),skinMat,0,1.55,0);head.scale.y=1.05;g.add(head);
+    const nose=mesh(new THREE.SphereGeometry(.045,10,8),skinMat,0,1.53,.286);nose.scale.set(.8,1,1.15);g.add(nose);
+    const eyeMat=new THREE.MeshBasicMaterial({color:0x20272a});for(const x of[-.105,.105]){g.add(mesh(new THREE.SphereGeometry(.027,8,8),eyeMat,x,1.59,.272));const brow=mesh(rounded(.09,.018,.015,.006),dark,x,1.67,.275);brow.rotation.z=x>0?.08:-.08;g.add(brow);}
+    const hair=mesh(new THREE.SphereGeometry(.305,18,12),mat(this.hair[index%this.hair.length]),0,1.69,-.02);hair.scale.y=.52;g.add(hair);
+    const hatBase=mesh(new THREE.CylinderGeometry(.31,.31,.17,22),white,0,1.83,0);g.add(hatBase);for(const x of[-.18,0,.18]){const puff=mesh(new THREE.SphereGeometry(.18,14,10),white,x,1.98,0);puff.scale.y=.8;g.add(puff);}
+    const sleeveMat=white;const leftSleeve=mesh(new THREE.CapsuleGeometry(.11,.26,5,9),sleeveMat,-.43,1.02,0);const rightSleeve=leftSleeve.clone();rightSleeve.position.x=.43;g.add(leftSleeve,rightSleeve);
+    const leftHand=mesh(new THREE.SphereGeometry(.105,12,10),skinMat,-.43,.78,.02);const rightHand=leftHand.clone();rightHand.position.x=.43;g.add(leftHand,rightHand);
+    const leftLeg=mesh(new THREE.CapsuleGeometry(.105,.37,5,9),dark,-.18,.32,0);const rightLeg=leftLeg.clone();rightLeg.position.x=.18;g.add(leftLeg,rightLeg);
+    const shoeL=mesh(rounded(.22,.12,.34,.07),mat(0x151b1e),-.18,.075,.08);const shoeR=shoeL.clone();shoeR.position.x=.18;g.add(shoeL,shoeR);
+    const roleLabel=makeLabel(`${isBot?'BOT • ':''}${ROLE_META[role].icon} ${ROLE_META[role].name.toUpperCase()}`,isBot?'#31505b':'#27343b','#fff',520);roleLabel.position.set(0,2.43,0);roleLabel.scale.set(2.45,.41,1);g.add(roleLabel);
+    if(role==='chef'){const pan=mesh(new THREE.CylinderGeometry(.12,.12,.035,16),mat(0x3b464a,.3,.7),.53,.82,.03);pan.rotation.z=Math.PI/2;g.add(pan);}else if(role==='prep'){const knife=mesh(rounded(.28,.025,.055,.01),mat(0xaeb9bc,.25,.7),.52,.83,.04);knife.rotation.z=-.35;g.add(knife);}else{const towel=mesh(rounded(.16,.25,.025,.03),mat(0xf2c85c),.48,.83,.03);g.add(towel);}
+    g.userData.limbs={leftSleeve,rightSleeve,leftLeg,rightLeg,leftHand,rightHand};g.scale.setScalar(1.14);return g;
   }
-  chef(color) {
-    const g = new THREE.Group();
-    const body = mesh(rounded(.58,.78,.38,.17), mat(color), 0,.82,0); g.add(body);
-    const apron = mesh(rounded(.4,.48,.04,.06), mat(0xf9f5ec), 0,.83,.215); g.add(apron);
-    const head = mesh(new THREE.SphereGeometry(.27,18,14), mat(0xe0a77f), 0,1.41,0); g.add(head);
-    const hatBase = mesh(new THREE.CylinderGeometry(.3,.3,.16,20), mat(0xffffff), 0,1.66,0); g.add(hatBase);
-    const hatTop = mesh(new THREE.SphereGeometry(.28,16,10), mat(0xffffff), 0,1.79,0); hatTop.scale.y=.65; g.add(hatTop);
-    const eyeMat = new THREE.MeshBasicMaterial({color:0x1e2529});
-    for (const x of [-.09,.09]) g.add(mesh(new THREE.SphereGeometry(.025,8,8), eyeMat,x,1.44,.252));
-    const armMat = mat(0xe0a77f); const legMat = mat(0x27343a);
-    const leftArm = mesh(new THREE.CapsuleGeometry(.085,.34,5,8), armMat,-.39,.9,0); const rightArm=leftArm.clone(); rightArm.position.x=.39; g.add(leftArm,rightArm);
-    const leftLeg = mesh(new THREE.CapsuleGeometry(.09,.35,5,8), legMat,-.17,.3,0); const rightLeg=leftLeg.clone(); rightLeg.position.x=.17; g.add(leftLeg,rightLeg);
-    g.userData.limbs = { leftArm, rightArm, leftLeg, rightLeg }; return g;
+  customer(index=0,type=CUSTOMER_TYPES[0]){
+    const g=new THREE.Group(),skin=this.skin[index%this.skin.length],skinMat=mat(skin),shirt=mat(type.color),pants=mat([0x293742,0x4b443e,0x344b5a][index%3]);
+    const torso=mesh(rounded(.56,.75,.38,.17),shirt,0,.78,0);g.add(torso);const collar=mesh(rounded(.25,.08,.04,.03),mat(0xf5eee3),0,1.08,.21);g.add(collar);
+    const head=mesh(new THREE.SphereGeometry(.265,20,14),skinMat,0,1.34,0);g.add(head);const nose=mesh(new THREE.SphereGeometry(.037,8,7),skinMat,0,1.33,.255);g.add(nose);
+    const hairStyle=index%3;if(hairStyle===0){const h=mesh(new THREE.SphereGeometry(.27,16,11),mat(this.hair[index%this.hair.length]),0,1.46,-.03);h.scale.y=.58;g.add(h);}else if(hairStyle===1){for(const x of[-.14,0,.14])g.add(mesh(new THREE.SphereGeometry(.13,12,8),mat(this.hair[index%this.hair.length]),x,1.49,-.04));}else{const h=mesh(rounded(.52,.12,.37,.08),mat(this.hair[index%this.hair.length]),0,1.48,-.03);g.add(h);}
+    const eyeMat=new THREE.MeshBasicMaterial({color:0x20272a});for(const x of[-.085,.085])g.add(mesh(new THREE.SphereGeometry(.02,7,7),eyeMat,x,1.36,.244));
+    if(index%4===0){const glassMat=mat(0x26363d,.3,.55);for(const x of[-.09,.09]){const rim=mesh(new THREE.TorusGeometry(.07,.012,6,16),glassMat,x,1.36,.258);rim.rotation.y=0;g.add(rim);}g.add(mesh(rounded(.08,.015,.012,.005),glassMat,0,1.36,.26));}
+    const lArm=mesh(new THREE.CapsuleGeometry(.075,.29,4,8),skinMat,-.35,.78,0);const rArm=lArm.clone();rArm.position.x=.35;g.add(lArm,rArm);const lLeg=mesh(new THREE.CapsuleGeometry(.08,.31,4,8),pants,-.14,.24,0);const rLeg=lLeg.clone();rLeg.position.x=.14;g.add(lLeg,rLeg);
+    if(type.id==='student'){const bag=mesh(rounded(.22,.32,.13,.05),mat(0xd3a33e),-.31,.69,-.18);g.add(bag);}if(type.id==='foodie'){const scarf=mesh(new THREE.TorusGeometry(.18,.035,7,18),mat(0xd96655),0,1.13,0);scarf.rotation.x=Math.PI/2;g.add(scarf);}
+    g.userData.limbs={lArm,rArm,lLeg,rLeg};g.scale.setScalar(1.07);return g;
   }
-  customer(index = 0) {
-    const palette = [0x7a4f9e,0x3d8b75,0xc6604b,0x4d70ae,0xc4922c,0x6f7681];
-    const g = new THREE.Group(); const skin = this.skin[index % this.skin.length];
-    const body = mesh(rounded(.5,.72,.34,.15), mat(palette[index%palette.length]),0,.72,0); g.add(body);
-    const head = mesh(new THREE.SphereGeometry(.25,16,12),mat(skin),0,1.27,0);g.add(head);
-    const hair = mesh(new THREE.SphereGeometry(.255,14,10),mat([0x2e211d,0x553620,0x17191b,0x76543c][index%4]),0,1.36,-.03); hair.scale.y=.65; g.add(hair);
-    const eyeMat = new THREE.MeshBasicMaterial({color:0x20272a});
-    for (const x of [-.08,.08]) g.add(mesh(new THREE.SphereGeometry(.02,6,6),eyeMat,x,1.29,.235));
-    const legMat=mat(0x2f3941); const l=mesh(new THREE.CapsuleGeometry(.07,.28,4,7),legMat,-.14,.22,0); const r=l.clone();r.position.x=.14;g.add(l,r); return g;
+  ingredient(kind,state='raw'){
+    const g=new THREE.Group();let m;
+    if(kind==='tomato'){m=mesh(new THREE.SphereGeometry(.2,18,12),mat(state==='burnt'?0x291d19:state==='chopped'?0xef5b4e:0xe4433e),0,.18,0);const stem=mesh(new THREE.ConeGeometry(.08,.12,7),mat(0x4f8b42),0,.34,0);g.add(stem);}
+    if(kind==='lettuce'){m=new THREE.Group();for(let i=0;i<7;i++){const p=mesh(new THREE.SphereGeometry(.13,12,8),mat(state==='burnt'?0x253126:0x58a85d),(i%3-1)*.12,.12+Math.floor(i/3)*.05,(i%2-.5)*.13);p.scale.y=.72;m.add(p);}}
+    if(kind==='meat'){m=mesh(new THREE.CylinderGeometry(.2,.2,.1,20),mat(state==='burnt'?0x1f1714:state==='cooked'?0x70402d:0xb65a54),0,.1,0);if(state==='cooked'){for(const z of[-.07,.07]){const line=mesh(rounded(.28,.012,.025,.006),mat(0x3b231c),0,.16,z);line.rotation.y=.35;g.add(line);}}}
+    if(kind==='potato'){m=mesh(new THREE.SphereGeometry(.18,16,10),mat(state==='burnt'?0x2c2215:state==='fried'?0xe8b13d:state==='chopped'?0xd7ac67:0xb98850),0,.15,0);m.scale.set(1.25,.8,.95);}
+    if(kind==='dough'){m=mesh(new THREE.CylinderGeometry(.23,.23,.07,22),mat(0xe5c596),0,.075,0);}
+    if(kind==='cheese'){m=mesh(rounded(.3,.09,.24,.03),mat(0xf1c83a),0,.09,0);for(let i=0;i<3;i++)g.add(mesh(new THREE.SphereGeometry(.025,7,6),mat(0xc99f2a),-.08+i*.08,.14,.1));}
+    if(kind==='bun'){m=mesh(new THREE.SphereGeometry(.22,18,11),mat(0xd89a4b),0,.15,0);m.scale.y=.58;for(const x of[-.09,0,.09])g.add(mesh(new THREE.SphereGeometry(.012,6,5),mat(0xf2d7a0),x,.25,.16));}
+    if(m)g.add(m);g.scale.setScalar(1.16);return g;
   }
-  ingredient(kind, state='raw') {
-    const g = new THREE.Group(); let m;
-    if (kind==='tomato') m=mesh(new THREE.SphereGeometry(.18,16,12),mat(state==='burnt'?0x2b211d:state==='chopped'?0xf05b4f:0xe4433e),0,.18,0);
-    if (kind==='lettuce') { m=new THREE.Group(); for(let i=0;i<5;i++){const p=mesh(new THREE.SphereGeometry(.13,10,8),mat(state==='burnt'?0x283028:0x58a85d),(i%2-.5)*.15,.13+Math.floor(i/2)*.04,(i%3-1)*.09);p.scale.y=.75;m.add(p);} }
-    if (kind==='meat') { m=mesh(new THREE.CylinderGeometry(.18,.18,.09,18),mat(state==='burnt'?0x1f1714:state==='cooked'?0x6b3d2c:0xb65a54),0,.09,0); }
-    if (kind==='potato') { m=mesh(new THREE.SphereGeometry(.16,14,10),mat(state==='burnt'?0x2c2215:state==='fried'?0xe8b13d:state==='chopped'?0xd7ac67:0xb98850),0,.15,0); m.scale.set(1.2,.8,.9); }
-    if (kind==='dough') { m=mesh(new THREE.CylinderGeometry(.2,.2,.06,20),mat(0xe5c596),0,.07,0); }
-    if (kind==='cheese') { m=mesh(rounded(.28,.08,.22,.03),mat(0xf1c83a),0,.09,0); }
-    if (kind==='bun') { m=mesh(new THREE.SphereGeometry(.2,16,10),mat(0xd89a4b),0,.14,0); m.scale.y=.58; }
-    g.add(m); return g;
+  plate(dirty=false){const g=new THREE.Group(),p=mesh(new THREE.CylinderGeometry(.34,.39,.06,30),mat(dirty?0xaea391:0xf9f8ef,.42),0,.055,0);g.add(p);const rim=mesh(new THREE.TorusGeometry(.31,.025,8,28),mat(dirty?0x998d7d:0xe4e5df),0,.095,0);rim.rotation.x=Math.PI/2;g.add(rim);if(dirty)for(let i=0;i<4;i++)g.add(mesh(new THREE.SphereGeometry(.045,8,6),mat(0x7a4d34),-.14+i*.09,.11,(i%2)*.1-.05));return g;}
+  station(type,accent=COLORS.orange){
+    const g=new THREE.Group(),base=mesh(rounded(1.35,.9,1.12,.13),mat(COLORS.counter),0,.45,0),edge=mesh(rounded(1.43,.13,1.2,.04),mat(COLORS.trim),0,.93,0);g.add(base,edge);
+    const drawer=mesh(rounded(.78,.28,.04,.03),mat(0xd7d3c9),0,.45,.58);g.add(drawer);for(const x of[-.22,.22])g.add(mesh(new THREE.CylinderGeometry(.025,.025,.08,10),mat(0x66767a,.3,.7),x,.45,.62));
+    if(type==='prep'){g.add(mesh(rounded(.88,.07,.62,.04),mat(0xc79262),0,1.03,0));const knife=mesh(rounded(.52,.035,.075,.02),mat(0xb7c0c2,.24,.7),0,1.085,.04);knife.rotation.y=.38;g.add(knife);}
+    if(type==='stove'){for(const x of[-.31,.31]){const ring=mesh(new THREE.TorusGeometry(.21,.035,8,20),mat(0x20282b,.3,.8),x,1.03,0);ring.rotation.x=Math.PI/2;g.add(ring);}const back=mesh(rounded(1.0,.36,.08,.04),mat(0x5c696d,.28,.5),0,1.14,-.52);g.add(back);}
+    if(type==='fryer'){for(const x of[-.26,.26]){const bin=mesh(rounded(.42,.24,.56,.05),mat(0x6f7c80,.25,.7),x,1.02,0);g.add(bin);const oil=mesh(rounded(.34,.028,.43,.02),mat(0xd5a236,.5),x,1.15,0);g.add(oil);}}
+    if(type==='oven'){const oven=mesh(rounded(.92,.66,.13,.07),mat(0x3f4d52,.35,.45),0,.5,.6);g.add(oven);const glass=mesh(rounded(.68,.38,.03,.04),mat(0x21333c,.2,.5),0,.52,.69);g.add(glass);for(const x of[-.24,0,.24])g.add(mesh(new THREE.SphereGeometry(.04,8,8),mat(0x20282b),x,.88,.68));}
+    if(type==='sink'){const basin=mesh(rounded(.78,.2,.6,.06),mat(0x8fa3a7,.22,.75),0,1.02,0);g.add(basin);const water=mesh(rounded(.65,.025,.47,.02),mat(COLORS.water,.25),0,1.13,0);g.add(water);const faucet=mesh(new THREE.TorusGeometry(.2,.035,8,18,Math.PI),mat(0xaab6b8,.2,.8),0,1.32,-.1);faucet.rotation.z=Math.PI/2;g.add(faucet);}
+    if(type==='plate'){for(let i=0;i<5;i++){const p=this.plate(false);p.position.set(0,1.01+i*.05,0);p.scale.set(.8,.8,.8);g.add(p);}}
+    if(type==='trash'){const can=mesh(new THREE.CylinderGeometry(.38,.32,.66,20),mat(0x59676a,.55,.25),0,.53,0);g.add(can);const lid=mesh(new THREE.CylinderGeometry(.4,.4,.09,20),mat(0x39484c),0,.9,0);g.add(lid);}
+    const stripe=mesh(rounded(1.08,.085,.05,.03),mat(accent),0,.58,.605);g.add(stripe);g.scale.setScalar(1.08);return g;
   }
-  plate(dirty=false) {
-    const g=new THREE.Group(); const p=mesh(new THREE.CylinderGeometry(.32,.36,.055,28),mat(dirty?0xaea391:0xf9f8ef,.45),0,.05,0);g.add(p);
-    if(dirty){for(let i=0;i<3;i++)g.add(mesh(new THREE.SphereGeometry(.04,8,6),mat(0x7a4d34),-.12+i*.11,.1,(i%2)*.09-.04));} return g;
-  }
-  station(type, accent = COLORS.orange) {
-    const g=new THREE.Group(); const base=mesh(rounded(1.25,.82,1.05,.12),mat(COLORS.counter),0,.41,0);g.add(base);
-    const edge=mesh(rounded(1.32,.12,1.12,.04),mat(COLORS.trim),0,.86,0);g.add(edge);
-    if(type==='prep'){g.add(mesh(rounded(.78,.06,.54,.04),mat(0xc79262),0,.95,0)); const knife=mesh(rounded(.48,.035,.07,.02),mat(0x9ca8aa,.25,.6),0,.99,.02);knife.rotation.y=.35;g.add(knife);}
-    if(type==='stove'){for(const x of[-.3,.3]){const ring=mesh(new THREE.TorusGeometry(.2,.035,8,20),mat(0x20282b,.3,.8),x,.95,0);ring.rotation.x=Math.PI/2;g.add(ring);} }
-    if(type==='fryer'){const bin=mesh(rounded(.72,.23,.52,.05),mat(0x6f7c80,.25,.7),0,.98,0);g.add(bin);const oil=mesh(rounded(.58,.03,.38,.02),mat(0xd5a236,.5),0,1.105,0);g.add(oil);}
-    if(type==='oven'){const oven=mesh(rounded(.86,.62,.12,.07),mat(0x3f4d52,.35,.45),0,.48,.55);g.add(oven);const glass=mesh(rounded(.62,.35,.03,.04),mat(0x23343d,.2,.5),0,.5,.63);g.add(glass);}
-    if(type==='sink'){const basin=mesh(rounded(.72,.18,.55,.06),mat(0x8fa3a7,.25,.7),0,.95,0);g.add(basin);const water=mesh(rounded(.6,.025,.43,.02),mat(COLORS.water,.25),0,1.04,0);g.add(water);}
-    if(type==='plate'){for(let i=0;i<4;i++){const p=this.plate(false);p.position.set(0,.92+i*.045,0);p.scale.set(.75,.75,.75);g.add(p);} }
-    if(type==='trash'){const lid=mesh(new THREE.CylinderGeometry(.35,.35,.09,20),mat(0x4a5a5d),0,.98,0);g.add(lid);}
-    const stripe=mesh(rounded(1.0,.08,.05,.03),mat(accent),0,.55,.555);g.add(stripe); return g;
-  }
-  crate(kind) {
-    const g=new THREE.Group();const box=mesh(rounded(.86,.58,.8,.08),mat(0x9a6a41),0,.3,0);g.add(box);const slat=mat(0xc18b54);for(const z of[-.28,.28])g.add(mesh(rounded(.9,.07,.07,.02),slat,0,.45,z));
-    const item=this.ingredient(kind);item.position.set(0,.64,0);item.scale.set(1.15,1.15,1.15);g.add(item);return g;
-  }
-  counter() { const g=new THREE.Group();g.add(mesh(rounded(1.25,.82,1.05,.12),mat(COLORS.counter),0,.41,0));g.add(mesh(rounded(1.32,.12,1.12,.04),mat(COLORS.trim),0,.86,0));return g; }
-  table(index) {
-    const g=new THREE.Group(); const top=mesh(new THREE.CylinderGeometry(.72,.72,.12,28),mat(COLORS.wood),0,.73,0);g.add(top);g.add(mesh(new THREE.CylinderGeometry(.12,.16,.65,16),mat(0x6b5749),0,.36,0));
-    const chairMat=mat(0x617b72);
-    for(const a of [0,Math.PI/2,Math.PI,Math.PI*1.5]){
-      const c=new THREE.Group();
-      c.add(mesh(rounded(.52,.12,.48,.05),chairMat,0,.42,0));
-      const back=mesh(rounded(.52,.55,.1,.05),chairMat,0,.72,-.2);c.add(back);
-      c.position.set(Math.sin(a)*1.0,0,Math.cos(a)*1.0);c.rotation.y=a;g.add(c);
-    }
-    const label=makeLabel(`TABLE ${index+1}`,'#fff7e8','#26343a');label.position.set(0,1.55,0);label.scale.multiplyScalar(.62);g.add(label);return g;
-  }
+  crate(kind){const g=new THREE.Group(),box=mesh(rounded(.98,.62,.88,.08),mat(0x9a6a41),0,.32,0);g.add(box);const slat=mat(0xc18b54);for(const z of[-.34,0,.34])g.add(mesh(rounded(1.01,.065,.07,.02),slat,0,.48,z));for(let i=0;i<3;i++){const item=this.ingredient(kind);item.position.set((i-1)*.24,.7,(i%2-.5)*.18);item.scale.multiplyScalar(.75);g.add(item);}g.scale.setScalar(1.07);return g;}
+  counter(){const g=new THREE.Group();g.add(mesh(rounded(1.35,.9,1.12,.13),mat(COLORS.counter),0,.45,0));g.add(mesh(rounded(1.43,.13,1.2,.04),mat(COLORS.trim),0,.93,0));g.add(mesh(rounded(.85,.28,.04,.03),mat(0xd8d4c9),0,.47,.58));g.scale.setScalar(1.08);return g;}
+  table(index=0){const g=new THREE.Group(),top=mesh(new THREE.CylinderGeometry(.85,.85,.13,30),mat(COLORS.wood),0,.78,0);g.add(top);const cloth=mesh(new THREE.CylinderGeometry(.72,.72,.02,30),mat(index%2?0xe8eee8:0xfff5e4),0,.855,0);g.add(cloth);g.add(mesh(new THREE.CylinderGeometry(.13,.17,.7,18),mat(0x6b5749),0,.39,0));const chairMat=mat(index%2?0x617b72:0x826d5c);for(const a of[0,Math.PI/2,Math.PI,Math.PI*1.5]){const c=new THREE.Group();c.add(mesh(rounded(.54,.13,.5,.055),chairMat,0,.44,0));c.add(mesh(rounded(.54,.59,.1,.055),chairMat,0,.76,-.22));for(const x of[-.19,.19])c.add(mesh(new THREE.CylinderGeometry(.035,.04,.42,8),chairMat,x,.22,0));c.position.set(Math.sin(a)*1.15,0,Math.cos(a)*1.15);c.rotation.y=a;g.add(c);}const vase=mesh(new THREE.CylinderGeometry(.08,.12,.25,12),mat(0xd8ddd5),0,1.0,0);g.add(vase);const flower=mesh(new THREE.SphereGeometry(.09,10,8),mat(index%2?0xe0645c:0xe9b541),0,1.18,0);g.add(flower);const label=makeLabel(`TABLE ${index+1}`,'#fff7e8','#26343a');label.position.set(0,1.78,0);label.scale.multiplyScalar(.68);g.add(label);g.scale.setScalar(1.08);return g;}
+  plant(){const g=new THREE.Group();g.add(mesh(new THREE.CylinderGeometry(.28,.35,.45,16),mat(0xb2704d),0,.22,0));for(let i=0;i<7;i++){const leaf=mesh(new THREE.SphereGeometry(.2,10,8),mat(0x4d9061),(i%3-1)*.2,.62+Math.floor(i/3)*.16,(i%2-.5)*.18);leaf.scale.set(.65,1.4,.5);leaf.rotation.z=(i%3-1)*.35;g.add(leaf);}return g;}
+}
+
+class CameraRig {
+  constructor(game){this.game=game;this.mode='dynamic';this.yaw=Math.PI*.25;this.pitch=.72;this.distance=25;this.target=new THREE.Vector3(0,0,1);this.smoothTarget=this.target.clone();this.prevTarget=this.target.clone();this.lean=0;this.dragging=false;this.lastX=0;this.lastY=0;const c=game.canvas;c.addEventListener('contextmenu',e=>e.preventDefault());c.addEventListener('pointerdown',e=>{if(e.button===2){this.dragging=true;this.lastX=e.clientX;this.lastY=e.clientY;c.setPointerCapture?.(e.pointerId);}});c.addEventListener('pointerup',e=>{if(e.button===2)this.dragging=false;});c.addEventListener('pointermove',e=>{if(!this.dragging)return;const dx=e.clientX-this.lastX,dy=e.clientY-this.lastY;this.lastX=e.clientX;this.lastY=e.clientY;this.yaw-=dx*.006;this.pitch=clamp(this.pitch+dy*.004,.38,1.25);});c.addEventListener('wheel',e=>{e.preventDefault();this.distance=clamp(this.distance+e.deltaY*.012,16,34);},{passive:false});}
+  setMode(mode){this.mode=mode;document.getElementById('camera-mode-label').textContent=mode.toUpperCase();if(mode==='classic'){this.yaw=Math.PI*.25;this.pitch=.72;this.distance=25;}if(mode==='top'){this.pitch=1.18;this.distance=29;}}
+  cycle(){const modes=['dynamic','classic','top'];this.setMode(modes[(modes.indexOf(this.mode)+1)%modes.length]);}
+  reset(){this.yaw=Math.PI*.25;this.pitch=this.mode==='top'?1.18:.72;this.distance=this.mode==='top'?29:25;}
+  update(dt){const g=this.game;let target=new THREE.Vector3(0,0,1);if(g.state==='playing'&&g.players.length){for(const p of g.players)target.add(p.group.position);target.multiplyScalar(1/g.players.length);target.y=.6;}else if(g.state==='build'){target.set(0,.4,0);}this.target.copy(target);const k=1-Math.exp(-dt*4.5);this.smoothTarget.lerp(target,k);const vel=target.clone().sub(this.prevTarget).multiplyScalar(1/Math.max(dt,.016));this.prevTarget.copy(target);if(this.mode==='dynamic'){const localSide=vel.x*Math.cos(this.yaw)-vel.z*Math.sin(this.yaw);this.lean=lerp(this.lean,clamp(-localSide*.008,-.035,.035),1-Math.exp(-dt*3));}else this.lean=lerp(this.lean,0,1-Math.exp(-dt*4));const cp=Math.cos(this.pitch),sp=Math.sin(this.pitch);const d=this.distance;const pos=new THREE.Vector3(Math.sin(this.yaw)*cp*d,sp*d,Math.cos(this.yaw)*cp*d).add(this.smoothTarget);g.camera.position.lerp(pos,1-Math.exp(-dt*6));g.camera.lookAt(this.smoothTarget);g.camera.rotation.z+=this.lean;}
 }
 
 class WorldItem {
-  constructor(game, kind, state='raw', isPlate=false) {
-    this.game=game; this.kind=kind; this.state=state; this.isPlate=isPlate; this.components=[]; this.baked=false; this.dirty=false; this.group=isPlate?game.assets.plate(false):game.assets.ingredient(kind,state);
-    this.group.userData.item=this; this.velocity=new THREE.Vector3(); this.airborne=false; this.onSurface=false; this.dead=false; game.itemRoot.add(this.group);
-  }
-  description() {
-    if(this.isPlate){if(this.dirty)return 'dirty plate';const r=identifyRecipe(this);return r?RECIPES[r].name:`plate${this.components.length?' + '+this.components.map(c=>INGREDIENT_META[c.kind]?.name||c.kind).join(', '):''}`;}
-    return `${this.state==='raw'?'':this.state+' '}${INGREDIENT_META[this.kind]?.name||this.kind}`.trim();
-  }
-  setState(s){this.state=s;if(!this.isPlate){this.group.remove(...this.group.children);const n=this.game.assets.ingredient(this.kind,s);while(n.children.length)this.group.add(n.children[0]);}}
+  constructor(game,kind,state='raw',isPlate=false){this.game=game;this.kind=kind;this.state=state;this.isPlate=isPlate;this.components=[];this.baked=false;this.burnt=false;this.dirty=false;this.group=isPlate?game.assets.plate(false):game.assets.ingredient(kind,state);this.group.userData.item=this;this.velocity=new THREE.Vector3();this.airborne=false;this.onSurface=false;this.dead=false;game.itemRoot.add(this.group);}
+  description(){if(this.isPlate){if(this.dirty)return'dirty plate';const r=identifyRecipe(this);return r?RECIPES[r].name:`plate${this.components.length?' + '+this.components.map(c=>INGREDIENT_META[c.kind]?.name||c.kind).join(', '):''}`;}return`${this.state==='raw'?'':this.state+' '}${INGREDIENT_META[this.kind]?.name||this.kind}`.trim();}
+  setState(s){this.state=s;if(!this.isPlate){while(this.group.children.length)this.group.remove(this.group.children[0]);const n=this.game.assets.ingredient(this.kind,s);while(n.children.length)this.group.add(n.children[0]);}}
+  setDirty(v){this.dirty=v;if(this.isPlate){while(this.group.children.length)this.group.remove(this.group.children[0]);const n=this.game.assets.plate(v);while(n.children.length)this.group.add(n.children[0]);}}
   dispose(){this.dead=true;this.group.removeFromParent();}
 }
 
-function identifyRecipe(plate) {
-  if(!plate?.isPlate || plate.dirty) return null;
-  const sigs=plate.components.map(signature).sort();
-  for(const r of Object.values(RECIPES)){
-    const req=[...r.components].sort(); if(req.length!==sigs.length)continue;
-    if(req.every((v,i)=>v===sigs[i]) && (!!r.baked===!!plate.baked))return r.id;
-  }
-  return null;
+function identifyRecipe(plate){if(!plate?.isPlate||plate.dirty||plate.burnt)return null;const sigs=plate.components.map(signature).sort();for(const r of Object.values(RECIPES)){const req=[...r.components].sort();if(req.length!==sigs.length)continue;if(req.every((v,i)=>v===sigs[i])&&!!r.baked===!!plate.baked)return r.id;}return null;}
+
+class CrewMember {
+  constructor(game,index,color,start,role='chef',human=true){this.game=game;this.index=index;this.role=role;this.human=human;this.group=game.assets.chef(color,role,index,!human);this.group.position.copy(start);game.playerRoot.add(this.group);this.held=null;this.radius=.43;this.speed=4.55*ROLE_META[role].move;this.facing=new THREE.Vector3(0,0,1);this.prevInteract=false;this.prevThrow=false;this.dashCooldown=0;this.walkPhase=0;this.bot=human?null:new BotBrain(game,this);}
+  workMultiplier(type){const r=ROLE_META[this.role];if(type==='prep')return r.prep;if(['stove','fryer','oven'].includes(type))return r.cook;if(type==='sink')return r.wash;return 1;}
+  pick(item){if(this.held||!item||item.dead)return false;this.held=item;item.onSurface=false;this.game.sfx.pickup();return true;}
+  dropAt(pos){if(!this.held)return;const i=this.held;this.held=null;i.group.position.copy(pos);i.group.position.y=.22;i.onSurface=false;}
+  throwItem(){if(!this.held)return;const i=this.held;this.held=null;i.airborne=true;i.onSurface=false;i.group.position.copy(this.group.position).add(new THREE.Vector3(0,1.35,0));i.velocity.copy(this.facing).multiplyScalar(7.2);i.velocity.y=4.0;this.game.sfx.pickup();}
+  animate(dt,moving,boost=1){const l=this.group.userData.limbs;if(moving){this.walkPhase+=dt*10*boost;if(l){l.leftSleeve.rotation.x=Math.sin(this.walkPhase)*.58;l.rightSleeve.rotation.x=-Math.sin(this.walkPhase)*.58;l.leftLeg.rotation.x=-Math.sin(this.walkPhase)*.34;l.rightLeg.rotation.x=Math.sin(this.walkPhase)*.34;l.leftHand.rotation.x=l.leftSleeve.rotation.x;l.rightHand.rotation.x=l.rightSleeve.rotation.x;}this.group.position.y=.02+Math.abs(Math.sin(this.walkPhase*2))*.035;}else{if(l)for(const p of Object.values(l))p.rotation.x*=.75;this.group.position.y=0;}if(this.held){this.held.group.position.copy(this.group.position).add(new THREE.Vector3(this.facing.x*.25,1.42,this.facing.z*.25));this.held.group.rotation.y=this.group.rotation.y;}}
+  updateHuman(dt,input){this.dashCooldown=Math.max(0,this.dashCooldown-dt);let dx=input.x,dz=input.y;const len=Math.hypot(dx,dz);if(len>.001){dx/=Math.max(1,len);dz/=Math.max(1,len);this.facing.set(dx,0,dz);this.group.rotation.y=Math.atan2(dx,dz);}let boost=input.dash&&this.dashCooldown<=0?1.72:1;if(boost>1)this.dashCooldown=.2;this.game.moveCrew(this,new THREE.Vector3(dx,0,dz).multiplyScalar(this.speed*boost*dt));this.animate(dt,len>.05,boost);if(input.throw&&!this.prevThrow)this.throwItem();this.prevThrow=input.throw;const nearest=this.game.nearestInteractable(this.group.position,1.55);if(input.interact&&nearest)this.game.interact(this,nearest,dt,true);this.prevInteract=input.interact;}
+  update(dt){if(this.human)this.updateHuman(dt,this.game.input.state(this.index));else this.bot.update(dt);}
 }
 
-class Player {
-  constructor(game,index,color,start) {
-    this.game=game;this.index=index;this.group=game.assets.chef(color);this.group.position.copy(start);game.playerRoot.add(this.group);this.held=null;this.radius=.38;this.speed=4.3;this.facing=new THREE.Vector3(0,0,1);this.prevInteract=false;this.prevThrow=false;this.dashCooldown=0;this.walkPhase=0;
+class BotBrain {
+  constructor(game,member){this.game=game;this.member=member;this.task=null;this.stepIndex=0;this.work=0;this.target=null;this.visual=null;this.id=`bot-${member.index}`;}
+  clearVisual(){if(this.visual){this.visual.removeFromParent();this.visual=null;}}
+  showCarry(kind='plate'){this.clearVisual();this.visual=kind==='plate'?this.game.assets.plate(false):this.game.assets.ingredient(kind,'raw');this.visual.scale.setScalar(.8);this.member.group.add(this.visual);this.visual.position.set(.32,1.32,.28);}
+  buildSteps(recipeId,table){const r=RECIPES[recipeId],steps=[];for(const sig of r.components){const[k,state]=sig.split(':');steps.push({type:'crate',kind:k,duration:.45});if(state==='chopped')steps.push({type:'prep',kind:k,duration:2.2});if(state==='cooked')steps.push({type:'stove',kind:k,duration:3.2});if(state==='fried'){steps.push({type:'prep',kind:k,duration:1.8});steps.push({type:'fryer',kind:k,duration:3.2});}}steps.push({type:'counter',duration:1.0});if(r.baked)steps.push({type:'oven',duration:3.8});steps.push({type:'table',table,duration:.55});return steps;}
+  chooseTask(){const g=this.game,m=this.member,role=ROLE_META[m.role];if(role.botBias==='service'){const dirty=g.tables.find(t=>t.dirty>0&&!t.cleanClaim);if(dirty){dirty.cleanClaim=this.id;this.task={kind:'clean',table:dirty,steps:[{type:'table',table:dirty,duration:.45},{type:'sink',duration:2.0}]};this.stepIndex=0;return;}}
+    const candidates=[];for(const p of g.parties){if(p.state!=='waiting')continue;for(const o of p.orders){if(!o.claimedBy)candidates.push({party:p,order:o});}}
+    if(candidates.length){let choice=candidates[0];if(role.botBias==='hot')choice=candidates.find(c=>RECIPES[c.order.recipeId].baked||RECIPES[c.order.recipeId].components.some(s=>s.includes(':cooked')||s.includes(':fried')))||choice;if(role.botBias==='prep')choice=candidates.find(c=>RECIPES[c.order.recipeId].components.some(s=>s.includes(':chopped')))||choice;choice.order.claimedBy=this.id;this.task={kind:'dish',party:choice.party,order:choice.order,recipeId:choice.order.recipeId,steps:this.buildSteps(choice.order.recipeId,choice.party.table)};this.stepIndex=0;return;}
+    const dirty=g.tables.find(t=>t.dirty>0&&!t.cleanClaim);if(dirty){dirty.cleanClaim=this.id;this.task={kind:'clean',table:dirty,steps:[{type:'table',table:dirty,duration:.45},{type:'sink',duration:2.1}]};this.stepIndex=0;}
   }
-  pick(item){if(this.held||!item)return false;this.held=item;item.onSurface=false;this.game.sfx.pickup();return true;}
-  dropAt(pos){if(!this.held)return;const i=this.held;this.held=null;i.group.position.copy(pos);i.group.position.y=.18;i.onSurface=false;}
-  throwItem(){if(!this.held)return;const i=this.held;this.held=null;i.airborne=true;i.onSurface=false;i.group.position.copy(this.group.position).add(new THREE.Vector3(0,1.05,0));i.velocity.copy(this.facing).multiplyScalar(5.5);i.velocity.y=3.2;this.game.sfx.pickup();}
-  update(dt,input){
-    this.dashCooldown=Math.max(0,this.dashCooldown-dt);let dx=input.x,dz=input.y;const len=Math.hypot(dx,dz);if(len>.001){dx/=Math.max(1,len);dz/=Math.max(1,len);this.facing.set(dx,0,dz);this.group.rotation.y=Math.atan2(dx,dz);}
-    let boost=input.dash&&this.dashCooldown<=0?1.72:1;if(boost>1)this.dashCooldown=.18;
-    const move=new THREE.Vector3(dx,0,dz).multiplyScalar(this.speed*boost*dt);this.game.movePlayer(this,move);
-    if(len>.05){this.walkPhase+=dt*10*boost;const l=this.group.userData.limbs;if(l){l.leftArm.rotation.x=Math.sin(this.walkPhase)*.6;l.rightArm.rotation.x=-Math.sin(this.walkPhase)*.6;l.leftLeg.rotation.x=-Math.sin(this.walkPhase)*.35;l.rightLeg.rotation.x=Math.sin(this.walkPhase)*.35;}this.group.position.y=.02+Math.abs(Math.sin(this.walkPhase*2))*.025;}else{const l=this.group.userData.limbs;if(l){for(const p of Object.values(l))p.rotation.x*=.72;}this.group.position.y=0;}
-    if(this.held){this.held.group.position.copy(this.group.position).add(new THREE.Vector3(this.facing.x*.18,1.1,this.facing.z*.18));this.held.group.rotation.y=this.group.rotation.y;}
-    if(input.throw&&!this.prevThrow)this.throwItem();this.prevThrow=input.throw;
-    const nearest=this.game.nearestInteractable(this.group.position,1.25);if(input.interact&&nearest)this.game.interact(this,nearest,dt,true);this.prevInteract=input.interact;
-  }
+  findTarget(step){const g=this.game;if(step.type==='table')return step.table;if(step.type==='crate')return g.stations.find(s=>s.type==='crate'&&s.kind===step.kind);return g.stations.find(s=>s.type===step.type);}
+  abort(){if(this.task?.order&&this.task.order.claimedBy===this.id)this.task.order.claimedBy=null;if(this.task?.table)this.task.table.cleanClaim=null;this.task=null;this.stepIndex=0;this.work=0;this.target=null;this.clearVisual();}
+  update(dt){const m=this.member,g=this.game;if(!this.task)this.chooseTask();if(!this.task){m.animate(dt,false);return;}if(this.task.kind==='dish'&&(!g.parties.includes(this.task.party)||this.task.party.state!=='waiting'||!this.task.party.orders.includes(this.task.order))){this.abort();return;}const step=this.task.steps[this.stepIndex];if(!step){this.abort();return;}const target=this.findTarget(step);if(!target){this.abort();return;}const pos=target.pos||target.position||target.group?.position;if(!pos){this.abort();return;}const v=new THREE.Vector3(pos.x-m.group.position.x,0,pos.z-m.group.position.z),d=v.length();if(d>1.25){v.normalize();m.facing.copy(v);m.group.rotation.y=Math.atan2(v.x,v.z);g.moveCrew(m,v.multiplyScalar(m.speed*.88*dt));m.animate(dt,true,.9);return;}m.animate(dt,false);const mult=m.workMultiplier(step.type);this.work+=dt*mult;if(step.type==='crate'&&this.work>.12&&!this.visual)this.showCarry(step.kind);if(['prep','stove','fryer'].includes(step.type)&&this.work>.15&&!this.visual)this.showCarry(step.kind);if(step.type==='counter'&&this.work>.1)this.showCarry('plate');if(step.type==='oven'&&this.work>.1)this.showCarry('plate');if(this.work<step.duration)return;this.work=0;this.stepIndex++;if(step.type==='table'&&this.task.kind==='dish'){const ok=this.task.party.serve(this.task.recipeId,m);if(ok)this.clearVisual();this.abort();return;}if(step.type==='sink'&&this.task.kind==='clean'){this.task.table.dirty=Math.max(0,this.task.table.dirty-1);this.task.table.cleanClaim=null;g.score+=18;g.flash(`Bot ${m.index+1} washed a returned plate`);this.abort();}}
 }
 
 class CustomerParty {
-  constructor(game, table, size, recipes, patience) {
-    this.game=game;this.table=table;this.size=size;this.orders=Array.from({length:size},()=>recipes[Math.floor(Math.random()*recipes.length)]);this.patienceMax=patience+Math.random()*12;this.patience=this.patienceMax;this.state='entering';this.browse=2.2+Math.random()*2;this.eat=0;this.customers=[];
-    const door=new THREE.Vector3(9.5,0,-7.6);for(let i=0;i<size;i++){const c=game.assets.customer((game.customerSerial+i)%6);c.position.copy(door).add(new THREE.Vector3(i*.22,0,i*.18));game.customerRoot.add(c);this.customers.push({group:c,target:table.seats[i].clone(),speed:2.0+Math.random()*.45});}game.customerSerial+=size;
-  }
-  update(dt){
-    if(this.state==='entering'){let arrived=true;for(const c of this.customers){const v=c.target.clone().sub(c.group.position);v.y=0;if(v.length()>.08){arrived=false;v.normalize();c.group.position.addScaledVector(v,c.speed*dt);c.group.rotation.y=Math.atan2(v.x,v.z);}else{c.group.position.copy(c.target);c.group.position.y=-.08;c.group.rotation.y=Math.atan2(this.table.pos.x-c.group.position.x,this.table.pos.z-c.group.position.z);}}
-      if(arrived){this.state='browsing';}
-    } else if(this.state==='browsing'){this.browse-=dt;if(this.browse<=0){this.state='waiting';this.game.sfx.order();this.game.flash(`Table ${this.table.id+1} placed an order!`);}}
-    else if(this.state==='waiting'){this.patience-=dt;if(this.patience<=0){this.game.walkout(this);}}
+  constructor(game,table,size,recipes,patience,type){this.game=game;this.id=++game.partySerial;this.table=table;this.size=size;this.type=type;this.orders=Array.from({length:size},(_,i)=>({id:`${this.id}-${i}`,recipeId:recipes[Math.floor(Math.random()*recipes.length)],claimedBy:null}));this.patienceMax=patience*type.patience+Math.random()*10;this.patience=this.patienceMax;this.state='entering';this.browse=2.0+Math.random()*2.5;this.eat=0;this.customers=[];const door=new THREE.Vector3(13.2,0,-9.2);for(let i=0;i<size;i++){const c=game.assets.customer((game.customerSerial+i)%12,type);c.position.copy(door).add(new THREE.Vector3(i*.28,0,i*.22));game.customerRoot.add(c);this.customers.push({group:c,target:table.seats[i].clone(),speed:2.2+Math.random()*.35,phase:Math.random()*6});}game.customerSerial+=size;}
+  animateCustomer(c,dt,moving){const limbs=c.group.userData.limbs;c.phase+=dt*9;if(limbs&&moving){limbs.lArm.rotation.x=Math.sin(c.phase)*.45;limbs.rArm.rotation.x=-Math.sin(c.phase)*.45;limbs.lLeg.rotation.x=-Math.sin(c.phase)*.28;limbs.rLeg.rotation.x=Math.sin(c.phase)*.28;}else if(limbs)for(const l of Object.values(limbs))l.rotation.x*=.8;}
+  update(dt){if(this.state==='entering'){let arrived=true;for(const c of this.customers){const v=c.target.clone().sub(c.group.position);v.y=0;if(v.length()>.1){arrived=false;v.normalize();c.group.position.addScaledVector(v,c.speed*dt);c.group.rotation.y=Math.atan2(v.x,v.z);this.animateCustomer(c,dt,true);}else{c.group.position.copy(c.target);c.group.position.y=-.08;c.group.rotation.y=Math.atan2(this.table.pos.x-c.group.position.x,this.table.pos.z-c.group.position.z);this.animateCustomer(c,dt,false);}}if(arrived)this.state='browsing';}
+    else if(this.state==='browsing'){this.browse-=dt;if(this.browse<=0){this.state='waiting';this.game.sfx.order();this.game.flash(`${this.type.label} at Table ${this.table.id+1} placed an order!`);}}
+    else if(this.state==='waiting'){this.patience-=dt;if(this.patience<=0)this.game.walkout(this);}
     else if(this.state==='eating'){this.eat-=dt;if(this.eat<=0)this.beginLeaving();}
-    else if(this.state==='leaving'){let done=true;const exit=new THREE.Vector3(10.5,0,-8);for(const c of this.customers){const v=exit.clone().sub(c.group.position);v.y=0;if(v.length()>.2){done=false;v.normalize();c.group.position.addScaledVector(v,c.speed*dt);c.group.rotation.y=Math.atan2(v.x,v.z);}}
-      if(done){for(const c of this.customers)c.group.removeFromParent();this.table.party=null;this.table.dirty=Math.max(1,this.size);this.state='gone';}
-    }
+    else if(this.state==='leaving'){let done=true;const exit=new THREE.Vector3(14,0,-10);for(const c of this.customers){const v=exit.clone().sub(c.group.position);v.y=0;if(v.length()>.25){done=false;v.normalize();c.group.position.addScaledVector(v,c.speed*dt);c.group.rotation.y=Math.atan2(v.x,v.z);this.animateCustomer(c,dt,true);}}if(done){for(const c of this.customers)c.group.removeFromParent();this.table.party=null;this.table.dirty=Math.max(this.table.dirty,this.size);this.state='gone';}}
   }
-  serve(recipeId){const idx=this.orders.indexOf(recipeId);if(idx<0)return false;this.orders.splice(idx,1);if(this.orders.length===0){const urgency=this.patience/this.patienceMax;const tip=Math.round(80+150*urgency*this.game.combo);this.game.score+=tip;this.game.combo=Math.min(8,this.game.combo+1);this.state='eating';this.eat=6+Math.random()*3;this.game.sfx.serve();this.game.flash(`Table ${this.table.id+1} complete! +${tip}`);this.game.onSuccessfulTable();}else{this.game.score+=Math.round(RECIPES[recipeId].price*.35);this.game.sfx.serve();this.game.flash(`${RECIPES[recipeId].name} served to Table ${this.table.id+1}`);}return true;}
+  serve(recipeId,server=null){const idx=this.orders.findIndex(o=>o.recipeId===recipeId);if(idx<0)return false;const[o]=this.orders.splice(idx,1);o.claimedBy=null;if(this.orders.length===0){const urgency=this.patience/this.patienceMax,tipMult=server?ROLE_META[server.role].tip:1,tip=Math.round((95+175*urgency*this.game.combo)*this.type.tip*tipMult);this.game.score+=tip;this.game.combo=Math.min(9,this.game.combo+1);this.state='eating';this.eat=6+Math.random()*3;this.game.sfx.serve();this.game.flash(`Table ${this.table.id+1} complete! +${tip}`);this.game.successfulTables++;}else{this.game.score+=Math.round(RECIPES[recipeId].price*.35);this.game.sfx.serve();this.game.flash(`${RECIPES[recipeId].name} served to Table ${this.table.id+1}`);}return true;}
   beginLeaving(){this.state='leaving';}
-  forceLeave(){this.state='leaving';}
+  forceLeave(){for(const o of this.orders)o.claimedBy=null;this.state='leaving';}
 }
 
 class Game {
   constructor(){
-    this.canvas=document.getElementById('game-canvas');this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,alpha:false,powerPreference:'high-performance'});this.renderer.setPixelRatio(Math.min(2,devicePixelRatio));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.12;
-    this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0xb7cfca);this.scene.fog=new THREE.Fog(0xb7cfca,23,42);this.camera=new THREE.OrthographicCamera(-10,10,7,-7,.1,100);this.camera.position.set(16,18,18);this.camera.lookAt(0,0,0);
-    this.assets=new AssetFactory();this.input=new InputManager();this.sfx=new Sfx();this.playerRoot=new THREE.Group();this.itemRoot=new THREE.Group();this.customerRoot=new THREE.Group();this.worldRoot=new THREE.Group();this.scene.add(this.worldRoot,this.itemRoot,this.customerRoot,this.playerRoot);
-    this.players=[];this.stations=[];this.obstacles=[];this.tables=[];this.items=[];this.parties=[];this.activeMenu=[];this.state='menu';this.levelIndex=0;this.score=0;this.combo=1;this.lives=3;this.timeLeft=0;this.spawnTimer=0;this.customerSerial=0;this.lastTs=performance.now();this.messageTimer=0;this.geometryPendingLife=false;this.progress=JSON.parse(localStorage.getItem('robledo_kitchen_rush_progress')||'{"stars":[0,0,0]}');
-    this.bindUI();this.buildRecipeUI();this.buildLevelButtons();this.buildLights();this.buildDecorativeWorld();window.addEventListener('resize',()=>this.resize());this.resize();requestAnimationFrame(t=>this.loop(t));
+    this.canvas=document.getElementById('game-canvas');this.renderer=new THREE.WebGLRenderer({canvas:this.canvas,antialias:true,alpha:false,powerPreference:'high-performance'});this.renderer.setPixelRatio(Math.min(2,devicePixelRatio));this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;this.renderer.outputColorSpace=THREE.SRGBColorSpace;this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.08;
+    this.scene=new THREE.Scene();this.scene.background=new THREE.Color(0xb7cfca);this.scene.fog=new THREE.Fog(0xb7cfca,28,48);this.camera=new THREE.PerspectiveCamera(43,1,.1,120);this.camera.position.set(18,18,20);
+    this.assets=new AssetFactory();this.input=new InputManager();this.sfx=new Sfx();this.staticRoot=new THREE.Group();this.fixtureRoot=new THREE.Group();this.itemRoot=new THREE.Group();this.customerRoot=new THREE.Group();this.playerRoot=new THREE.Group();this.buildRoot=new THREE.Group();this.scene.add(this.staticRoot,this.fixtureRoot,this.itemRoot,this.customerRoot,this.playerRoot,this.buildRoot);this.cameraRig=new CameraRig(this);
+    this.players=[];this.stations=[];this.obstacles=[];this.tables=[];this.items=[];this.parties=[];this.plan=[];this.state='menu';this.levelIndex=0;this.score=0;this.combo=1;this.lives=3;this.timeLeft=0;this.spawnTimer=0;this.customerSerial=0;this.partySerial=0;this.successfulTables=0;this.lastTs=performance.now();this.messageTimer=0;this.geometryPendingLife=false;this.buildBudget=LEVELS[0].budget;this.selectedFixture=null;this.buildRotation=0;this.ghost=null;this.ghostPoint=new THREE.Vector3();this.buildHoverPlan=null;this.pointerNdc=new THREE.Vector2();this.raycaster=new THREE.Raycaster();this.floorPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);this.config={humanCount:1,roles:['chef','prep','service'],camera:'dynamic',menu:['burger','salad','fries','pizza']};this.tutorialIndex=0;this.tutorialReturn='menu';this.progress=JSON.parse(localStorage.getItem('robledo_kitchen_rush_progress')||'{"stars":[0,0,0],"tutorial":false}');
+    this.bindUI();this.buildRecipeUI();this.buildLevelButtons();this.buildLights();this.buildStaticWorld();this.bindBuildPointer();window.addEventListener('resize',()=>this.resize());this.resize();requestAnimationFrame(t=>this.loop(t));
   }
   bindUI(){
-    this.ui={menu:document.getElementById('menu-screen'),recipes:document.getElementById('recipe-screen'),controls:document.getElementById('controls-screen'),pause:document.getElementById('pause-screen'),result:document.getElementById('result-screen'),geometry:document.getElementById('geometry-screen'),hud:document.getElementById('hud'),orders:document.getElementById('orders'),playerHud:document.getElementById('player-hud'),timer:document.getElementById('timer'),score:document.getElementById('score'),combo:document.getElementById('combo'),lives:document.getElementById('lives'),message:document.getElementById('message'),hint:document.getElementById('interaction-hint'),levelName:document.getElementById('level-name')};
-    document.getElementById('start-btn').onclick=()=>this.startLevel(this.levelIndex);document.getElementById('recipes-btn').onclick=()=>this.showOverlay('recipes');document.getElementById('controls-btn').onclick=()=>this.showOverlay('controls');document.querySelectorAll('.close-overlay').forEach(b=>b.onclick=()=>this.closeSoftOverlay());document.getElementById('resume-btn').onclick=()=>this.resume();document.getElementById('restart-btn').onclick=()=>this.startLevel(this.levelIndex);document.getElementById('quit-btn').onclick=()=>this.toMenu();document.getElementById('replay-btn').onclick=()=>this.startLevel(this.levelIndex);document.getElementById('result-menu-btn').onclick=()=>this.toMenu();document.getElementById('next-btn').onclick=()=>this.startLevel(Math.min(LEVELS.length-1,this.levelIndex+1));
-    window.addEventListener('keydown',e=>{if(e.code==='Escape'){if(!this.ui.recipes.classList.contains('hidden')||!this.ui.controls.classList.contains('hidden'))this.closeSoftOverlay();else if(this.state==='playing')this.pause();else if(this.state==='paused')this.resume();}if(e.code==='KeyM'&&this.state==='playing')this.showOverlay('recipes');});
+    const id=x=>document.getElementById(x);this.ui={menu:id('menu-screen'),crew:id('crew-screen'),tutorial:id('tutorial-screen'),build:id('build-ui'),recipes:id('recipe-screen'),controls:id('controls-screen'),pause:id('pause-screen'),result:id('result-screen'),geometry:id('geometry-screen'),hud:id('hud'),orders:id('orders'),playerHud:id('player-hud'),timer:id('timer'),score:id('score'),combo:id('combo'),lives:id('lives'),message:id('message'),hint:id('interaction-hint'),levelName:id('level-name')};
+    id('start-btn').onclick=()=>this.openCrewSetup();id('tutorial-btn').onclick=()=>this.showTutorial('menu');id('recipes-btn').onclick=()=>this.showOverlay('recipes');id('controls-btn').onclick=()=>this.showOverlay('controls');document.querySelectorAll('.close-overlay').forEach(b=>b.onclick=()=>this.closeSoftOverlay());id('crew-back-btn').onclick=()=>this.toMenu();id('crew-continue-btn').onclick=()=>this.commitCrew();id('tutorial-next-btn').onclick=()=>this.tutorialNext();id('tutorial-prev-btn').onclick=()=>this.tutorialPrev();id('tutorial-skip-btn').onclick=()=>this.finishTutorial();id('auto-layout-btn').onclick=()=>this.autoLayout();id('clear-plan-btn').onclick=()=>this.clearPlan();id('open-restaurant-btn').onclick=()=>this.openRestaurant();id('resume-btn').onclick=()=>this.resume();id('restart-btn').onclick=()=>this.restartService();id('quit-btn').onclick=()=>this.toMenu();id('replay-btn').onclick=()=>this.enterBuildMode();id('result-menu-btn').onclick=()=>this.toMenu();id('next-btn').onclick=()=>{this.levelIndex=Math.min(LEVELS.length-1,this.levelIndex+1);this.openCrewSetup();};
+    id('human-count').querySelectorAll('button').forEach(b=>b.onclick=()=>{this.config.humanCount=Number(b.dataset.count);this.renderCrewSetup();});id('camera-choice').querySelectorAll('button').forEach(b=>b.onclick=()=>{this.config.camera=b.dataset.camera;this.renderCrewSetup();});
+    window.addEventListener('keydown',e=>{if(e.code==='Escape'){if(!this.ui.recipes.classList.contains('hidden')||!this.ui.controls.classList.contains('hidden'))this.closeSoftOverlay();else if(this.state==='playing')this.pause();else if(this.state==='paused')this.resume();else if(this.state==='build')this.toMenu();}if(e.code==='KeyM'&&this.state==='playing')this.showOverlay('recipes');if(e.code==='KeyC'&&['playing','build'].includes(this.state))this.cameraRig.cycle();if(e.code==='Home'&&['playing','build'].includes(this.state))this.cameraRig.reset();if(e.code==='KeyR'&&this.state==='build'){this.buildRotation=(this.buildRotation+Math.PI/2)%(Math.PI*2);this.updateGhost();}if(e.code==='Delete'&&this.state==='build')this.removeBuildHover();});
   }
-  buildRecipeUI(){document.getElementById('recipe-grid').innerHTML=Object.values(RECIPES).map(r=>`<article class="recipe-card"><div class="recipe-icon">${r.icon}</div><h3>${r.name}</h3><div class="ingredients">${r.components.map(s=>{const [k,st]=s.split(':');return `${INGREDIENT_META[k]?.emoji||''} ${st==='raw'?'':st+' '}${INGREDIENT_META[k]?.name||k}`}).join(' + ')}</div><ul>${r.steps.map(s=>`<li>${s}</li>`).join('')}</ul></article>`).join('');}
-  buildLevelButtons(){const row=document.getElementById('level-row');row.innerHTML='';LEVELS.forEach((l,i)=>{const unlocked=i===0||(this.progress.stars[i-1]||0)>0;const b=document.createElement('button');b.className=`level-btn ${i===this.levelIndex?'selected':''} ${unlocked?'':'locked'}`;b.innerHTML=`${i+1}. ${l.name} ${'★'.repeat(this.progress.stars[i]||0)}`;b.disabled=!unlocked;b.onclick=()=>{this.levelIndex=i;this.buildLevelButtons();};row.appendChild(b);});}
-  buildLights(){const hemi=new THREE.HemisphereLight(0xfff7e0,0x4a6871,2.2);this.scene.add(hemi);const sun=new THREE.DirectionalLight(0xfff0cf,4.3);sun.position.set(-9,18,10);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-18;sun.shadow.camera.right=18;sun.shadow.camera.top=18;sun.shadow.camera.bottom=-18;this.scene.add(sun);}
-  buildDecorativeWorld(){const floor=mesh(rounded(25,.25,20,.12),mat(0xcfd7d0),0,-.2,0);floor.receiveShadow=true;this.worldRoot.add(floor);for(let x=-12;x<=12;x+=2)for(let z=-9;z<=9;z+=2){const tile=mesh(rounded(1.92,.04,1.92,.04),mat(((x+z)/2)%2===0?COLORS.floorA:COLORS.floorB),x,-.04,z);tile.receiveShadow=true;tile.castShadow=false;this.worldRoot.add(tile);}const wallMat=mat(COLORS.wall);for(const cfg of [[0,1.4,-9.7,25,.2],[ -12.4,1.4,0,.2,19.5],[12.4,1.4,3,.2,13]]){const w=mesh(rounded(cfg[3],2.8,cfg[4],.04),wallMat,cfg[0],cfg[1],cfg[2]);this.worldRoot.add(w);}const sign=makeLabel('ROBLEDO BISTRO','#ef7c38','#fff');sign.position.set(0,2.2,-9.45);sign.scale.set(4.4,1.18,1);this.worldRoot.add(sign);}
-  clearGameplay(){for(const r of [this.playerRoot,this.itemRoot,this.customerRoot]){while(r.children.length)r.remove(r.children[0]);}this.stations=[];this.obstacles=[];this.tables=[];this.items=[];this.parties=[];}
-  startLevel(index){
-    this.levelIndex=index;const L=LEVELS[index];this.closeAllScreens();this.clearGameplay();this.state='playing';this.score=0;this.combo=1;this.lives=3;this.timeLeft=L.duration;this.spawnTimer=2.5;this.activeMenu=[...L.recipes];this.ui.hud.classList.remove('hidden');this.ui.orders.classList.remove('hidden');this.ui.playerHud.classList.remove('hidden');this.ui.levelName.textContent=L.name;this.scene.background.setHex(L.tint);this.scene.fog.color.setHex(L.tint);this.buildKitchen(index);this.spawnPlayers();this.updateUI();this.flash('SHIFT START! Three chefs, one kitchen.');
+  buildRecipeUI(){document.getElementById('recipe-grid').innerHTML=Object.values(RECIPES).map(r=>`<article class="recipe-card"><div class="recipe-icon">${r.icon}</div><h3>${r.name}</h3><div class="ingredients">${r.components.map(s=>{const[k,st]=s.split(':');return`${INGREDIENT_META[k]?.emoji||''} ${st==='raw'?'':st+' '}${INGREDIENT_META[k]?.name||k}`}).join(' + ')}</div><ul>${r.steps.map(s=>`<li>${s}</li>`).join('')}</ul></article>`).join('');}
+  buildLevelButtons(){const row=document.getElementById('level-row');row.innerHTML='';LEVELS.forEach((l,i)=>{const unlocked=i===0||(this.progress.stars[i-1]||0)>0,b=document.createElement('button');b.className=`level-btn ${i===this.levelIndex?'selected':''} ${unlocked?'':'locked'}`;b.innerHTML=`${i+1}. ${l.name} ${'★'.repeat(this.progress.stars[i]||0)}`;b.disabled=!unlocked;b.onclick=()=>{this.levelIndex=i;this.buildLevelButtons();};row.appendChild(b);});}
+  buildLights(){this.scene.add(new THREE.HemisphereLight(0xfff7e0,0x46666e,2.35));const sun=new THREE.DirectionalLight(0xfff0cf,4.4);sun.position.set(-10,21,12);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-20;sun.shadow.camera.right=20;sun.shadow.camera.top=20;sun.shadow.camera.bottom=-20;this.scene.add(sun);for(const x of[-8,0,8]){const p=new THREE.PointLight(0xffdca1,18,9,2);p.position.set(x,6,-1);this.scene.add(p);}}
+  buildStaticWorld(){while(this.staticRoot.children.length)this.staticRoot.remove(this.staticRoot.children[0]);const floor=mesh(rounded(31,.28,24,.15),mat(0xcfd7d0),0,-.22,0);floor.receiveShadow=true;this.staticRoot.add(floor);for(let x=-15;x<=15;x+=2)for(let z=-11;z<=11;z+=2){const tile=mesh(rounded(1.92,.045,1.92,.04),mat(((x+z)/2)%2===0?COLORS.floorA:COLORS.floorB),x,-.045,z);tile.receiveShadow=true;tile.castShadow=false;this.staticRoot.add(tile);}const wallMat=mat(COLORS.wall);for(const cfg of[[0,1.6,-12,31,.24],[-15.4,1.6,0,.24,24],[15.4,1.6,3,.24,18]])this.staticRoot.add(mesh(rounded(cfg[3],3.2,cfg[4],.05),wallMat,cfg[0],cfg[1],cfg[2]));for(const x of[-10,-5,5,10]){const win=mesh(rounded(3.1,1.45,.05,.06),mat(0x9cc9d2,.2,.15),x,1.85,-11.82);this.staticRoot.add(win);const frame=mesh(new THREE.TorusGeometry(.82,.04,6,24),mat(0x60737a,.3,.5),x,1.85,-11.76);frame.scale.x=1.7;this.staticRoot.add(frame);}const sign=makeLabel('ROBLEDO KITCHEN RUSH','#ef7c38','#fff',600);sign.position.set(0,2.62,-11.68);sign.scale.set(5.3,.82,1);this.staticRoot.add(sign);const door=mesh(rounded(2.1,2.55,.08,.05),mat(0x52686f),13.7,1.27,-11.68);this.staticRoot.add(door);const doorGlass=mesh(rounded(1.55,1.3,.04,.04),mat(0x9cc9d2,.18,.25),13.7,1.65,-11.6);this.staticRoot.add(doorGlass);for(const p of[[-13,-9],[13,9],[-13,9]]){const plant=this.assets.plant();plant.position.set(p[0],0,p[1]);plant.scale.setScalar(1.4);this.staticRoot.add(plant);}for(const x of[-8,0,8]){const cord=mesh(new THREE.CylinderGeometry(.025,.025,3,8),mat(0x36484e),x,5.5,-1);this.staticRoot.add(cord);const shade=mesh(new THREE.ConeGeometry(.65,.45,20,1,true),mat(0xd58542,.4),x,4,-1);shade.rotation.x=Math.PI;this.staticRoot.add(shade);}}
+  renderCrewSetup(){
+    document.querySelectorAll('#human-count button').forEach(b=>b.classList.toggle('active',Number(b.dataset.count)===this.config.humanCount));document.querySelectorAll('#camera-choice button').forEach(b=>b.classList.toggle('active',b.dataset.camera===this.config.camera));const slots=document.getElementById('crew-slots');slots.innerHTML='';for(let i=0;i<3;i++){const human=i<this.config.humanCount,role=this.config.roles[i],card=document.createElement('div');card.className=`crew-slot p${i+1} ${human?'human':'bot'}`;const gp=navigator.getGamepads?.()[i];card.innerHTML=`<div class="crew-head"><span class="crew-id">CREW ${i+1}</span><span class="crew-kind">${human?'HUMAN':'BOT AI'}</span></div><select data-slot="${i}">${Object.values(ROLE_META).map(r=>`<option value="${r.id}" ${r.id===role?'selected':''}>${r.icon} ${r.name}</option>`).join('')}</select><div class="role-desc">${ROLE_META[role].description}</div><div class="device-line">${human?(gp?`🎮 Gamepad ${i+1} connected`:`⌨ Keyboard layout P${i+1}${i===0?' / first controller':''}`):'🤖 Autonomous task planner'}</div>`;slots.appendChild(card);}slots.querySelectorAll('select').forEach(s=>s.onchange=()=>{const i=Number(s.dataset.slot);this.config.roles[i]=s.value;this.renderCrewSetup();});
+    const grid=document.getElementById('menu-toggle-grid');grid.innerHTML='';for(const r of Object.values(RECIPES)){const active=this.config.menu.includes(r.id),el=document.createElement('div');el.className=`menu-toggle ${active?'active':''}`;el.dataset.recipe=r.id;el.innerHTML=`<span class="ico">${r.icon}</span><b>${r.name}</b><small>${r.price} pts base</small>`;el.onclick=()=>this.toggleMenu(r.id);grid.appendChild(el);}document.getElementById('crew-warning').textContent=this.config.menu.length<3?'Select at least 3 dishes.':this.config.menu.length>5?'Maximum 5 dishes.':'';
   }
-  buildKitchen(level){
-    const addObstacle=(x,z,w,d)=>this.obstacles.push({x,z,w,d});
-    const station=(type,x,z,opts={})=>{const s={type,x,z,pos:new THREE.Vector3(x,0,z),slot:null,progress:0,cook:0,burn:0,kind:opts.kind||null,label:opts.label||type};s.group=opts.kind?this.assets.crate(opts.kind):this.assets.station(type,opts.accent||COLORS.orange);s.group.position.set(x,0,z);const lab=makeLabel(opts.label||type.toUpperCase(),opts.color||'#33454c');lab.position.set(0,1.52,0);lab.scale.multiplyScalar(.58);s.group.add(lab);
-      if(['prep','stove','fryer','oven','sink'].includes(type)){const bg=mesh(rounded(.82,.075,.055,.02),mat(0x243139),0,1.22,.5);bg.castShadow=false;const fill=mesh(rounded(.76,.055,.06,.015),mat(type==='sink'?0x4fb7dc:type==='prep'?0xe4aa54:0x69b36f),-.38,1.22,.535);fill.geometry.translate(.38,0,0);fill.scale.x=.001;fill.castShadow=false;s.group.add(bg,fill);s.bar=fill;}
-      this.worldRoot.add(s.group);this.stations.push(s);addObstacle(x,z,1.15,.95);return s;};
-    const counter=(x,z)=>{const s={type:'counter',x,z,pos:new THREE.Vector3(x,0,z),slot:null,progress:0};s.group=this.assets.counter();s.group.position.set(x,0,z);this.worldRoot.add(s.group);this.stations.push(s);addObstacle(x,z,1.15,.95);};
-    // clear prior dynamic world meshes except floor/walls/sign by tagged list
-    if(this.dynamicRoot)this.dynamicRoot.removeFromParent();this.dynamicRoot=new THREE.Group();this.worldRoot.add(this.dynamicRoot);
-    const oldAdd=this.worldRoot.add.bind(this.worldRoot);this.worldRoot.add=(...o)=>{this.dynamicRoot.add(...o);return this.worldRoot;};
-    // Kitchen block
-    station('plate',-8,-5,{label:'PLATES',color:'#4a7882'});station('sink',-6.4,-5,{label:'SINK',color:'#4aa5bc'});station('trash',-4.8,-5,{label:'TRASH',color:'#545e62'});
-    station('crate',-8,-2.8,{kind:'tomato',label:'TOMATO',color:'#d84a43'});station('crate',-6.4,-2.8,{kind:'lettuce',label:'LETTUCE',color:'#4f9f58'});station('crate',-4.8,-2.8,{kind:'meat',label:'MEAT',color:'#9d5146'});station('crate',-3.2,-2.8,{kind:'potato',label:'POTATO',color:'#b08755'});station('crate',-1.6,-2.8,{kind:'bun',label:'BUN',color:'#c98e48'});station('crate',0,-2.8,{kind:'cheese',label:'CHEESE',color:'#d8ad2b'});station('crate',1.6,-2.8,{kind:'dough',label:'DOUGH',color:'#c5a36f'});
-    station('prep',-6.5,-.4,{label:'CHOP',color:'#c67a45'});station('prep',-4.9,-.4,{label:'CHOP',color:'#c67a45'});station('stove',-2.7,-.4,{label:'STOVE',color:'#cc5f46'});station('fryer',-.9,-.4,{label:'FRYER',color:'#d7a839'});station('oven',.9,-.4,{label:'OVEN',color:'#b54e3f'});counter(3,-.4);counter(4.6,-.4);
-    if(level>0){counter(3,-2.8);counter(4.6,-2.8);} if(level===2){counter(-2.7,1.5);counter(-.9,1.5);}
-    // Dining room tables
-    const tablePositions=[[-7,4],[-3.8,4],[0,4],[3.8,4],[7,4],[-5.5,7],[0,7],[5.5,7]];for(let i=0;i<LEVELS[level].seats;i++){const [x,z]=tablePositions[i];const t={id:i,pos:new THREE.Vector3(x,0,z),party:null,dirty:0,group:this.assets.table(i),seats:[]};t.group.position.set(x,0,z);this.worldRoot.add(t.group);for(const a of [0,Math.PI/2,Math.PI,Math.PI*1.5])t.seats.push(new THREE.Vector3(x+Math.sin(a)*1.0,0,z+Math.cos(a)*1.0));this.tables.push(t);addObstacle(x,z,1.35,1.35);}
-    // Service/visual divider counters
-    counter(6.7,-.4);counter(8.1,-.4);const pass=this.stations[this.stations.length-1];pass.type='counter';
-    this.worldRoot.add=oldAdd;
-  }
-  spawnPlayers(){const starts=[new THREE.Vector3(-5,0,1.8),new THREE.Vector3(-2,0,1.8),new THREE.Vector3(1,0,1.8)];this.players=[new Player(this,0,COLORS.red,starts[0]),new Player(this,1,COLORS.blue,starts[1]),new Player(this,2,COLORS.yellow,starts[2])];}
-  movePlayer(p,move){const tryPos=p.group.position.clone();tryPos.x+=move.x;if(!this.blocked(p,tryPos))p.group.position.x=tryPos.x;tryPos.copy(p.group.position);tryPos.z+=move.z;if(!this.blocked(p,tryPos))p.group.position.z=tryPos.z;p.group.position.x=clamp(p.group.position.x,-10.8,10.8);p.group.position.z=clamp(p.group.position.z,-8.2,8.7);}
-  blocked(p,pos){for(const o of this.obstacles){if(Math.abs(pos.x-o.x)<o.w/2+p.radius&&Math.abs(pos.z-o.z)<o.d/2+p.radius)return true;}for(const q of this.players){if(q!==p&&dist2(pos,q.group.position)<p.radius+q.radius-.05)return true;}return false;}
-  nearestInteractable(pos,max){let best=null,bd=max;for(const s of this.stations){const d=dist2(pos,s.pos);if(d<bd){bd=d;best=s;}}for(const t of this.tables){const d=dist2(pos,t.pos);if(d<bd){bd=d;best={type:'table',table:t,pos:t.pos};}}for(const i of this.items){if(i.dead||i.airborne||i.onSurface)continue;const d=dist2(pos,i.group.position);if(d<bd){bd=d;best={type:'loose',item:i,pos:i.group.position};}}return best;}
-  interact(player,target,dt,held){
-    if(target.type==='loose'){if(!player.held)player.pick(target.item);return;}
-    if(target.type==='table'){this.interactTable(player,target.table);return;}
-    const s=target;
-    if(s.type==='crate'){if(!player.held){const i=this.newItem(s.kind);i.group.position.copy(player.group.position);player.pick(i);}return;}
-    if(s.type==='plate'){if(!player.held){const i=this.newPlate(false);i.group.position.copy(player.group.position);player.pick(i);}return;}
-    if(s.type==='trash'){if(player.held){player.held.dispose();player.held=null;this.sfx.bad();this.flash('Item trashed');}return;}
-    if(s.type==='counter'){this.surfaceInteract(player,s);return;}
-    if(s.type==='prep'){this.prepInteract(player,s,dt,held);return;}
-    if(['stove','fryer','oven'].includes(s.type)){this.cookInteract(player,s);return;}
-    if(s.type==='sink'){this.sinkInteract(player,s,dt,held);return;}
-  }
-  surfaceInteract(p,s){if(!p.held&&s.slot){p.pick(s.slot);s.slot=null;return;}if(!p.held)return;if(!s.slot){s.slot=p.held;p.held=null;s.slot.onSurface=true;s.slot.group.position.set(s.x,.94,s.z);return;}if(s.slot.isPlate&&!p.held.isPlate&&!s.slot.dirty){s.slot.components.push({kind:p.held.kind,state:p.held.state});p.held.dispose();p.held=null;this.sfx.pickup();this.refreshPlateVisual(s.slot);return;}if(p.held.isPlate&&!s.slot.isPlate&&!p.held.dirty){p.held.components.push({kind:s.slot.kind,state:s.slot.state});s.slot.dispose();s.slot=p.held;p.held=null;s.slot.onSurface=true;s.slot.group.position.set(s.x,.94,s.z);this.refreshPlateVisual(s.slot);}}
-  prepInteract(p,s,dt){if(!s.slot&&p.held&&!p.held.isPlate&&INGREDIENT_META[p.held.kind]?.choppable&&p.held.state==='raw'){s.slot=p.held;p.held=null;s.slot.onSurface=true;s.slot.group.position.set(s.x,.95,s.z);s.progress=0;return;}if(!s.slot)return;if(s.slot.state!=='raw'){if(!p.held){p.pick(s.slot);s.slot=null;}return;}s.progress+=dt;this.sfx.chop();if(s.progress>=1.25){s.slot.setState('chopped');s.progress=0;this.flash(`${INGREDIENT_META[s.slot.kind].name} chopped!`);}}
-  cookInteract(p,s){if(!s.slot&&p.held){if(this.canCookAt(p.held,s.type)){s.slot=p.held;p.held=null;s.slot.onSurface=true;s.slot.group.position.set(s.x,.98,s.z);s.cook=0;s.burn=0;return;}}if(s.slot&&this.isCookedForStation(s.slot,s.type)&&!p.held){p.pick(s.slot);s.slot=null;s.cook=0;s.burn=0;return;}if(s.slot&&!this.canCookAt(s.slot,s.type)&&!p.held){p.pick(s.slot);s.slot=null;}}
-  canCookAt(item,type){if(item.isPlate){return type==='oven'&&!!this.preBakeRecipe(item);}if(type==='stove')return item.kind==='meat'&&item.state==='raw';if(type==='fryer')return item.kind==='potato'&&item.state==='chopped';return false;}
-  isCookedForStation(item,type){if(item.isPlate)return item.baked;if(type==='stove')return item.state==='cooked'||item.state==='burnt';if(type==='fryer')return item.state==='fried'||item.state==='burnt';return false;}
-  preBakeRecipe(plate){if(!plate?.isPlate||plate.baked)return null;const sigs=plate.components.map(signature).sort();for(const id of ['pizza','toast']){const r=RECIPES[id];if([...r.components].sort().join('|')===sigs.join('|'))return id;}return null;}
-  sinkInteract(p,s,dt){if(!s.slot&&p.held?.isPlate&&p.held.dirty){s.slot=p.held;p.held=null;s.slot.onSurface=true;s.slot.group.position.set(s.x,.98,s.z);s.progress=0;return;}if(!s.slot)return;s.progress+=dt;if(s.progress>=1.6){s.slot.dirty=false;s.slot.components=[];s.slot.baked=false;this.refreshPlateVisual(s.slot);if(!p.held){p.pick(s.slot);s.slot=null;}s.progress=0;this.sfx.serve();this.flash('Plate washed');}}
-  interactTable(p,t){if(t.dirty>0&&!p.held){const i=this.newPlate(true);i.group.position.copy(p.group.position);p.pick(i);t.dirty--;this.flash(`Dirty plate collected • ${t.dirty} left`);return;}if(!t.party||t.party.state!=='waiting'||!p.held?.isPlate)return;const r=identifyRecipe(p.held);if(!r){this.sfx.bad();this.flash('That plate does not match a finished recipe.');return;}if(t.party.serve(r)){p.held.dispose();p.held=null;}else{this.sfx.bad();this.combo=1;this.flash(`Table ${t.id+1} did not order ${RECIPES[r].name}.`);}}
-  newItem(kind,state='raw'){const i=new WorldItem(this,kind,state,false);this.items.push(i);return i;}
-  newPlate(dirty=false){const i=new WorldItem(this,'plate','clean',true);i.dirty=dirty;if(dirty){i.group.removeFromParent();i.group=this.assets.plate(true);this.itemRoot.add(i.group);}this.items.push(i);return i;}
-  refreshPlateVisual(p){const pos=p.group.position.clone();const parent=p.group.parent;p.group.removeFromParent();p.group=this.assets.plate(p.dirty);p.group.position.copy(pos);if(parent)parent.add(p.group);for(const [idx,c] of p.components.entries()){const m=this.assets.ingredient(c.kind,c.state);m.scale.set(.55,.55,.55);m.position.set((idx%3-1)*.13,.12+Math.floor(idx/3)*.07,(idx%2-.5)*.12);p.group.add(m);}if(p.baked){const glow=mesh(new THREE.TorusGeometry(.27,.025,8,18),mat(0xe6a037),0,.12,0);glow.rotation.x=Math.PI/2;p.group.add(glow);}}
-  updateStations(dt){for(const s of this.stations){
-      if(s.bar){let ratio=0;if(s.type==='prep')ratio=s.slot&&s.slot.state==='raw'?s.progress/1.25:0;else if(s.type==='sink')ratio=s.slot?s.progress/1.6:0;else if(['stove','fryer','oven'].includes(s.type)){const target=s.type==='oven'?4.4:s.type==='fryer'?3.2:3.8;ratio=s.slot?Math.min(1,s.cook/target):0;}s.bar.scale.x=Math.max(.001,clamp(ratio,0,1));}
-      if(!['stove','fryer','oven'].includes(s.type)||!s.slot)continue;s.cook+=dt;const target=s.type==='oven'?4.4:s.type==='fryer'?3.2:3.8;if(s.cook>=target&&s.cook<target+5){if(s.slot.isPlate&&!s.slot.baked){s.slot.baked=true;this.refreshPlateVisual(s.slot);this.sfx.cook();}else if(!s.slot.isPlate){const cooked=s.type==='fryer'?'fried':'cooked';if(s.slot.state!==cooked)s.slot.setState(cooked);} }if(s.cook>=target+7){if(s.slot.isPlate){s.slot.components=s.slot.components.map(c=>({...c,state:c.state==='raw'?c.state:'burnt'}));s.slot.baked=false;this.refreshPlateVisual(s.slot);}else if(s.slot.state!=='burnt')s.slot.setState('burnt');}}
-  }
-  updateItems(dt){for(const i of this.items){if(i.dead||!i.airborne)continue;i.velocity.y-=8.5*dt;i.group.position.addScaledVector(i.velocity,dt);if(i.group.position.y<=.15){i.group.position.y=.15;i.velocity.set(0,0,0);i.airborne=false;}}
-    this.items=this.items.filter(i=>!i.dead);
-  }
-  spawnParty(){const free=this.tables.filter(t=>!t.party&&t.dirty===0);if(!free.length)return;const t=free[Math.floor(Math.random()*free.length)];const size=1+Math.floor(Math.random()*Math.min(3,t.seats.length));const p=new CustomerParty(this,t,size,this.activeMenu,LEVELS[this.levelIndex].patience);t.party=p;this.parties.push(p);}
-  walkout(p){this.sfx.bad();this.combo=1;this.lives--;p.forceLeave();this.flash(`Table ${p.table.id+1} walked out! Team life lost.`);this.updateUI();if(this.lives>0)this.openGeometryRescue();else this.finishLevel(true);}
-  openGeometryRescue(){this.state='geometry';const q=GEOMETRY_QUESTIONS[Math.floor(Math.random()*GEOMETRY_QUESTIONS.length)];this.currentGeometry=q;document.getElementById('geometry-question').textContent=q.q;const box=document.getElementById('geometry-options');box.innerHTML='';q.a.forEach((a,i)=>{const b=document.createElement('button');b.textContent=a;b.onclick=()=>this.answerGeometry(i,b);box.appendChild(b);});this.ui.geometry.classList.remove('hidden');}
-  answerGeometry(i,b){const q=this.currentGeometry;const buttons=[...document.querySelectorAll('#geometry-options button')];buttons.forEach(x=>x.disabled=true);if(i===q.c){b.classList.add('correct');this.lives=Math.min(3,this.lives+1);this.sfx.serve();this.flash('Life restored! Back to the kitchen.');}else{b.classList.add('wrong');buttons[q.c].classList.add('correct');this.sfx.bad();}this.updateUI();setTimeout(()=>{this.ui.geometry.classList.add('hidden');if(this.lives<=0)this.finishLevel(true);else this.state='playing';},1100);}
-  onSuccessfulTable(){this.updateUI();}
-  updateCustomers(dt){for(const p of this.parties)if(p.state!=='gone')p.update(dt);this.parties=this.parties.filter(p=>p.state!=='gone');}
-  updateOrders(){const active=this.parties.filter(p=>p.state==='waiting');this.ui.orders.innerHTML=active.slice(0,6).map(p=>{const pct=clamp(p.patience/p.patienceMax*100,0,100);return `<div class="order-card ${pct<25?'urgent':''}"><div class="top"><span>TABLE ${p.table.id+1}</span><span>${Math.ceil(p.patience)}s</span></div><div class="dishes">${p.orders.map(id=>RECIPES[id].icon).join(' ')}</div><div class="bar"><div class="fill" style="width:${pct}%"></div></div></div>`}).join('');}
-  updateUI(){this.ui.timer.textContent=fmtTime(this.timeLeft);this.ui.score.textContent=Math.round(this.score);this.ui.combo.textContent=`x${this.combo}`;this.ui.lives.textContent='❤'.repeat(Math.max(0,this.lives))+'♡'.repeat(Math.max(0,3-this.lives));for(let i=0;i<3;i++){const p=this.players[i];const el=document.getElementById(`p${i+1}-held`);if(el)el.textContent=p?.held?p.held.description():'empty hands';}}
-  flash(text){this.ui.message.textContent=text;this.ui.message.classList.remove('hidden');this.messageTimer=2.1;}
-  nearestHint(){let best=null;for(const p of this.players){const t=this.nearestInteractable(p.group.position,1.25);if(t){best=this.hintFor(t,p);if(best)break;}}if(best){this.ui.hint.textContent=best;this.ui.hint.classList.remove('hidden');}else this.ui.hint.classList.add('hidden');}
-  hintFor(t,p){if(t.type==='loose')return 'Pick up item';if(t.type==='table'){if(t.table.dirty>0&&!p.held)return 'Collect dirty plate';if(t.table.party?.state==='waiting'&&p.held?.isPlate)return `Serve Table ${t.table.id+1}`;return null;}const map={crate:'Take ingredient',plate:'Take clean plate',trash:'Trash held item',counter:'Place / pick up / assemble',prep:'Place ingredient • hold interact to chop',stove:'Cook meat',fryer:'Fry chopped potato',oven:'Bake assembled pizza/toast',sink:'Wash dirty plate'};return map[t.type];}
-  updateCamera(dt){if(!this.players.length)return;const c=new THREE.Vector3();for(const p of this.players)c.add(p.group.position);c.multiplyScalar(1/this.players.length);const desired=new THREE.Vector3(c.x+14,16,c.z+16);this.camera.position.lerp(desired,1-Math.exp(-dt*2.4));this.camera.lookAt(c.x,0,c.z);}
-  pause(){if(this.state!=='playing')return;this.state='paused';this.ui.pause.classList.remove('hidden');}
-  resume(){if(this.state!=='paused')return;this.ui.pause.classList.add('hidden');this.state='playing';}
-  showOverlay(which){if(this.state==='playing')this.state='soft';this.ui[which].classList.remove('hidden');}
-  closeSoftOverlay(){this.ui.recipes.classList.add('hidden');this.ui.controls.classList.add('hidden');if(this.players.length&&this.state==='soft')this.state='playing';}
-  closeAllScreens(){for(const x of ['menu','recipes','controls','pause','result','geometry'])this.ui[x].classList.add('hidden');}
-  toMenu(){this.state='menu';this.clearGameplay();this.closeAllScreens();this.ui.menu.classList.remove('hidden');this.ui.hud.classList.add('hidden');this.ui.orders.classList.add('hidden');this.ui.playerHud.classList.add('hidden');this.buildLevelButtons();}
-  finishLevel(failed=false){if(this.state==='result')return;this.state='result';let stars=0;const L=LEVELS[this.levelIndex];if(!failed){for(const t of L.thresholds)if(this.score>=t)stars++;}this.progress.stars[this.levelIndex]=Math.max(this.progress.stars[this.levelIndex]||0,stars);localStorage.setItem('robledo_kitchen_rush_progress',JSON.stringify(this.progress));document.getElementById('result-title').textContent=failed?'KITCHEN CLOSED':'DINNER SERVICE COMPLETE';document.getElementById('result-stars').textContent='★'.repeat(stars)+'☆'.repeat(3-stars);document.getElementById('result-stats').innerHTML=`<p><b>Score:</b> ${Math.round(this.score)}<br/><b>Best combo:</b> x${this.combo}<br/><b>Team lives:</b> ${this.lives}</p>`;const next=document.getElementById('next-btn');next.style.display=this.levelIndex<LEVELS.length-1&&stars>0?'block':'none';this.ui.result.classList.remove('hidden');}
-  resize(){const w=innerWidth,h=innerHeight;this.renderer.setSize(w,h,false);const aspect=w/h;const view=12.5;this.camera.left=-view*aspect;this.camera.right=view*aspect;this.camera.top=view;this.camera.bottom=-view;this.camera.updateProjectionMatrix();}
-  loop(ts){const dt=Math.min(.033,(ts-this.lastTs)/1000||0);this.lastTs=ts;if(this.state==='playing')this.update(dt);if(this.messageTimer>0){this.messageTimer-=dt;if(this.messageTimer<=0)this.ui.message.classList.add('hidden');}this.renderer.render(this.scene,this.camera);requestAnimationFrame(t=>this.loop(t));}
-  update(dt){
-    for(let i=0;i<this.players.length;i++)this.players[i].update(dt,this.input.state(i));this.updateStations(dt);this.updateItems(dt);this.updateCustomers(dt);this.updateCamera(dt);this.nearestHint();
-    this.timeLeft-=dt;this.spawnTimer-=dt;if(this.spawnTimer<=0){this.spawnParty();this.spawnTimer=LEVELS[this.levelIndex].spawnEvery*(.8+Math.random()*.45);}if(this.timeLeft<=0)this.finishLevel(false);this.updateOrders();this.updateUI();this.input.endFrame();
-  }
+  toggleMenu(id){const has=this.config.menu.includes(id);if(has)this.config.menu=this.config.menu.filter(x=>x!==id);else if(this.config.menu.length<5)this.config.menu.push(id);this.renderCrewSetup();}
+  openCrewSetup(){this.closeAllScreens();this.state='crew';this.ui.crew.classList.remove('hidden');this.renderCrewSetup();this.cameraRig.setMode(this.config.camera);}
+  commitCrew(){if(this.config.menu.length<3||this.config.menu.length>5){document.getElementById('crew-warning').textContent='Choose between 3 and 5 dishes before continuing.';return;}localStorage.setItem('robledo_kitchen_rush_config',JSON.stringify(this.config));this.showTutorial('build');}
+  showTutorial(returnTo='menu'){this.closeAllScreens();this.state='tutorial';this.tutorialIndex=0;this.tutorialReturn=returnTo;this.ui.tutorial.classList.remove('hidden');this.renderTutorial();}
+  renderTutorial(){const s=TUTORIAL[this.tutorialIndex],v=document.getElementById('tutorial-visual');document.getElementById('tutorial-step-label').textContent=`STEP ${this.tutorialIndex+1} / ${TUTORIAL.length}`;document.getElementById('tutorial-progress-fill').style.width=`${((this.tutorialIndex+1)/TUTORIAL.length)*100}%`;document.getElementById('tutorial-title').textContent=s.title;document.getElementById('tutorial-body').textContent=s.body;if(s.visual==='keys')v.innerHTML='<div class="keys"><kbd>WASD</kbd><kbd>E</kbd><kbd>Q</kbd><kbd>SHIFT</kbd><kbd>🎮</kbd></div>';else v.innerHTML=`<div class="big-icon">${s.visual}</div>`;document.getElementById('tutorial-prev-btn').disabled=this.tutorialIndex===0;document.getElementById('tutorial-next-btn').textContent=this.tutorialIndex===TUTORIAL.length-1?'START PLANNING':'NEXT';}
+  tutorialNext(){if(this.tutorialIndex<TUTORIAL.length-1){this.tutorialIndex++;this.renderTutorial();}else this.finishTutorial();}
+  tutorialPrev(){if(this.tutorialIndex>0){this.tutorialIndex--;this.renderTutorial();}}
+  finishTutorial(){this.progress.tutorial=true;localStorage.setItem('robledo_kitchen_rush_progress',JSON.stringify(this.progress));if(this.tutorialReturn==='build')this.enterBuildMode();else this.toMenu();}
+  fixturePalette(){const keys=['table','counter','prep','stove','fryer','oven','sink','plate','trash','tomato','lettuce','meat','potato','bun','cheese','dough'],grid=document.getElementById('fixture-palette');grid.innerHTML='';for(const key of keys){const f=FIXTURES[key],b=document.createElement('button');b.className=`fixture-btn ${this.selectedFixture===key?'active':''}`;b.dataset.fixture=key;b.innerHTML=`<span class="fi">${f.icon}</span><b>${f.label}</b><small>$${f.cost}</small>`;b.onclick=()=>{this.selectedFixture=key;this.fixturePalette();this.updateGhost();document.getElementById('selected-fixture-label').textContent=`Selected: ${f.label} ($${f.cost})`;};grid.appendChild(b);}}
+  enterBuildMode(){this.closeAllScreens();this.clearGameplay(true);this.state='build';this.cameraRig.setMode(this.config.camera);this.buildBudget=LEVELS[this.levelIndex].budget;this.plan=[];this.selectedFixture='table';this.buildRotation=0;this.ui.build.classList.remove('hidden');this.addZoneGuides();this.fixturePalette();this.updateBuildUI();this.updateGhost();this.flash('BUILD MODE: design the restaurant before opening.');}
+  addZoneGuides(){while(this.buildRoot.children.length)this.buildRoot.remove(this.buildRoot.children[0]);const kg=mesh(rounded(27,.025,10,.08),new THREE.MeshBasicMaterial({color:COLORS.kitchenZone,transparent:true,opacity:.18,depthWrite:false}),0,.015,-5.8);kg.castShadow=false;this.buildRoot.add(kg);const dg=mesh(rounded(27,.025,10,.08),new THREE.MeshBasicMaterial({color:COLORS.diningZone,transparent:true,opacity:.16,depthWrite:false}),0,.016,5.8);dg.castShadow=false;this.buildRoot.add(dg);const kl=makeLabel('KITCHEN ZONE','#3f8f97','#fff');kl.position.set(-11,.08,-10);kl.scale.set(2.2,.48,1);this.buildRoot.add(kl);const dl=makeLabel('DINING ZONE','#b58139','#fff');dl.position.set(-11,.08,10);dl.scale.set(2.2,.48,1);this.buildRoot.add(dl);}
+  bindBuildPointer(){this.canvas.addEventListener('pointermove',e=>{const r=this.canvas.getBoundingClientRect();this.pointerNdc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);if(this.state==='build'&&!this.cameraRig.dragging){this.raycaster.setFromCamera(this.pointerNdc,this.camera);const p=new THREE.Vector3();if(this.raycaster.ray.intersectPlane(this.floorPlane,p)){this.ghostPoint.set(snap(p.x),0,snap(p.z));this.updateGhost();this.buildHoverPlan=this.plan.reduce((best,q)=>dist2(q,this.ghostPoint)<dist2(best||{x:999,z:999},this.ghostPoint)?q:best,null);}}});this.canvas.addEventListener('pointerdown',e=>{if(this.state!=='build'||e.button!==0||this.cameraRig.dragging)return;this.placeSelectedFixture();});}
+  updateGhost(){if(this.ghost){this.ghost.removeFromParent();this.ghost=null;}if(this.state!=='build'||!this.selectedFixture)return;const f=FIXTURES[this.selectedFixture];this.ghost=this.createFixtureVisual(this.selectedFixture,-1,true);this.ghost.position.set(this.ghostPoint.x,.05,this.ghostPoint.z);this.ghost.rotation.y=this.buildRotation;const ok=this.validPlacement(this.selectedFixture,this.ghostPoint.x,this.ghostPoint.z,this.buildRotation,true);this.ghost.traverse(o=>{if(o.material){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=ok?.7:.28;if(!ok)o.material.color?.setHex(0xe55c51);}});this.buildRoot.add(this.ghost);}
+  validPlacement(key,x,z,rot,ignoreBudget=false){const f=FIXTURES[key];if(!ignoreBudget&&this.buildBudget<f.cost)return false;if(Math.abs(x)>13.2||z<-10.7||z>10.7)return false;if(f.zone==='kitchen'&&z>-.8)return false;if(f.zone==='dining'&&z<1.3)return false;const w=Math.abs(Math.sin(rot))>.5?f.d:f.w,d=Math.abs(Math.sin(rot))>.5?f.w:f.d;for(const q of this.plan){const qf=FIXTURES[q.key],qw=Math.abs(Math.sin(q.rot))>.5?qf.d:qf.w,qd=Math.abs(Math.sin(q.rot))>.5?qf.w:qf.d;if(Math.abs(x-q.x)<(w+qw)*.52&&Math.abs(z-q.z)<(d+qd)*.52)return false;}return true;}
+  placeSelectedFixture(){const key=this.selectedFixture;if(!key)return;const f=FIXTURES[key],x=this.ghostPoint.x,z=this.ghostPoint.z;if(!this.validPlacement(key,x,z,this.buildRotation)){this.sfx.bad();document.getElementById('build-status').textContent='Cannot place here: check zone, overlap or budget.';return;}const q={id:crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`,key,x,z,rot:this.buildRotation,cost:f.cost};this.plan.push(q);this.buildBudget-=f.cost;const v=this.createFixtureVisual(key,this.plan.length-1,true);v.position.set(x,0,z);v.rotation.y=q.rot;v.userData.planId=q.id;this.fixtureRoot.add(v);this.sfx.build();this.updateBuildUI();this.updateGhost();}
+  removeBuildHover(){if(!this.buildHoverPlan||dist2(this.buildHoverPlan,this.ghostPoint)>1.7)return;const q=this.buildHoverPlan;this.plan=this.plan.filter(p=>p.id!==q.id);this.buildBudget+=q.cost;const v=this.fixtureRoot.children.find(c=>c.userData.planId===q.id);v?.removeFromParent();this.buildHoverPlan=null;this.updateBuildUI();this.updateGhost();}
+  clearPlan(){this.buildBudget=LEVELS[this.levelIndex].budget;this.plan=[];while(this.fixtureRoot.children.length)this.fixtureRoot.remove(this.fixtureRoot.children[0]);this.updateBuildUI();this.updateGhost();}
+  autoLayout(){this.clearPlan();const menu=this.config.menu,needed=this.requiredIngredients();const add=(key,x,z,rot=0)=>{const f=FIXTURES[key];if(this.buildBudget<f.cost)return;this.plan.push({id:`auto-${this.plan.length}-${Date.now()}`,key,x,z,rot,cost:f.cost});this.buildBudget-=f.cost;const v=this.createFixtureVisual(key,this.plan.length-1,true);v.position.set(x,0,z);v.rotation.y=rot;v.userData.planId=this.plan.at(-1).id;this.fixtureRoot.add(v);};
+    add('plate',-12,-9);add('sink',-10,-9);add('trash',-8,-9);let cx=-12;for(const k of needed){add(k,cx,-6.8);cx+=2;}add('prep',-9,-3.9);if(this.needsStation('prep'))add('prep',-6.8,-3.9);if(this.needsStation('stove'))add('stove',-3.8,-3.9);if(this.needsStation('fryer'))add('fryer',-1.5,-3.9);if(this.needsStation('oven'))add('oven',.8,-3.9);add('counter',4,-3.9);add('counter',6.2,-3.9);const tpos=[[-9,4],[-4.5,4],[0,4],[4.5,4],[9,4],[-7,8],[-2.4,8],[2.4,8],[7,8]];for(let i=0;i<Math.min(5+this.levelIndex,9);i++)add('table',tpos[i][0],tpos[i][1]);this.updateBuildUI();this.updateGhost();document.getElementById('build-status').textContent='Recommended layout installed. You can still move the plan by clearing and placing your own fixtures.';}
+  requiredIngredients(){const set=new Set();for(const id of this.config.menu)for(const sig of RECIPES[id].components)set.add(sig.split(':')[0]);return[...set];}
+  needsStation(type){for(const id of this.config.menu){const r=RECIPES[id];if(type==='oven'&&r.baked)return true;for(const sig of r.components){const[k,state]=sig.split(':');if(type==='prep'&&state==='chopped')return true;if(type==='stove'&&state==='cooked')return true;if(type==='fryer'&&state==='fried')return true;}}return false;}
+  planRequirements(){const req=[{label:'At least 3 dining tables',ok:this.plan.filter(q=>q.key==='table').length>=3},{label:'Plate rack',ok:this.plan.some(q=>q.key==='plate')},{label:'Sink',ok:this.plan.some(q=>q.key==='sink')},{label:'Trash',ok:this.plan.some(q=>q.key==='trash')},{label:'Assembly counter',ok:this.plan.some(q=>q.key==='counter')}];for(const k of this.requiredIngredients())req.push({label:`${INGREDIENT_META[k].name} crate`,ok:this.plan.some(q=>q.key===k)});for(const s of['prep','stove','fryer','oven'])if(this.needsStation(s))req.push({label:FIXTURES[s].label,ok:this.plan.some(q=>q.key===s)});return req;}
+  updateBuildUI(){document.getElementById('build-budget').textContent=`$${this.buildBudget}`;const req=this.planRequirements();document.getElementById('build-requirements').innerHTML=req.map(r=>`<div class="req ${r.ok?'ok':'bad'}"><span>${r.ok?'✓':'○'} ${r.label}</span><b>${r.ok?'READY':'NEEDED'}</b></div>`).join('');document.getElementById('open-restaurant-btn').disabled=req.some(r=>!r.ok);}
+  createFixtureVisual(key,index=0,build=false){const f=FIXTURES[key];let g;if(f.kind)g=this.assets.crate(f.kind);else if(key==='table')g=this.assets.table(Math.max(0,index));else if(key==='counter')g=this.assets.counter();else g=this.assets.station(key,key==='sink'?0x4fa8b8:key==='stove'||key==='oven'?0xd5644d:COLORS.orange);if(build&&key!=='table'){const l=makeLabel(f.label.toUpperCase(),f.zone==='kitchen'?'#447f86':'#a67838','#fff',480);l.position.set(0,1.72,0);l.scale.set(1.85,.34,1);g.add(l);}return g;}
+  clearGameplay(keepStatic=false){for(const r of[this.fixtureRoot,this.itemRoot,this.customerRoot,this.playerRoot])while(r.children.length)r.remove(r.children[0]);this.stations=[];this.obstacles=[];this.tables=[];this.items=[];this.parties=[];if(!keepStatic)while(this.buildRoot.children.length)this.buildRoot.remove(this.buildRoot.children[0]);}
+  buildLiveKitchen(){while(this.buildRoot.children.length)this.buildRoot.remove(this.buildRoot.children[0]);while(this.fixtureRoot.children.length)this.fixtureRoot.remove(this.fixtureRoot.children[0]);this.stations=[];this.tables=[];this.obstacles=[];let tableIndex=0;for(const q of this.plan){const f=FIXTURES[q.key],group=this.createFixtureVisual(q.key,q.key==='table'?tableIndex:0,false);group.position.set(q.x,0,q.z);group.rotation.y=q.rot;this.fixtureRoot.add(group);if(q.key==='table'){const t={id:tableIndex++,type:'table',pos:new THREE.Vector3(q.x,0,q.z),party:null,dirty:0,cleanClaim:null,group,seats:[]};for(const a of[0,Math.PI/2,Math.PI,Math.PI*1.5]){const local=new THREE.Vector3(Math.sin(a)*1.25,0,Math.cos(a)*1.25).applyAxisAngle(new THREE.Vector3(0,1,0),q.rot);t.seats.push(new THREE.Vector3(q.x+local.x,0,q.z+local.z));}this.tables.push(t);}else{const s={type:f.kind?'crate':q.key,kind:f.kind||null,pos:new THREE.Vector3(q.x,0,q.z),x:q.x,z:q.z,group,slot:null,progress:0,cook:0,burn:0,ready:false,bar:null};if(['prep','stove','fryer','oven','sink'].includes(s.type)){const bg=mesh(rounded(.9,.075,.055,.02),mat(0x243139),0,1.45,.57);bg.castShadow=false;const fill=mesh(rounded(.84,.055,.06,.015),mat(s.type==='sink'?0x4fb7dc:s.type==='prep'?0xe4aa54:0x69b36f),-.42,1.45,.605);fill.geometry.translate(.42,0,0);fill.scale.x=.001;fill.castShadow=false;group.add(bg,fill);s.bar=fill;}this.stations.push(s);}const w=Math.abs(Math.sin(q.rot))>.5?f.d:f.w,d=Math.abs(Math.sin(q.rot))>.5?f.w:f.d;this.obstacles.push({x:q.x,z:q.z,w:w*.95,d:d*.95,type:q.key});}}
+  spawnPlayers(){const starts=[new THREE.Vector3(-2.5,0,.2),new THREE.Vector3(0,0,.2),new THREE.Vector3(2.5,0,.2)],colors=[COLORS.red,COLORS.blue,COLORS.yellow];this.players=[];for(let i=0;i<3;i++)this.players.push(new CrewMember(this,i,colors[i],starts[i],this.config.roles[i],i<this.config.humanCount));this.renderPlayerHud();}
+  renderPlayerHud(){this.ui.playerHud.innerHTML=this.players.map((p,i)=>`<div class="player-chip p${i+1} ${p.human?'human':'bot'}"><div class="line"><b>P${i+1} • ${ROLE_META[p.role].icon} ${ROLE_META[p.role].name}</b><em>${p.human?'HUMAN':'BOT'}</em></div><span id="p${i+1}-held">${p.human?'empty hands':'AI ready'}</span></div>`).join('');}
+  openRestaurant(){const missing=this.planRequirements().filter(r=>!r.ok);if(missing.length){this.sfx.bad();document.getElementById('build-status').textContent=`Missing: ${missing.map(x=>x.label).join(', ')}`;return;}this.closeAllScreens();this.clearGameplay();this.buildLiveKitchen();this.state='playing';const L=LEVELS[this.levelIndex];this.score=0;this.combo=1;this.lives=3;this.timeLeft=L.duration;this.spawnTimer=3;this.customerSerial=0;this.partySerial=0;this.successfulTables=0;this.geometryPendingLife=false;this.cameraRig.setMode(this.config.camera);this.scene.background.setHex(L.tint);this.scene.fog.color.setHex(L.tint);this.spawnPlayers();this.ui.hud.classList.remove('hidden');this.ui.orders.classList.remove('hidden');this.ui.playerHud.classList.remove('hidden');this.ui.levelName.textContent=`${L.name} • ${this.config.humanCount} human${this.config.humanCount>1?'s':''} + ${3-this.config.humanCount} bot${3-this.config.humanCount===1?'':'s'}`;this.updateUI();this.flash('RESTAURANT OPEN — coordinate the crew!');}
+  restartService(){this.openRestaurant();}
+  moveCrew(p,move){const tryPos=p.group.position.clone();tryPos.x+=move.x;if(!this.blocked(p,tryPos))p.group.position.x=tryPos.x;tryPos.copy(p.group.position);tryPos.z+=move.z;if(!this.blocked(p,tryPos))p.group.position.z=tryPos.z;p.group.position.x=clamp(p.group.position.x,-14.2,14.2);p.group.position.z=clamp(p.group.position.z,-10.9,10.9);}
+  blocked(p,pos){for(const o of this.obstacles)if(Math.abs(pos.x-o.x)<o.w/2+p.radius&&Math.abs(pos.z-o.z)<o.d/2+p.radius)return true;for(const other of this.players)if(other!==p&&dist2(pos,other.group.position)<p.radius+other.radius-.04)return true;return false;}
+  nearestInteractable(pos,range){let best=null,bd=range;for(const s of this.stations){const d=dist2(pos,s.pos);if(d<bd){best=s;bd=d;}}for(const t of this.tables){const d=dist2(pos,t.pos);if(d<bd){best=t;bd=d;}}for(const i of this.items){if(i.dead||i.airborne||i.onSurface)continue;const d=dist2(pos,i.group.position);if(d<bd){best=i;bd=d;}}return best;}
+  spawnItem(kind,state='raw',plate=false,pos=null){const i=new WorldItem(this,kind,state,plate);this.items.push(i);if(pos)i.group.position.copy(pos);return i;}
+  interact(p,target,dt,held){if(target instanceof WorldItem){if(!p.held)p.pick(target);return;}if(target.type==='table'){this.interactTable(p,target);return;}if(target.type==='crate'){if(!p.held){const i=this.spawnItem(target.kind,'raw',false,target.pos.clone().add(new THREE.Vector3(0,1.1,0)));p.pick(i);}return;}if(target.type==='plate'){if(!p.held){const i=this.spawnItem('plate','raw',true,target.pos.clone().add(new THREE.Vector3(0,1.1,0)));p.pick(i);}return;}if(target.type==='trash'){if(p.held){p.held.dispose();p.held=null;this.sfx.bad();}return;}if(target.type==='counter'){this.interactCounter(p,target);return;}if(target.type==='prep'){this.interactPrep(p,target,dt);return;}if(['stove','fryer','oven'].includes(target.type)){this.interactCookStation(p,target);return;}if(target.type==='sink'){this.interactSink(p,target,dt);return;}}
+  interactCounter(p,s){if(!s.slot&&p.held){s.slot=p.held;p.held=null;s.slot.onSurface=true;s.slot.group.position.copy(s.pos).add(new THREE.Vector3(0,1.2,0));return;}if(s.slot&&!p.held){p.pick(s.slot);s.slot.onSurface=false;s.slot=null;return;}if(s.slot&&p.held){let plate=null,ing=null;if(s.slot.isPlate&&!p.held.isPlate){plate=s.slot;ing=p.held;}else if(p.held.isPlate&&!s.slot.isPlate){plate=p.held;ing=s.slot;}if(plate&&ing&&!plate.dirty){plate.components.push({kind:ing.kind,state:ing.state});ing.dispose();if(ing===p.held)p.held=null;else s.slot=plate===p.held?null:plate;if(plate===p.held){s.slot=null;}this.sfx.pickup();}}}
+  interactPrep(p,s,dt){if(!s.slot&&p.held&&!p.held.isPlate&&INGREDIENT_META[p.held.kind]?.choppable&&p.held.state==='raw'){s.slot=p.held;p.held=null;s.slot.onSurface=true;s.slot.group.position.copy(s.pos).add(new THREE.Vector3(0,1.22,0));s.progress=0;return;}if(s.slot&&s.slot.state==='raw'){s.progress+=dt*p.workMultiplier('prep')*1.05;if(s.bar)s.bar.scale.x=clamp(s.progress/1.7,.001,1);if(s.progress>=1.7){s.slot.setState('chopped');s.progress=0;if(s.bar)s.bar.scale.x=.001;this.sfx.chop();}}else if(s.slot&&!p.held){p.pick(s.slot);s.slot.onSurface=false;s.slot=null;}}
+  interactCookStation(p,s){if(!s.slot&&p.held){if(s.type==='stove'&&!p.held.isPlate&&p.held.kind==='meat'&&p.held.state==='raw'){s.slot=p.held;p.held=null;}else if(s.type==='fryer'&&!p.held.isPlate&&p.held.kind==='potato'&&p.held.state==='chopped'){s.slot=p.held;p.held=null;}else if(s.type==='oven'&&p.held.isPlate&&!p.held.dirty&&!p.held.baked){const rawMatch=Object.values(RECIPES).some(r=>r.baked&&[...r.components].sort().join('|')===p.held.components.map(signature).sort().join('|'));if(!rawMatch)return;s.slot=p.held;p.held=null;}else return;s.slot.onSurface=true;s.slot.group.position.copy(s.pos).add(new THREE.Vector3(0,1.25,0));s.cook=0;s.ready=false;return;}if(s.slot&&!p.held){p.pick(s.slot);s.slot.onSurface=false;s.slot=null;s.cook=0;s.ready=false;if(s.bar)s.bar.scale.x=.001;}}
+  interactSink(p,s,dt){if(!s.slot&&p.held?.isPlate&&p.held.dirty){s.slot=p.held;p.held=null;s.slot.onSurface=true;s.slot.group.position.copy(s.pos).add(new THREE.Vector3(0,1.22,0));s.progress=0;return;}if(s.slot?.dirty){s.progress+=dt*p.workMultiplier('sink');if(s.bar)s.bar.scale.x=clamp(s.progress/1.8,.001,1);if(s.progress>=1.8){s.slot.setDirty(false);s.slot.components=[];s.slot.baked=false;s.slot.burnt=false;s.progress=0;if(s.bar)s.bar.scale.x=.001;this.score+=15;this.sfx.serve();}}else if(s.slot&&!p.held){p.pick(s.slot);s.slot.onSurface=false;s.slot=null;}}
+  interactTable(p,t){if(t.party?.state==='waiting'&&p.held?.isPlate){const rid=identifyRecipe(p.held);if(rid&&t.party.serve(rid,p)){p.held.dispose();p.held=null;}else{this.sfx.bad();this.flash(`Table ${t.id+1} did not order that dish.`);}return;}if(!t.party&&t.dirty>0&&!p.held){const plate=this.spawnItem('plate','raw',true,t.pos.clone().add(new THREE.Vector3(0,1.1,0)));plate.setDirty(true);p.pick(plate);t.dirty--;this.flash(`Picked up dirty plate from Table ${t.id+1}`);}}
+  updateStations(dt){for(const s of this.stations){if(!['stove','fryer','oven'].includes(s.type)||!s.slot)continue;s.cook+=dt;const roleGrace=this.players.some(p=>p.role==='chef')?1.15:1;const readyAt=s.type==='oven'?4.1:3.5,burnAt=(s.type==='oven'?8.3:7.1)*roleGrace;if(!s.ready&&s.cook>=readyAt){s.ready=true;if(s.type==='stove')s.slot.setState('cooked');if(s.type==='fryer')s.slot.setState('fried');if(s.type==='oven')s.slot.baked=true;this.sfx.cook();}if(s.cook>=burnAt&&!s.slot.burnt){s.slot.burnt=true;if(!s.slot.isPlate)s.slot.setState('burnt');this.sfx.bad();this.flash(`${s.type.toUpperCase()} item burned!`);}if(s.bar){const v=s.ready?1:clamp(s.cook/readyAt,.001,1);s.bar.scale.x=v;}}}
+  updateThrown(dt){for(const i of this.items){if(i.dead||!i.airborne)continue;i.velocity.y-=9.8*dt;i.group.position.addScaledVector(i.velocity,dt);for(const p of this.players){if(!p.human||p.held)continue;if(i.group.position.y<1.7&&i.group.position.y>.55&&dist2(i.group.position,p.group.position)<.58){i.airborne=false;i.velocity.set(0,0,0);p.pick(i);this.flash(`P${p.index+1} caught ${i.description()}!`);break;}}if(i.airborne&&i.group.position.y<=.22){i.group.position.y=.22;i.airborne=false;i.velocity.set(0,0,0);}}this.items=this.items.filter(i=>!i.dead);}
+  spawnParty(){const free=this.tables.filter(t=>!t.party&&t.dirty===0);if(!free.length)return;const table=free[Math.floor(Math.random()*free.length)],size=1+Math.floor(Math.random()*Math.min(3,table.seats.length)),type=CUSTOMER_TYPES[Math.floor(Math.random()*CUSTOMER_TYPES.length)],p=new CustomerParty(this,table,size,this.config.menu,LEVELS[this.levelIndex].patience,type);table.party=p;this.parties.push(p);}
+  walkout(p){if(p.state!=='waiting')return;p.forceLeave();this.combo=1;this.lives=Math.max(0,this.lives-1);this.sfx.bad();this.flash(`Table ${p.table.id+1} walked out! Team life lost.`);if(this.lives>0)this.openGeometryRescue();else this.endLevel(true);}
+  openGeometryRescue(){this.state='geometry';this.geometryPendingLife=true;const q=GEOMETRY_QUESTIONS[Math.floor(Math.random()*GEOMETRY_QUESTIONS.length)];document.getElementById('geometry-question').textContent=q.q;const box=document.getElementById('geometry-options');box.innerHTML='';q.a.forEach((a,i)=>{const b=document.createElement('button');b.textContent=a;b.onclick=()=>{if(i===q.c){b.classList.add('correct');this.lives=Math.min(3,this.lives+1);this.flash('Correct! Team life restored.');this.sfx.serve();}else{b.classList.add('wrong');this.sfx.bad();this.flash('Incorrect. Continue with the remaining lives.');}setTimeout(()=>{this.ui.geometry.classList.add('hidden');this.state='playing';this.geometryPendingLife=false;},550);};box.appendChild(b);});this.ui.geometry.classList.remove('hidden');}
+  updateOrdersUI(){const active=this.parties.filter(p=>p.state==='waiting');this.ui.orders.innerHTML=active.slice(0,6).map(p=>{const pct=clamp(p.patience/p.patienceMax*100,0,100);return`<article class="order-card ${pct<28?'urgent':''}"><div class="top"><span>TABLE ${p.table.id+1}</span><span>${Math.ceil(p.patience)}s</span></div><div class="customer-type">${p.type.label}</div><div class="dishes">${p.orders.map(o=>RECIPES[o.recipeId].icon+(o.claimedBy?'·':'')).join(' ')}</div><div class="bar"><div class="fill" style="width:${pct}%"></div></div></article>`;}).join('');}
+  updateUI(){this.ui.timer.textContent=fmtTime(this.timeLeft);this.ui.score.textContent=Math.round(this.score);this.ui.combo.textContent=`x${this.combo}`;this.ui.lives.textContent='❤'.repeat(this.lives)+'♡'.repeat(3-this.lives);for(const p of this.players){const el=document.getElementById(`p${p.index+1}-held`);if(el)el.textContent=p.human?(p.held?p.held.description():'empty hands'):(p.bot.task?`AI: ${p.bot.task.kind==='dish'?RECIPES[p.bot.task.recipeId]?.name:'cleaning'}`:'AI ready');}this.updateOrdersUI();}
+  flash(text){this.ui.message.textContent=text;this.ui.message.classList.remove('hidden');this.messageTimer=2.5;}
+  showOverlay(name){if(this.state==='playing')this.state='softpause';this.ui[name].classList.remove('hidden');}
+  closeSoftOverlay(){this.ui.recipes.classList.add('hidden');this.ui.controls.classList.add('hidden');if(this.state==='softpause')this.state='playing';}
+  closeAllScreens(){for(const k of['menu','crew','tutorial','recipes','controls','pause','result','geometry'])this.ui[k].classList.add('hidden');this.ui.build.classList.add('hidden');this.ui.hud.classList.add('hidden');this.ui.orders.classList.add('hidden');this.ui.playerHud.classList.add('hidden');this.ui.hint.classList.add('hidden');}
+  pause(){this.state='paused';this.ui.pause.classList.remove('hidden');}
+  resume(){this.ui.pause.classList.add('hidden');this.state='playing';}
+  toMenu(){this.closeAllScreens();this.clearGameplay();this.state='menu';this.ui.menu.classList.remove('hidden');this.scene.background.setHex(0xb7cfca);this.scene.fog.color.setHex(0xb7cfca);this.cameraRig.setMode('classic');this.buildLevelButtons();}
+  endLevel(failed=false){if(this.state==='result')return;this.state='result';const L=LEVELS[this.levelIndex],stars=failed?0:this.score>=L.thresholds[2]?3:this.score>=L.thresholds[1]?2:this.score>=L.thresholds[0]?1:0;this.progress.stars[this.levelIndex]=Math.max(this.progress.stars[this.levelIndex]||0,stars);localStorage.setItem('robledo_kitchen_rush_progress',JSON.stringify(this.progress));document.getElementById('result-title').textContent=failed?'KITCHEN CLOSED EARLY':'SERVICE COMPLETE';document.getElementById('result-stars').textContent='★'.repeat(stars)+'☆'.repeat(3-stars);document.getElementById('result-stats').innerHTML=`<p><b>${Math.round(this.score)}</b> points</p><p>${this.successfulTables} tables completed • ${this.config.humanCount} human player${this.config.humanCount>1?'s':''}</p>`;this.ui.result.classList.remove('hidden');this.buildLevelButtons();}
+  resize(){const w=innerWidth,h=innerHeight;this.renderer.setSize(w,h,false);this.camera.aspect=w/h;this.camera.updateProjectionMatrix();}
+  updateBuildHoverHint(){if(this.state!=='build')return;const q=this.buildHoverPlan;if(q&&dist2(q,this.ghostPoint)<1.7)document.getElementById('build-status').textContent=`Hovering ${FIXTURES[q.key].label}. Press Delete to remove and refund $${q.cost}.`;}
+  loop(ts){const dt=Math.min(.04,Math.max(.001,(ts-this.lastTs)/1000));this.lastTs=ts;if(this.state==='playing'){for(const p of this.players)p.update(dt);this.updateStations(dt);this.updateThrown(dt);for(const p of this.parties)p.update(dt);this.parties=this.parties.filter(p=>p.state!=='gone');this.spawnTimer-=dt;if(this.spawnTimer<=0){this.spawnParty();this.spawnTimer=LEVELS[this.levelIndex].spawnEvery*(.82+Math.random()*.36);}this.timeLeft-=dt;if(this.timeLeft<=0)this.endLevel(false);this.updateUI();const p1=this.players.find(p=>p.human);if(p1){const n=this.nearestInteractable(p1.group.position,1.55);if(n){this.ui.hint.textContent=`P${p1.index+1} • ${n.type==='table'?`TABLE ${n.id+1}`:n instanceof WorldItem?n.description().toUpperCase():(FIXTURES[n.kind||n.type]?.label||n.type).toUpperCase()} • INTERACT`;this.ui.hint.classList.remove('hidden');}else this.ui.hint.classList.add('hidden');}}
+    if(this.state==='build')this.updateBuildHoverHint();if(this.messageTimer>0){this.messageTimer-=dt;if(this.messageTimer<=0)this.ui.message.classList.add('hidden');}this.cameraRig.update(dt);this.renderer.render(this.scene,this.camera);requestAnimationFrame(t=>this.loop(t));}
 }
 
 new Game();
