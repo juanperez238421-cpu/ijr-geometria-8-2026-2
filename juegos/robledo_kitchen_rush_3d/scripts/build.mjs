@@ -23,7 +23,13 @@ await build({
 
 let html = await readFile(path.join(root, 'index.html'), 'utf8');
 const css = await readFile(path.join(root, 'style.css'), 'utf8');
-const js = await readFile(path.join(dist, 'game.bundle.js'), 'utf8');
+const bundledGame = await readFile(path.join(dist, 'game.bundle.js'), 'utf8');
+
+// When the native portable launcher opens the game through 127.0.0.1 it expects
+// a lightweight heartbeat. Keeping this inside the single embedded script avoids
+// adding extra script tags and lets the launcher close after the browser tab exits.
+const portableHeartbeat = `if(location.hostname==='127.0.0.1'&&new URLSearchParams(location.search).get('portable')==='1'){const __rkrHeartbeat=()=>fetch('/__heartbeat',{method:'POST',cache:'no-store'}).catch(()=>{});__rkrHeartbeat();setInterval(__rkrHeartbeat,10000);}`;
+const js = portableHeartbeat + bundledGame;
 
 // Callback replacements insert minified bytes literally. Replacement strings can
 // reinterpret valid "$&" sequences from Three.js and corrupt the standalone.
