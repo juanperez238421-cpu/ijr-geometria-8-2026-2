@@ -69,11 +69,15 @@ jobs:
           set -euxo pipefail
           CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME_BIN"
+          rm -rf /tmp/rkr-chrome-profile
           python3 -m http.server 8765 --bind 127.0.0.1 --directory dist >/tmp/rkr-http.log 2>&1 &
           HTTP_PID=$!
           xvfb-run -a "$CHROME_BIN" \
             --no-sandbox \
             --disable-dev-shm-usage \
+            --no-first-run \
+            --no-default-browser-check \
+            --user-data-dir=/tmp/rkr-chrome-profile \
             --remote-debugging-port=9333 \
             --remote-allow-origins='*' \
             --window-size=1280,800 \
