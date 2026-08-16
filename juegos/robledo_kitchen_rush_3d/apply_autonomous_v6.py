@@ -24,4 +24,12 @@ with tarfile.open(fileobj=io.BytesIO(archive), mode='r:gz') as tf:
         if ROOT.resolve() not in target.parents and target != ROOT.resolve():
             raise SystemExit(f'Unsafe archive path: {member.name}')
     tf.extractall(ROOT)
+
+# Normalize one transport-only token corruption detected by CI in the compressed source.
+# The active V6 fixture is Grocery Market + Freezer; there is no `kitchen` fixture-cap key.
+game_js = ROOT / 'juegos/robledo_kitchen_rush_3d/src/game.js'
+text = game_js.read_text(encoding='utf-8')
+text = text.replace("kitchen'1", 'grocery:1')
+game_js.write_text(text, encoding='utf-8')
+
 print(f'Applied Robledo Kitchen Rush Autonomous Service V6 ({len(archive)} bytes, sha256={digest}).')
