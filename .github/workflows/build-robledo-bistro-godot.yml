@@ -36,7 +36,9 @@ jobs:
           fi
           test -s "$PROJECT_DIR/project.godot"
           test -s "$PROJECT_DIR/scripts/main.gd"
-          test -s "$PROJECT_DIR/assets/ui/school_logo.png"
+          test -s "$PROJECT_DIR/assets/ui/school_logo.webp"
+          test -s "$PROJECT_DIR/data/recipes.json"
+          test -s "$PROJECT_DIR/data/questions.json"
 
       - name: Install Godot 4.3 and export templates
         run: |
@@ -54,21 +56,29 @@ jobs:
       - name: Import project and validate scripts
         run: |
           set -euxo pipefail
-          godot --headless --path "$PROJECT_DIR" --editor --quit-after 3
+          set -o pipefail
+          godot --headless --path "$PROJECT_DIR" --editor --quit-after 3 2>&1 | tee /tmp/godot-import.log
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|Error importing" /tmp/godot-import.log; then
+            echo "Godot source validation found parser/import errors." >&2
+            exit 1
+          fi
 
       - name: Export Windows and Linux
         run: |
           set -euxo pipefail
           mkdir -p "$PROJECT_DIR/build/windows" "$PROJECT_DIR/build/linux"
-          godot --headless --path "$PROJECT_DIR" --export-release "Windows Desktop" "$PROJECT_DIR/build/windows/RobledoBistroSenior.exe"
-          godot --headless --path "$PROJECT_DIR" --export-release "Linux" "$PROJECT_DIR/build/linux/RobledoBistroSenior.x86_64"
-          test -s "$PROJECT_DIR/build/windows/RobledoBistroSenior.exe"
-          test -s "$PROJECT_DIR/build/linux/RobledoBistroSenior.x86_64"
+          WIN_OUT="$GITHUB_WORKSPACE/$PROJECT_DIR/build/windows/RobledoBistroSenior.exe"
+          LINUX_OUT="$GITHUB_WORKSPACE/$PROJECT_DIR/build/linux/RobledoBistroSenior.x86_64"
+          godot --headless --path "$PROJECT_DIR" --export-release "Windows Desktop" "$WIN_OUT"
+          godot --headless --path "$PROJECT_DIR" --export-release "Linux" "$LINUX_OUT"
+          test -s "$WIN_OUT"
+          test -s "$LINUX_OUT"
 
       - name: Commit expanded source to main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('juegos/robledo_bistro_godot_staging/apply_payload.py') != ''
         run: |
           set -euxo pipefail
+          cp -a "$PROJECT_DIR/build" /tmp/robledo_bistro_build
           rm -rf juegos/robledo_bistro_godot_staging
           rm -rf "$PROJECT_DIR/.godot" "$PROJECT_DIR/build"
           git config user.name "github-actions[bot]"
@@ -76,13 +86,16 @@ jobs:
           git add juegos/robledo_bistro_godot juegos/robledo_bistro_godot_staging
           git commit -m "Expand Robledo Bistro Godot full source"
           git push
+          mv /tmp/robledo_bistro_build "$PROJECT_DIR/build"
 
       - name: Package offline desktop builds
         run: |
           set -euxo pipefail
           mkdir -p dist/Robledo_Bistro_Godot_Full/Windows dist/Robledo_Bistro_Godot_Full/Linux dist/Robledo_Bistro_Godot_Full/Source
-          cp "$PROJECT_DIR/build/windows/RobledoBistroSenior.exe" "$PROJECT_DIR/build/windows/RobledoBistroSenior.pck" dist/Robledo_Bistro_Godot_Full/Windows/ 2>/dev/null || cp "$PROJECT_DIR/build/windows/RobledoBistroSenior.exe" dist/Robledo_Bistro_Godot_Full/Windows/
-          cp "$PROJECT_DIR/build/linux/RobledoBistroSenior.x86_64" "$PROJECT_DIR/build/linux/RobledoBistroSenior.pck" dist/Robledo_Bistro_Godot_Full/Linux/ 2>/dev/null || cp "$PROJECT_DIR/build/linux/RobledoBistroSenior.x86_64" dist/Robledo_Bistro_Godot_Full/Linux/
+          cp "$PROJECT_DIR/build/windows/RobledoBistroSenior.exe" dist/Robledo_Bistro_Godot_Full/Windows/
+          if [ -s "$PROJECT_DIR/build/windows/RobledoBistroSenior.pck" ]; then cp "$PROJECT_DIR/build/windows/RobledoBistroSenior.pck" dist/Robledo_Bistro_Godot_Full/Windows/; fi
+          cp "$PROJECT_DIR/build/linux/RobledoBistroSenior.x86_64" dist/Robledo_Bistro_Godot_Full/Linux/
+          if [ -s "$PROJECT_DIR/build/linux/RobledoBistroSenior.pck" ]; then cp "$PROJECT_DIR/build/linux/RobledoBistroSenior.pck" dist/Robledo_Bistro_Godot_Full/Linux/; fi
           cp -a "$PROJECT_DIR"/. dist/Robledo_Bistro_Godot_Full/Source/
           rm -rf dist/Robledo_Bistro_Godot_Full/Source/.godot dist/Robledo_Bistro_Godot_Full/Source/build
           cat > dist/Robledo_Bistro_Godot_Full/README_FIRST.txt <<'TXT'
@@ -98,7 +111,7 @@ jobs:
           SOURCE:
           Open Source/project.godot with Godot 4.3+.
 
-          The game does not need Internet while playing. Geometry Rescue appears only after a life is lost.
+          This build is fully local/offline while playing. Geometry Rescue appears only after a life is lost.
           TXT
           cd dist
           zip -qr Robledo_Bistro_Godot_Full_Local.zip Robledo_Bistro_Godot_Full
