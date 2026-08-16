@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PAYLOAD = Path(__file__).resolve().parent / '.v6_payload'
-EXPECTED_SHA256 = '6fb6170dfbc3bd40ff13180971809919fe1a509ff6efddf480a56b84b21e460b'
+EXPECTED_SHA256 = 'b73036b38938f1d13c78e580873145e3dbfb8d8535ade2ec250b83b7c3f6914e'
 
 parts = sorted(PAYLOAD.glob('part_*.b64'))
 if len(parts) != 11:
