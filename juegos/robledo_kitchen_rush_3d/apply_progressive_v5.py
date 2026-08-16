@@ -11,8 +11,8 @@ PAYLOAD = Path(__file__).resolve().parent / '.v5_payload'
 EXPECTED_SHA256 = 'ccb7f35dfcdb453766e97130f5e6c9318591e825dcdf3963498c86b9b1746f0c'
 
 parts = sorted(PAYLOAD.glob('part_*.b64'))
-if len(parts) != 5:
-    raise SystemExit(f'Expected 5 Progressive V5 payload parts, found {len(parts)}')
+if len(parts) != 7:
+    raise SystemExit(f'Expected 7 Progressive V5 payload parts, found {len(parts)}')
 
 encoded = ''.join(p.read_text(encoding='utf-8').strip() for p in parts)
 archive = base64.b64decode(encoded, validate=True)
