@@ -51,26 +51,27 @@ try {
   console.warn('School logo not found at repository asset path; build continues with source path.');
 }
 
-const standalone = path.join(dist, 'Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html');
+const standalone = path.join(dist, 'Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6_OFFLINE.html');
 await writeFile(standalone, html, 'utf8');
 // Keep canonical aliases for launcher/CI compatibility.
 await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_OFFLINE.html'));
 await copyFile(standalone, path.join(dist, 'index.html'));
 await rm(path.join(dist, 'game.bundle.js'), { force: true });
 
-await writeFile(path.join(dist, 'README_FIRST.txt'), `ROBLEDO KITCHEN RUSH 3D — SENIOR PROGRESSIVE GROWTH V5
+await writeFile(path.join(dist, 'README_FIRST.txt'), `ROBLEDO KITCHEN RUSH 3D — SENIOR AUTONOMOUS SERVICE V6
 
 RECOMMENDED ON WINDOWS
 1. Extract the complete ZIP before playing.
-2. Open PLAY/RobledoKitchenRush3D_ProgressiveV5_Windows.exe.
+2. Open PLAY/RobledoKitchenRush3D_AutonomousV6_Windows.exe.
 3. The launcher serves the complete game only on 127.0.0.1 and opens it in your browser. Everything remains local/offline.
 
 PROGRESSIVE BUSINESS LOOP
 - Start in a compact Starter Bistro with only 2 tables, 2 active customer parties and 2 menu recipes.
-- Business cash persists between shifts. Tables, counters, stations and ingredient crates are permanent investments.
+- Business cash persists between shifts. Tables, counters, production stations and the grocery market/freezer wall are permanent investments.
 - Customer satisfaction persists and is required together with cash to expand.
-- Expansion tiers unlock more floor area, higher table/customer limits, duplicate kitchen stations, additional ingredient crates and more recipes/menu slots.
-- Complete a whole table within 30 seconds of ordering to restore one lost life (up to the 3-life maximum).
+- Expansion tiers unlock more floor area, higher table/customer limits, duplicate kitchen stations and more recipes/menu slots.
+- A crew member must take each customer order. The 30-second fast-service clock starts only after the order is taken.
+- Bots physically collect groceries, prep, cook, assemble, serve and clean through the same live station logic as humans.
 - Walkouts cost one life, reduce satisfaction and impose a small cash penalty.
 
 BUILD MODE
@@ -96,7 +97,7 @@ Home: reset
 The camera distance scales with restaurant expansion so the starter bistro stays readable and later restaurants fit naturally.
 
 HTML FALLBACK
-Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html is fully standalone. Managed browsers can restrict file:// pages, so the Windows launcher is preferred.
+Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6_OFFLINE.html is fully standalone. Managed browsers can restrict file:// pages, so the Windows launcher is preferred.
 `);
 
 console.log(`Built ${standalone}`);
