@@ -24,8 +24,18 @@ await build({
 let html = await readFile(path.join(root, 'index.html'), 'utf8');
 const css = await readFile(path.join(root, 'style.css'), 'utf8');
 const js = await readFile(path.join(dist, 'game.bundle.js'), 'utf8');
-html = html.replace('<link rel="stylesheet" href="./style.css" />', `<style>${css}</style>`);
-html = html.replace('<script src="./game.js"></script>', `<script>${js}</script>`);
+
+// Use replacement callbacks instead of replacement strings. A minified bundle may
+// legitimately contain `$&`; String.replace would interpret that sequence as the
+// matched HTML placeholder and silently inject nested <script> tags into the JS.
+html = html.replace(
+  '<link rel="stylesheet" href="./style.css" />',
+  () => `<style>${css}</style>`,
+);
+html = html.replace(
+  '<script src="./game.js"></script>',
+  () => `<script>${js}</script>`,
+);
 
 const logoPath = path.resolve(root, '../../assets/logo_colegio_transparente.png');
 try {
