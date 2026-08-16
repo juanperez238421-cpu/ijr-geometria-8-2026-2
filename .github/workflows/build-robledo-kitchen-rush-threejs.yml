@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-offline-game:
@@ -21,6 +21,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Apply checksum-verified Autonomous Service V6 source
+        run: python juegos/robledo_kitchen_rush_3d/apply_autonomous_v6.py
 
       - name: Node 22
         uses: actions/setup-node@v4
@@ -31,7 +34,7 @@ jobs:
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Validate Progressive Growth V5 source and mechanics
+      - name: Static Autonomous Service V6 QA
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm run check
 
@@ -39,16 +42,16 @@ jobs:
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm run build
 
-      - name: Verify Progressive V5 standalone output
+      - name: Verify Autonomous V6 standalone output
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          test -s dist/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html
+          test -s dist/Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6_OFFLINE.html
           test -s dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
           python - <<'PY'
           from pathlib import Path
-          html = Path('dist/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html').read_text(encoding='utf-8')
-          for token in ['ROBLEDO KITCHEN RUSH 3D','PROGRESSIVE RESTAURANT MANAGEMENT','BUSINESS CASH','EXPAND RESTAURANT','data:image/png;base64']:
+          html = Path('dist/Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6_OFFLINE.html').read_text(encoding='utf-8')
+          for token in ['ROBLEDO KITCHEN RUSH 3D','GROCERY MARKET','WAITER NEEDED','BUSINESS CASH','data:image/png;base64']:
               assert token in html, token
           assert 'href="./style.css"' not in html
           assert '<script src="./game.js"></script>' not in html
@@ -57,38 +60,37 @@ jobs:
           start = html.index('<script>') + len('<script>')
           end = html.rindex('</script>')
           bundle = html[start:end]
-          assert bundle.strip()
-          Path('/tmp/robledo-kitchen-bundle.js').write_text(bundle, encoding='utf-8')
-          print('Progressive V5 standalone bytes:', len(html.encode('utf-8')))
+          Path('/tmp/robledo-kitchen-v6-bundle.js').write_text(bundle, encoding='utf-8')
+          print('Autonomous V6 standalone bytes:', len(html.encode('utf-8')))
           PY
-          node --check /tmp/robledo-kitchen-bundle.js
+          node --check /tmp/robledo-kitchen-v6-bundle.js
 
-      - name: Real browser Progressive V5 end-to-end test
+      - name: Professional browser E2E — waiter, grocery, cooking, serving and cleaning
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
           CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME_BIN"
-          rm -rf /tmp/rkr-chrome-profile
-          python3 -m http.server 8765 --bind 127.0.0.1 --directory dist >/tmp/rkr-http.log 2>&1 &
+          rm -rf /tmp/rkr-v6-chrome-profile
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory dist >/tmp/rkr-v6-http.log 2>&1 &
           HTTP_PID=$!
           xvfb-run -a "$CHROME_BIN" \
             --no-sandbox \
             --disable-dev-shm-usage \
             --no-first-run \
             --no-default-browser-check \
-            --user-data-dir=/tmp/rkr-chrome-profile \
+            --user-data-dir=/tmp/rkr-v6-chrome-profile \
             --remote-debugging-port=9333 \
             --remote-allow-origins='*' \
             --window-size=1280,800 \
             --enable-unsafe-swiftshader \
             --use-angle=swiftshader \
-            http://127.0.0.1:8765/index.html >/tmp/rkr-chrome.log 2>&1 &
+            http://127.0.0.1:8765/index.html >/tmp/rkr-v6-chrome.log 2>&1 &
           CHROME_PID=$!
           cleanup() { kill "$CHROME_PID" "$HTTP_PID" 2>/dev/null || true; }
           trap cleanup EXIT
           if ! CDP_PORT=9333 node scripts/smoke.mjs; then
-            cat /tmp/rkr-chrome.log || true
+            cat /tmp/rkr-v6-chrome.log || true
             exit 1
           fi
 
@@ -98,22 +100,22 @@ jobs:
           go-version: '1.23.x'
           cache: false
 
-      - name: Build Progressive V5 portable launchers
+      - name: Build Autonomous V6 portable launchers
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          cp dist/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html launcher/game.html
-          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags='-s -w -H=windowsgui' -o dist/RobledoKitchenRush3D_ProgressiveV5_Windows.exe ./launcher
-          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o dist/RobledoKitchenRush3D_ProgressiveV5_Linux ./launcher
-          test -s dist/RobledoKitchenRush3D_ProgressiveV5_Windows.exe
-          test -s dist/RobledoKitchenRush3D_ProgressiveV5_Linux
+          cp dist/Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6_OFFLINE.html launcher/game.html
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags='-s -w -H=windowsgui' -o dist/RobledoKitchenRush3D_AutonomousV6_Windows.exe ./launcher
+          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o dist/RobledoKitchenRush3D_AutonomousV6_Linux ./launcher
+          test -s dist/RobledoKitchenRush3D_AutonomousV6_Windows.exe
+          test -s dist/RobledoKitchenRush3D_AutonomousV6_Linux
 
-      - name: Verify portable launcher serves Progressive V5
+      - name: Verify V6 portable launcher
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          chmod +x dist/RobledoKitchenRush3D_ProgressiveV5_Linux
-          dist/RobledoKitchenRush3D_ProgressiveV5_Linux --no-open --port 8766 >/tmp/rkr-launcher.log 2>&1 &
+          chmod +x dist/RobledoKitchenRush3D_AutonomousV6_Linux
+          dist/RobledoKitchenRush3D_AutonomousV6_Linux --no-open --port 8766 >/tmp/rkr-v6-launcher.log 2>&1 &
           PID=$!
           trap 'kill "$PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 30); do
@@ -121,28 +123,51 @@ jobs:
             sleep .2
           done
           curl -fsS http://127.0.0.1:8766/__health | grep -q OK
-          curl -fsS http://127.0.0.1:8766/ -o /tmp/rkr-served.html
-          grep -q 'BUSINESS CASH' /tmp/rkr-served.html
-          grep -q 'EXPAND RESTAURANT' /tmp/rkr-served.html
-          test $(wc -c </tmp/rkr-served.html) -gt 550000
+          curl -fsS http://127.0.0.1:8766/ -o /tmp/rkr-v6-served.html
+          grep -q 'GROCERY MARKET' /tmp/rkr-v6-served.html
+          grep -q 'WAITER NEEDED' /tmp/rkr-v6-served.html
+          test $(wc -c </tmp/rkr-v6-served.html) -gt 550000
 
-      - name: Package Progressive V5 plus editable source
+      - name: Package Autonomous V6 plus editable source and QA report
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
           rm -rf package
-          mkdir -p package/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5/PLAY package/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5/SOURCE
-          cp dist/RobledoKitchenRush3D_ProgressiveV5_Windows.exe dist/RobledoKitchenRush3D_ProgressiveV5_Linux dist/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html dist/README_FIRST.txt package/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5/PLAY/
-          cp index.html style.css package.json package-lock.json README.md README_PROGRESSIVE_V5.txt SENIOR_PROGRESSIVE_V5_NOTES.md go.mod package/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5/SOURCE/
-          cp -a src scripts launcher package/Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5/SOURCE/
+          mkdir -p package/Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6/PLAY package/Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6/SOURCE
+          cp dist/RobledoKitchenRush3D_AutonomousV6_Windows.exe dist/RobledoKitchenRush3D_AutonomousV6_Linux dist/Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6_OFFLINE.html dist/README_FIRST.txt package/Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6/PLAY/
+          cp index.html style.css package.json package-lock.json README.md README_PROGRESSIVE_V5.txt README_AUTONOMOUS_V6.txt SENIOR_PROGRESSIVE_V5_NOTES.md SENIOR_V6_QA_REPORT.md go.mod package/Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6/SOURCE/
+          cp -a src scripts launcher package/Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6/SOURCE/
           cd package
-          zip -qr Robledo_Kitchen_Rush_3D_SENIOR_PROGRESSIVE_V5_FULL_LOCAL.zip Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5
-          test -s Robledo_Kitchen_Rush_3D_SENIOR_PROGRESSIVE_V5_FULL_LOCAL.zip
+          zip -qr Robledo_Kitchen_Rush_3D_SENIOR_AUTONOMOUS_V6_FULL_LOCAL.zip Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6
+          test -s Robledo_Kitchen_Rush_3D_SENIOR_AUTONOMOUS_V6_FULL_LOCAL.zip
 
-      - name: Upload Progressive V5 downloadable build
+      - name: Promote QA-approved V6 source to main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -euxo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add juegos/robledo_kitchen_rush_3d/src/game.js \
+                  juegos/robledo_kitchen_rush_3d/index.html \
+                  juegos/robledo_kitchen_rush_3d/style.css \
+                  juegos/robledo_kitchen_rush_3d/package.json \
+                  juegos/robledo_kitchen_rush_3d/package-lock.json \
+                  juegos/robledo_kitchen_rush_3d/scripts/build.mjs \
+                  juegos/robledo_kitchen_rush_3d/scripts/check.mjs \
+                  juegos/robledo_kitchen_rush_3d/scripts/smoke.mjs \
+                  juegos/robledo_kitchen_rush_3d/README_AUTONOMOUS_V6.txt \
+                  juegos/robledo_kitchen_rush_3d/SENIOR_V6_QA_REPORT.md
+          if git diff --cached --quiet; then
+            echo "QA-approved Autonomous V6 source already present on main."
+          else
+            git commit -m "Promote QA-approved Robledo Kitchen Rush Autonomous Service V6"
+            git push origin HEAD:main
+          fi
+
+      - name: Upload Autonomous V6 downloadable build
         uses: actions/upload-artifact@v4
         with:
-          name: Robledo-Kitchen-Rush-3D-Senior-Progressive-V5
-          path: juegos/robledo_kitchen_rush_3d/package/Robledo_Kitchen_Rush_3D_SENIOR_PROGRESSIVE_V5_FULL_LOCAL.zip
+          name: Robledo-Kitchen-Rush-3D-Senior-Autonomous-V6
+          path: juegos/robledo_kitchen_rush_3d/package/Robledo_Kitchen_Rush_3D_SENIOR_AUTONOMOUS_V6_FULL_LOCAL.zip
           if-no-files-found: error
           retention-days: 90
