@@ -52,15 +52,29 @@ jobs:
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm run build
 
-      - name: Verify standalone output
+      - name: Verify standalone output and embedded bundle syntax
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
           test -s dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
-          grep -q 'ROBLEDO KITCHEN RUSH 3D' dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
-          grep -q 'data:image/png;base64' dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
-          ! grep -q 'src="./game.js"' dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
-          ! grep -q 'href="./style.css"' dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
+          python - <<'PY'
+          from pathlib import Path
+          html = Path('dist/Robledo_Kitchen_Rush_3D_OFFLINE.html').read_text(encoding='utf-8')
+          assert 'ROBLEDO KITCHEN RUSH 3D' in html
+          assert 'data:image/png;base64' in html
+          assert 'href="./style.css"' not in html
+          assert '<script src="./game.js"></script>' not in html
+          assert html.count('<script') == 1, f'unexpected script openings: {html.count("<script")}'
+          assert html.count('</script>') == 1, f'unexpected script closings: {html.count("</script>")}'
+          start = html.index('<script>') + len('<script>')
+          end = html.rindex('</script>')
+          bundle = html[start:end]
+          assert bundle.strip(), 'embedded game bundle is empty'
+          Path('/tmp/robledo-kitchen-bundle.js').write_text(bundle, encoding='utf-8')
+          print('Standalone HTML bytes:', len(html.encode('utf-8')))
+          print('Embedded bundle bytes:', len(bundle.encode('utf-8')))
+          PY
+          node --check /tmp/robledo-kitchen-bundle.js
           du -h dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
 
       - name: Package ready-to-play game plus editable source
