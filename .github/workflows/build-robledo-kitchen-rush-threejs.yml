@@ -96,6 +96,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23.x'
+          cache: false
 
       - name: Build portable localhost launchers
         working-directory: juegos/robledo_kitchen_rush_3d
@@ -120,7 +121,9 @@ jobs:
             sleep .2
           done
           curl -fsS http://127.0.0.1:8766/__health | grep -q OK
-          curl -fsS http://127.0.0.1:8766/ | grep -q 'ROBLEDO KITCHEN RUSH 3D'
+          curl -fsS http://127.0.0.1:8766/ -o /tmp/rkr-served.html
+          grep -q 'ROBLEDO KITCHEN RUSH 3D' /tmp/rkr-served.html
+          test $(wc -c </tmp/rkr-served.html) -gt 500000
 
       - name: Package ready-to-play game plus editable source
         working-directory: juegos/robledo_kitchen_rush_3d
