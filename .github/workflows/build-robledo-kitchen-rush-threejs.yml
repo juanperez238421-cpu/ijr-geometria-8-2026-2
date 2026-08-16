@@ -28,6 +28,9 @@ jobs:
       - name: Normalize production loop and deterministic V6 QA harness
         run: python juegos/robledo_kitchen_rush_3d/fix_v6_deterministic_qa.py
 
+      - name: Apply collision-aware A-star bot navigation
+        run: python juegos/robledo_kitchen_rush_3d/fix_v6_pathfinding.py
+
       - name: Node 22
         uses: actions/setup-node@v4
         with:
