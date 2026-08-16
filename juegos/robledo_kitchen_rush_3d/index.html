@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Robledo Kitchen Rush 3D — Dynamic Crew Edition</title>
+  <title>Robledo Kitchen Rush 3D — Progressive Growth Edition</title>
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
@@ -16,6 +16,9 @@
       <div class="hud-stat glass"><span>SCORE</span><b id="score">0</b></div>
       <div class="hud-stat glass"><span>COMBO</span><b id="combo">x1</b></div>
       <div class="hud-stat glass"><span>LIVES</span><b id="lives">❤❤❤</b></div>
+      <div class="hud-stat glass economy-stat"><span>CASH</span><b id="cash">$430</b></div>
+      <div class="hud-stat glass economy-stat"><span>SAT</span><b id="satisfaction">68%</b></div>
+      <div class="hud-stat glass economy-stat"><span>GROWTH</span><b id="growth-tier">T1</b></div>
       <div class="hud-stat glass camera-stat"><span>CAMERA</span><b id="camera-mode-label">DYNAMIC</b></div>
     </header>
 
@@ -28,9 +31,9 @@
       <div class="menu-stage">
         <div class="menu-card hero-card">
           <img id="school-logo" src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo" />
-          <div class="eyebrow">LOCAL CO-OP • 1–3 HUMAN PLAYERS • DYNAMIC 3D</div>
+          <div class="eyebrow">LOCAL CO-OP • 1–3 HUMAN PLAYERS • PROGRESSIVE RESTAURANT MANAGEMENT</div>
           <h1>ROBLEDO<br/><span>KITCHEN RUSH 3D</span></h1>
-          <p>Build your kitchen, choose the crew, assign roles, configure the menu and then survive a real-time restaurant rush with customers, cooking timers and team AI.</p>
+          <p>Start with a tiny bistro, two tables and two recipes. Protect customer satisfaction, earn persistent cash, restore lives with fast service, and reinvest in a larger restaurant, more stations, ingredients and menu capacity.</p>
           <div class="menu-actions">
             <button id="start-btn" class="primary xl">PLAN A NEW SHIFT</button>
             <button id="tutorial-btn">TUTORIAL</button>
@@ -39,7 +42,7 @@
           </div>
           <div class="level-row" id="level-row"></div>
           <div class="feature-strip">
-            <span>🧑‍🍳 Human + bot crews</span><span>🧱 Build-mode kitchen</span><span>🎥 3D orbit camera</span><span>🍽 Real seated customers</span>
+            <span>🏠 Small-to-large restaurant</span><span>💵 Persistent business cash</span><span>😊 Satisfaction-gated growth</span><span>❤️ Fast service restores lives</span>
           </div>
           <small>Fully local build • no accounts • progress and preferences stored on this PC</small>
         </div>
@@ -47,8 +50,8 @@
           <h2>SHIFT FLOW</h2>
           <div class="flow-step"><b>1</b><div><strong>Choose crew</strong><span>1, 2 or 3 human players. Empty seats become active bots.</span></div></div>
           <div class="flow-step"><b>2</b><div><strong>Assign roles</strong><span>Head Chef, Prep Specialist or Service Captain.</span></div></div>
-          <div class="flow-step"><b>3</b><div><strong>Design kitchen</strong><span>Spend the starting budget on tables, crates and stations.</span></div></div>
-          <div class="flow-step"><b>4</b><div><strong>Open service</strong><span>Cook, plate, deliver, wash and coordinate under pressure.</span></div></div>
+          <div class="flow-step"><b>3</b><div><strong>Invest carefully</strong><span>Buy permanent tables, crates and stations from persistent business cash.</span></div></div>
+          <div class="flow-step"><b>4</b><div><strong>Grow the business</strong><span>Fast service protects lives; cash + satisfaction unlock more floor space and capacity.</span></div></div>
           <div class="controller-note"><b>Best setup:</b> one controller per human player. Keyboard layouts remain available.</div>
         </div>
       </div>
@@ -71,7 +74,7 @@
         </div>
         <div id="crew-slots" class="crew-slots"></div>
         <div class="menu-planner">
-          <div><span class="eyebrow">ACTIVE MENU</span><h3>CHOOSE 3–5 DISHES FOR THIS SHIFT</h3><p class="micro">Your ingredient requirements in Build Mode are generated from this menu.</p></div>
+          <div><span class="eyebrow">ACTIVE MENU</span><h3 id="menu-planner-title">CHOOSE 2 DISHES TO START</h3><p class="micro">The first bistro is intentionally limited. Expansion unlocks more recipes and menu slots.</p><div id="business-preview" class="business-preview"></div></div>
           <div id="menu-toggle-grid" class="menu-toggle-grid"></div>
         </div>
         <div class="footer-actions"><div id="crew-warning" class="warning"></div><button id="crew-continue-btn" class="primary xl">CONTINUE TO TRAINING</button></div>
@@ -92,14 +95,20 @@
     <div id="build-ui" class="hidden">
       <div class="build-panel left-panel glass-strong">
         <div class="eyebrow">KITCHEN PLANNER</div><h2>BUILD MODE</h2>
-        <div class="budget-line"><span>STARTING BUDGET</span><b id="build-budget">$0</b></div>
+        <div class="budget-line"><span>BUSINESS CASH</span><b id="build-budget">$0</b></div>
+        <div class="growth-card">
+          <div class="growth-head"><span id="business-tier-name">TIER 1 • Starter Bistro</span><b id="business-satisfaction">68%</b></div>
+          <div id="capacity-summary" class="capacity-summary">0/2 tables • 2 active parties • 2 menu slots</div>
+          <div id="upgrade-requirement" class="upgrade-requirement">Requires cash + satisfaction</div>
+          <button id="upgrade-restaurant-btn" class="growth-button">EXPAND RESTAURANT</button>
+        </div>
         <div id="build-requirements" class="requirements"></div>
         <h3>PLACE FIXTURES</h3>
         <div id="fixture-palette" class="fixture-palette"></div>
         <div class="build-help"><b>Mouse:</b> point + left click to place<br/><b>Right drag:</b> rotate camera • <b>Wheel:</b> zoom<br/><b>R:</b> rotate fixture • <b>Delete:</b> remove highlighted fixture</div>
       </div>
       <div class="build-panel bottom-panel glass-strong">
-        <div><b id="selected-fixture-label">Select a fixture</b><span id="build-status">Tables belong in the dining zone; cooking equipment belongs in the kitchen zone.</span></div>
+        <div><b id="selected-fixture-label">Select a fixture</b><span id="build-status">The starter restaurant is deliberately small. Earn cash and satisfaction before expanding.</span></div>
         <div class="build-actions"><button id="clear-plan-btn">CLEAR</button><button id="auto-layout-btn">RECOMMENDED LAYOUT</button><button id="open-restaurant-btn" class="primary xl">OPEN RESTAURANT</button></div>
       </div>
       <div class="zone-legend glass"><span><i class="zone kitchen"></i> Kitchen zone</span><span><i class="zone dining"></i> Dining zone</span></div>
@@ -128,7 +137,7 @@
 
     <div id="pause-screen" class="overlay screen hidden"><div class="modal-card"><span class="eyebrow">SHIFT PAUSED</span><h2>TAKE FIVE</h2><button id="resume-btn" class="primary">RESUME</button><button id="restart-btn">RESTART SERVICE</button><button id="quit-btn">MAIN MENU</button></div></div>
     <div id="result-screen" class="overlay screen hidden"><div class="modal-card result-card"><span class="eyebrow">SHIFT COMPLETE</span><h2 id="result-title">SERVICE COMPLETE</h2><div id="result-stars" class="stars">★★★</div><div id="result-stats"></div><button id="next-btn" class="primary">PLAN NEXT KITCHEN</button><button id="replay-btn">REPLAN THIS LEVEL</button><button id="result-menu-btn">MAIN MENU</button></div></div>
-    <div id="geometry-screen" class="overlay screen hidden"><div class="modal-card geometry-card"><span class="eyebrow">TEAM LIFE LOST</span><h2>GEOMETRY RESCUE</h2><p id="geometry-question"></p><div id="geometry-options" class="geometry-options"></div><small>Correct answer restores the lost team life. Normal cooking is paused.</small></div></div>
+    <div id="geometry-screen" class="overlay screen hidden"><div class="modal-card geometry-card"><span class="eyebrow">TEAM LIFE LOST</span><h2>GEOMETRY RESCUE</h2><p id="geometry-question"></p><div id="geometry-options" class="geometry-options"></div><small>Correct answer restores the lost team life. Fast table service within 30 seconds can also restore one lost life during normal play.</small></div></div>
   </div>
   <script src="./game.js"></script>
 </body>

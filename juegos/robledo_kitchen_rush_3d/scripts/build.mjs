@@ -51,13 +51,52 @@ try {
   console.warn('School logo not found at repository asset path; build continues with source path.');
 }
 
-const standalone = path.join(dist, 'Robledo_Kitchen_Rush_3D_DYNAMIC_V4_OFFLINE.html');
+const standalone = path.join(dist, 'Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html');
 await writeFile(standalone, html, 'utf8');
 // Keep canonical aliases for launcher/CI compatibility.
 await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_OFFLINE.html'));
 await copyFile(standalone, path.join(dist, 'index.html'));
 await rm(path.join(dist, 'game.bundle.js'), { force: true });
 
-await writeFile(path.join(dist, 'README_FIRST.txt'), `ROBLEDO KITCHEN RUSH 3D — SENIOR DYNAMIC V4\n\nRECOMMENDED ON WINDOWS\n1. Extract the complete ZIP before playing.\n2. Open PLAY/RobledoKitchenRush3D_Windows.exe.\n3. The launcher starts a private server only on 127.0.0.1 and opens the game in your default browser.\n4. Keep the launcher running while the game tab is open. Everything remains local/offline.\n\nNEW SHIFT FLOW\n1. Choose 1, 2 or 3 human players.\n2. Every unused crew slot becomes an autonomous bot.\n3. Assign Head Chef, Prep Specialist or Service Captain to all three crew members.\n4. Select 3–5 dishes for the active menu.\n5. Complete or skip the seven-step control/mechanics tutorial.\n6. Build the restaurant from the starting budget: place tables, ingredient crates, preparation/cooking stations, sink, plates, trash and counters.\n7. Open the restaurant and run the real-time service.\n\nBUILD MODE\nLeft click: place selected fixture\nRight mouse drag: orbit camera\nMouse wheel: zoom\nR: rotate fixture\nDelete: remove highlighted fixture and refund its cost\nRecommended Layout: instantly creates a valid editable starter kitchen\n\nCAMERA\nDynamic mode follows the crew centroid and adds a subtle gyroscope-style lean.\nRight mouse drag: orbit\nMouse wheel: zoom\nC: cycle Dynamic / Classic / Top presets\nHome: reset camera\n\nHUMAN CONTROLS\nP1: WASD / E interact / Q throw / Left Shift dash\nP2: Arrows / Enter interact / Slash throw / Right Shift dash\nP3: IJKL / O interact / U throw / P dash\nGamepads: left stick / A interact / X throw / B dash. One controller per human is recommended.\n\nROLES\nHead Chef: faster hot-station work and larger burn window.\nPrep Specialist: much faster chopping and slightly faster movement.\nService Captain: faster movement/washing and better service tips.\n\nCOOKING LOOP\nCustomers enter -> sit -> browse the selected menu -> order -> wait.\nIngredients -> prep -> cook/fry/bake -> assemble on plate -> deliver to correct table -> collect dirty dishes -> sink.\nBots physically move through your installed kitchen and complete role-biased cooking/cleaning task chains.\n\nHTML FALLBACK\nRobledo_Kitchen_Rush_3D_DYNAMIC_V4_OFFLINE.html is fully standalone. Direct file:// execution can be restricted by managed browsers, so the Windows launcher is the preferred entry point.\n`);
+await writeFile(path.join(dist, 'README_FIRST.txt'), `ROBLEDO KITCHEN RUSH 3D — SENIOR PROGRESSIVE GROWTH V5
+
+RECOMMENDED ON WINDOWS
+1. Extract the complete ZIP before playing.
+2. Open PLAY/RobledoKitchenRush3D_ProgressiveV5_Windows.exe.
+3. The launcher serves the complete game only on 127.0.0.1 and opens it in your browser. Everything remains local/offline.
+
+PROGRESSIVE BUSINESS LOOP
+- Start in a compact Starter Bistro with only 2 tables, 2 active customer parties and 2 menu recipes.
+- Business cash persists between shifts. Tables, counters, stations and ingredient crates are permanent investments.
+- Customer satisfaction persists and is required together with cash to expand.
+- Expansion tiers unlock more floor area, higher table/customer limits, duplicate kitchen stations, additional ingredient crates and more recipes/menu slots.
+- Complete a whole table within 30 seconds of ordering to restore one lost life (up to the 3-life maximum).
+- Walkouts cost one life, reduce satisfaction and impose a small cash penalty.
+
+BUILD MODE
+Left click: place selected unlocked fixture
+Right mouse drag: orbit camera
+Mouse wheel: zoom
+R: rotate fixture
+Delete: remove highlighted fixture and refund its purchase cost
+Recommended Layout: creates a compact valid layout for the current restaurant tier
+Expand Restaurant: available only when both the cash and satisfaction requirements are met
+
+HUMAN CONTROLS
+P1: WASD / E interact / Q throw / Left Shift dash
+P2: Arrows / Enter interact / Slash throw / Right Shift dash
+P3: IJKL / O interact / U throw / P dash
+Gamepads: left stick / A interact / X throw / B dash
+
+CAMERA
+Right mouse drag: orbit
+Mouse wheel: zoom
+C: cycle Dynamic / Classic / Top
+Home: reset
+The camera distance scales with restaurant expansion so the starter bistro stays readable and later restaurants fit naturally.
+
+HTML FALLBACK
+Robledo_Kitchen_Rush_3D_PROGRESSIVE_V5_OFFLINE.html is fully standalone. Managed browsers can restrict file:// pages, so the Windows launcher is preferred.
+`);
 
 console.log(`Built ${standalone}`);
