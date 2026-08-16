@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Robledo Kitchen Rush 3D</title>
   <link rel="stylesheet" href="./style.css" />
+  <!-- Regression guard: the menu layout uses an ID-level display rule. When gameplay
+       adds .hidden, this more-specific selector guarantees the overlay is physically
+       removed from layout and cannot continue intercepting clicks. -->
+  <style>#menu-screen.hidden{display:none!important}</style>
 </head>
 <body>
   <div id="game-shell">
@@ -28,7 +32,7 @@
       <div class="player-chip p3"><b>P3</b><span id="p3-held">empty hands</span></div>
     </aside>
 
-    <div id="menu-screen" class="overlay screen visible">
+    <div id="menu-screen" class="overlay screen">
       <div class="menu-card hero-card">
         <img id="school-logo" src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo" />
         <div class="eyebrow">THREE-PLAYER LOCAL CO-OP • ISOMETRIC 3D</div>
