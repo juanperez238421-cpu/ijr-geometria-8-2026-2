@@ -6,6 +6,20 @@ from pathlib import Path
 GAME = Path(__file__).resolve().parent / 'src/game.js'
 text = GAME.read_text(encoding='utf-8')
 
+# Autonomous staff remain fully physical, but move at roughly a human dash pace and receive a
+# modest AI work-efficiency multiplier. This prevents a correctly routed burger from exceeding
+# normal customer patience simply because one bot must make several real grocery/station trips.
+old_ctor = "this.held=null;this.radius=.43;this.speed=4.55*ROLE_META[role].move;this.facing="
+new_ctor = "this.held=null;this.radius=.43;this.speed=(human?4.55:6.6)*ROLE_META[role].move;this.facing="
+if old_ctor not in text:
+    raise SystemExit('Could not apply V6 autonomous movement-speed tuning')
+text = text.replace(old_ctor, new_ctor, 1)
+old_work = "  workMultiplier(type){const r=ROLE_META[this.role];if(type==='prep')return r.prep;if(['stove','fryer','oven'].includes(type))return r.cook;if(type==='sink')return r.wash;return 1;}"
+new_work = "  workMultiplier(type){const r=ROLE_META[this.role],ai=this.human?1:1.45;let base=1;if(type==='prep')base=r.prep;else if(['stove','fryer','oven'].includes(type))base=r.cook;else if(type==='sink')base=r.wash;return base*ai;}"
+if old_work not in text:
+    raise SystemExit('Could not apply V6 autonomous work-efficiency tuning')
+text = text.replace(old_work, new_work, 1)
+
 replacement = r'''  staticBlocked(pos){const m=this.member,g=this.game,b=g.currentBounds();if(pos.x<-b.xMax+.5||pos.x>b.xMax-.5||pos.z<b.zMin+.5||pos.z>b.zMax-.5)return true;for(const o of g.obstacles)if(Math.abs(pos.x-o.x)<o.w/2+m.radius+.06&&Math.abs(pos.z-o.z)<o.d/2+m.radius+.06)return true;return false;}
   pathBlocked(pos){if(this.staticBlocked(pos))return true;const m=this.member;for(const other of this.game.players){if(other===m)continue;if(Math.hypot(pos.x-other.group.position.x,pos.z-other.group.position.z)<m.radius+other.radius+.16)return true;}return false;}
   approachPoint(target){const m=this.member,pos=target?.pos||target?.group?.position;if(!pos||target.type==='storage')return pos;const o=this.game.obstacles.find(x=>x.type===target.type&&Math.abs(x.x-pos.x)<.08&&Math.abs(x.z-pos.z)<.08);if(!o)return pos;const pad=m.radius+.24,candidates=[new THREE.Vector3(o.x,0,o.z-o.d/2-pad),new THREE.Vector3(o.x+o.w/2+pad,0,o.z),new THREE.Vector3(o.x,0,o.z+o.d/2+pad),new THREE.Vector3(o.x-o.w/2-pad,0,o.z)];const valid=candidates.filter(p=>!this.staticBlocked(p)),pool=valid.length?valid:candidates;pool.sort((a,b)=>a.distanceToSquared(m.group.position)-b.distanceToSquared(m.group.position));return pool[0];}
@@ -21,4 +35,4 @@ text, count = pattern.subn(replacement, text, count=1)
 if count != 1:
     raise SystemExit(f'Expected to replace one V6 BotBrain navigation block, replaced {count}')
 GAME.write_text(text, encoding='utf-8')
-print('Applied V6 hybrid direct-first navigation with collision-aware A-star recovery.')
+print('Applied V6 hybrid navigation plus autonomous staff performance tuning.')
