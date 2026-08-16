@@ -31,6 +31,9 @@ jobs:
       - name: Apply collision-aware A-star bot navigation
         run: python juegos/robledo_kitchen_rush_3d/fix_v6_pathfinding.py
 
+      - name: Re-route dynamically occupied bot service points
+        run: python juegos/robledo_kitchen_rush_3d/fix_v6_dynamic_service_points.py
+
       - name: Node 22
         uses: actions/setup-node@v4
         with:
