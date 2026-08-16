@@ -23,5 +23,17 @@ replacement = "if(target.type!=='storage'&&this.navGoal&&this.pathBlocked(this.n
 if needle not in text:
     raise SystemExit('Could not find V6 navigation goal segment for dynamic service-point correction')
 text = text.replace(needle, replacement, 1)
+
+# A professional service bot must not finish a task and remain parked at a critical fixture.
+# In V6, idle autonomous crew walk to a free standby point in the open dining area. This prevents
+# a waiter that just returned a clean plate from blocking the rack for a second bot, and also
+# reduces kitchen congestion during normal service. Standby motion uses the same production near()
+# and hybrid direct/A* navigation as every other physical bot action.
+idle = "if(!this.task){m.animate(dt,false);return;}"
+idle_replacement = "if(!this.task){const b=g.currentBounds(),bias=ROLE_META[m.role]?.botBias,candidates=bias==='service'?[new THREE.Vector3(Math.min(3.4,b.xMax-1),0,b.zMax-1.15),new THREE.Vector3(1.4,0,b.zMax-1.0),new THREE.Vector3(3.6,0,1.6)]:bias==='prep'?[new THREE.Vector3(-1.2,0,b.zMax-1.0),new THREE.Vector3(.4,0,b.zMax-1.1),new THREE.Vector3(-1.4,0,1.8)]:[new THREE.Vector3(1.2,0,b.zMax-1.0),new THREE.Vector3(0,0,b.zMax-1.0),new THREE.Vector3(1.5,0,1.8)];const free=candidates.find(p=>!this.pathBlocked(p))||candidates.find(p=>!this.staticBlocked(p))||candidates[0];if(!this.idleTarget||this.idleTarget.pos.distanceToSquared(free)>.04)this.idleTarget={type:'storage',pos:free.clone()};if(!this.near(this.idleTarget,dt))return;m.animate(dt,false);return;}"
+if idle not in text:
+    raise SystemExit('Could not find V6 idle BotBrain block for standby correction')
+text = text.replace(idle, idle_replacement, 1)
+
 GAME.write_text(text, encoding='utf-8')
-print('Applied V6 human-equivalent fixture reach plus dynamic service-point re-routing.')
+print('Applied V6 fixture reach, dynamic service-point re-routing and idle crew standby behavior.')
