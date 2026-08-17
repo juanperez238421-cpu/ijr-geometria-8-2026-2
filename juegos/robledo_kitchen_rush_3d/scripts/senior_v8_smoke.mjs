@@ -2,30 +2,98 @@ const port = Number(process.env.CDP_PORT || 9333);
 const endpoint = `http://127.0.0.1:${port}/json`;
 const gameUrl = 'http://127.0.0.1:8765/index.html';
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-async function waitForPage(){for(let i=0;i<400;i++){try{const pages=await fetch(endpoint).then(r=>r.json());const page=pages.find(p=>p.type==='page');if(page)return page;}catch{}await sleep(100);}throw new Error('Chrome DevTools page did not become available');}
-class CDP{constructor(url){this.ws=new WebSocket(url);this.next=1;this.pending=new Map();this.exceptions=[];this.consoleErrors=[];this.ws.onmessage=e=>{const msg=JSON.parse(e.data);if(msg.id&&this.pending.has(msg.id)){const{resolve,reject}=this.pending.get(msg.id);this.pending.delete(msg.id);msg.error?reject(new Error(JSON.stringify(msg.error))):resolve(msg.result);}else if(msg.method==='Runtime.exceptionThrown')this.exceptions.push(msg.params?.exceptionDetails?.exception?.description||msg.params?.exceptionDetails?.text||'Runtime exception');else if(msg.method==='Runtime.consoleAPICalled'&&msg.params?.type==='error')this.consoleErrors.push((msg.params.args||[]).map(x=>x.value??x.description??'').join(' '));};}async open(){if(this.ws.readyState!==WebSocket.OPEN)await new Promise((resolve,reject)=>{this.ws.onopen=resolve;this.ws.onerror=reject;});}send(method,params={}){const id=this.next++;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}));});}async eval(expression){const result=await this.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.exception?.description||result.exceptionDetails.text||'Evaluation failed');return result.result?.value;}}
+
+async function waitForPage(){
+  for(let i=0;i<400;i++){
+    try{
+      const pages=await fetch(endpoint).then(r=>r.json());
+      const page=pages.find(p=>p.type==='page');
+      if(page)return page;
+    }catch{}
+    await sleep(100);
+  }
+  throw new Error('Chrome DevTools page did not become available');
+}
+
+class CDP{
+  constructor(url){
+    this.ws=new WebSocket(url);this.next=1;this.pending=new Map();this.exceptions=[];this.consoleErrors=[];
+    this.ws.onmessage=e=>{const msg=JSON.parse(e.data);if(msg.id&&this.pending.has(msg.id)){const{resolve,reject}=this.pending.get(msg.id);this.pending.delete(msg.id);msg.error?reject(new Error(JSON.stringify(msg.error))):resolve(msg.result);}else if(msg.method==='Runtime.exceptionThrown')this.exceptions.push(msg.params?.exceptionDetails?.exception?.description||msg.params?.exceptionDetails?.text||'Runtime exception');else if(msg.method==='Runtime.consoleAPICalled'&&msg.params?.type==='error')this.consoleErrors.push((msg.params.args||[]).map(x=>x.value??x.description??'').join(' '));};
+  }
+  async open(){if(this.ws.readyState!==WebSocket.OPEN)await new Promise((resolve,reject)=>{this.ws.onopen=resolve;this.ws.onerror=reject;});}
+  send(method,params={}){const id=this.next++;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}));});}
+  async eval(expression){const result=await this.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.exception?.description||result.exceptionDetails.text||'Evaluation failed');return result.result?.value;}
+}
+
 async function waitEval(cdp,expression,timeout=10000){const until=Date.now()+timeout;let last;while(Date.now()<until){try{last=await cdp.eval(expression);if(last)return last;}catch{}await sleep(100);}throw new Error(`Timed out waiting for ${expression}; last=${JSON.stringify(last)}`);}
-async function key(cdp,code,keyValue,hold=300){await cdp.send('Input.dispatchKeyEvent',{type:'keyDown',code,key:keyValue});await sleep(hold);await cdp.send('Input.dispatchKeyEvent',{type:'keyUp',code,key:keyValue});await sleep(120);}
+async function key(cdp,code,keyValue,hold=650){await cdp.send('Input.dispatchKeyEvent',{type:'keyDown',code,key:keyValue});await sleep(hold);await cdp.send('Input.dispatchKeyEvent',{type:'keyUp',code,key:keyValue});await sleep(180);}
 async function mouseClick(cdp,x,y,button='left',hold=90){await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',x,y});await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',x,y,button,clickCount:1});await sleep(hold);await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',x,y,button,clickCount:1});await sleep(180);}
 
-const page=await waitForPage();const cdp=new CDP(page.webSocketDebuggerUrl);await cdp.open();await cdp.send('Runtime.enable');await cdp.send('Page.enable');
-await cdp.send('Page.navigate',{url:gameUrl});await waitEval(cdp,`location.origin==='http://127.0.0.1:8765'&&document.readyState==='complete'`,15000);await waitEval(cdp,`!!window.__rkrGame&&!!window.__rkrGame.__seniorV8`,15000);await cdp.eval(`localStorage.clear();true`);await cdp.send('Page.reload',{ignoreCache:true});await waitEval(cdp,`location.origin==='http://127.0.0.1:8765'&&document.readyState==='complete'&&!!window.__rkrGame&&!!window.__rkrGame.__seniorV8`,15000);cdp.exceptions.length=0;cdp.consoleErrors.length=0;
+const page=await waitForPage();
+const cdp=new CDP(page.webSocketDebuggerUrl);
+await cdp.open();await cdp.send('Runtime.enable');await cdp.send('Page.enable');
+await cdp.send('Page.navigate',{url:gameUrl});
+await waitEval(cdp,`location.origin==='http://127.0.0.1:8765'&&document.readyState==='complete'`,15000);
+await waitEval(cdp,`!!window.__rkrGame&&!!window.__rkrGame.__seniorV8`,15000);
+await cdp.eval(`localStorage.clear();true`);
+await cdp.send('Page.reload',{ignoreCache:true});
+await waitEval(cdp,`location.origin==='http://127.0.0.1:8765'&&document.readyState==='complete'&&!!window.__rkrGame&&!!window.__rkrGame.__seniorV8`,15000);
+cdp.exceptions.length=0;cdp.consoleErrors.length=0;
 
-const setup=await cdp.eval(`(()=>{const g=window.__rkrGame;g.config.humanCount=1;g.config.roles=['chef','prep','service'];g.config.menu=['salad','burger'];g.config.avatars[0]={...g.config.avatars[0],name:'SOLO QA',gender:'female',hairStyle:'bun',uniform:4,apron:3,accessory:'glasses'};g.business.cash=430;g.business.satisfaction=80;g.business.plan=[];g.plan=[];g.enterBuildMode();g.autoLayout();const plan=g.plan.map(q=>({key:q.key,x:q.x,z:q.z}));g.openRestaurant();g.spawnTimer=9999;g.timeLeft=9999;return{version:g.__seniorV8.version,hotfix:g.__seniorV8.hotfix,players:g.players.length,bots:g.players.filter(p=>!p.human).length,plan,recipeCards:document.querySelectorAll('#recipe-grid .v8-recipe').length,customizer:!!document.getElementById('v8-customization'),avatar:g.config.avatars[0],board:!document.getElementById('v8-service-board').classList.contains('hidden'),boardPointer:getComputedStyle(document.getElementById('v8-service-board')).pointerEvents};})()`);
+const setup=await cdp.eval(`(()=>{const g=window.__rkrGame;g.config.humanCount=1;g.config.roles=['chef','prep','service'];g.config.menu=['salad','burger'];g.config.avatars[0]={...g.config.avatars[0],name:'SOLO QA',gender:'female',hairStyle:'bun',uniform:4,apron:3,accessory:'glasses'};g.business.cash=430;g.business.satisfaction=80;g.business.plan=[];g.plan=[];g.enterBuildMode();g.autoLayout();const plan=g.plan.map(q=>({key:q.key,x:q.x,z:q.z}));g.openRestaurant();g.spawnTimer=9999;g.timeLeft=9999;return{version:g.__seniorV8.version,hotfix:g.__seniorV8.hotfix,patch:g.__seniorV8.patchLevel,players:g.players.length,bots:g.players.filter(p=>!p.human).length,plan,recipeCards:document.querySelectorAll('#recipe-grid .v8-recipe').length,customizer:!!document.getElementById('v8-customization'),avatar:g.config.avatars[0],board:!document.getElementById('v8-service-board').classList.contains('hidden'),boardPointer:getComputedStyle(document.getElementById('v8-service-board')).pointerEvents};})()`);
 if(setup.version!=='8.0.0'||setup.hotfix!=='8.0.1-input-overlay'||setup.players!==1||setup.bots!==0||setup.recipeCards!==6||!setup.customizer||!setup.board||setup.boardPointer!=='none')throw new Error(`Senior V8 solo/customization setup failed: ${JSON.stringify(setup)}`);
 if(!setup.plan.some(q=>q.key==='grocery')||!setup.plan.some(q=>q.key==='prep')||!setup.plan.some(q=>q.key==='stove')||setup.plan.filter(q=>q.key==='table').length<2)throw new Error(`Senior V8 layout missing required production/dining fixtures: ${JSON.stringify(setup.plan)}`);
-const tables=setup.plan.filter(q=>q.key==='table');if(tables.some(t=>t.z<1.7))throw new Error(`Dining layout is not separated from kitchen: ${JSON.stringify(tables)}`);
+const tables=setup.plan.filter(q=>q.key==='table');
+if(tables.some(t=>t.z<1.7))throw new Error(`Dining layout is not separated from kitchen: ${JSON.stringify(tables)}`);
 
-const platePoint=await cdp.eval(`(()=>{const g=window.__rkrGame,p=g.players[0],s=g.stations.find(x=>x.type==='plate');p.group.position.set(s.pos.x,0,s.pos.z+1.35);g.cameraRig.update(.5);const v=s.pos.clone();v.y=1.05;v.project(g.camera);const r=g.canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};})()`);await sleep(300);await mouseClick(cdp,platePoint.x,platePoint.y,'left',90);await waitEval(cdp,`!!window.__rkrGame.players[0].held?.isPlate`,3000);const leftInteraction=await cdp.eval(`(()=>{const g=window.__rkrGame,p=g.players[0];return{held:p.held?.description?.(),target:p.selectedTarget?.type,events:g.qaEvents.filter(e=>e.type==='v8-human-interact').length};})()`);if(leftInteraction.held!=='plate'||leftInteraction.target!=='plate')throw new Error(`P1 left-click interaction failed: ${JSON.stringify(leftInteraction)}`);await cdp.eval(`(()=>{const p=window.__rkrGame.players[0];p.held?.dispose();p.held=null;return true;})()`);
+// P1 LEFT CLICK: physical mouse click on the rendered Plate Rack must immediately
+// execute a real interaction and place a clean plate in the player's hands.
+const platePoint=await cdp.eval(`(()=>{const g=window.__rkrGame,p=g.players[0],s=g.stations.find(x=>x.type==='plate');p.group.position.set(s.pos.x,0,s.pos.z+1.35);g.cameraRig.update(.5);const v=s.pos.clone();v.y=1.05;v.project(g.camera);const r=g.canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2};})()`);
+await sleep(250);await mouseClick(cdp,platePoint.x,platePoint.y,'left',80);
+await waitEval(cdp,`!!window.__rkrGame.players[0].held?.isPlate`,3000);
+const leftInteraction=await cdp.eval(`(()=>{const g=window.__rkrGame,p=g.players[0];return{held:p.held?.description?.(),target:p.selectedTarget?.type,pointerEvents:g.qaEvents.filter(e=>e.type==='v8-pointer-immediate').length};})()`);
+if(leftInteraction.held!=='plate'||leftInteraction.target!=='plate'||leftInteraction.pointerEvents<1)throw new Error(`P1 left-click interaction failed: ${JSON.stringify(leftInteraction)}`);
+await cdp.eval(`(()=>{const p=window.__rkrGame.players[0];p.held?.dispose();p.held=null;return true;})()`);
 
-const tomatoPoint=await cdp.eval(`(()=>{const g=window.__rkrGame,p=g.players[0],s=g.stations.find(x=>x.type==='storage'&&x.kind==='tomato');p.group.position.set(s.pos.x,0,s.pos.z+.72);g.cameraRig.update(.5);const v=s.pos.clone();v.y=1.0;v.project(g.camera);const r=g.canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2,stock:g.v8Stock.tomato};})()`);await mouseClick(cdp,tomatoPoint.x,tomatoPoint.y,'right',230);await waitEval(cdp,`window.__rkrGame.players[0].held?.kind==='tomato'`,3000);const rightInteraction=await cdp.eval(`(()=>{const g=window.__rkrGame,p=g.players[0];return{held:p.held?.kind,state:p.held?.state,stock:g.v8Stock.tomato,target:p.selectedTarget?.kind};})()`);if(rightInteraction.held!=='tomato'||rightInteraction.stock!==tomatoPoint.stock-1)throw new Error(`P1 right-click grocery interaction failed: ${JSON.stringify({tomatoPoint,rightInteraction})}`);
+// P1 RIGHT CLICK: physical right-click on a real grocery compartment must pick
+// the ingredient, select the compartment, and decrement finite stock exactly once.
+const tomatoPoint=await cdp.eval(`(()=>{const g=window.__rkrGame,p=g.players[0],s=g.stations.find(x=>x.type==='storage'&&x.kind==='tomato');p.group.position.set(s.pos.x,0,s.pos.z+.72);g.cameraRig.update(.5);const v=s.pos.clone();v.y=1.0;v.project(g.camera);const r=g.canvas.getBoundingClientRect();return{x:r.left+(v.x+1)*r.width/2,y:r.top+(1-v.y)*r.height/2,stock:g.v8Stock.tomato};})()`);
+await mouseClick(cdp,tomatoPoint.x,tomatoPoint.y,'right',170);
+await waitEval(cdp,`window.__rkrGame.players[0].held?.kind==='tomato'`,3000);
+const rightInteraction=await cdp.eval(`(()=>{const g=window.__rkrGame,p=g.players[0];return{held:p.held?.kind,state:p.held?.state,stock:g.v8Stock.tomato,target:p.selectedTarget?.kind,pointerEvents:g.qaEvents.filter(e=>e.type==='v8-pointer-immediate').length};})()`);
+if(rightInteraction.held!=='tomato'||rightInteraction.stock!==tomatoPoint.stock-1||rightInteraction.pointerEvents<2)throw new Error(`P1 right-click grocery interaction failed: ${JSON.stringify({tomatoPoint,rightInteraction})}`);
 
-// Mouse interaction is already proven above. Validate the continuous smart-action engine
-// independently of screen projection so this stage specifically tests ingredient state work.
-const prepQueued=await cdp.eval(`(()=>{const g=window.__rkrGame,p=g.players[0],s=g.stations.find(x=>x.type==='prep');p.group.position.set(s.pos.x,0,s.pos.z+1.35);g.__seniorV8.queueAction(p,s,'smart');return{held:p.held?.kind,target:p.selectedTarget?.type,action:g.__seniorV8.mouse.action?.target?.type};})()`);if(prepQueued.held!=='tomato'||prepQueued.target!=='prep'||prepQueued.action!=='prep')throw new Error(`Prep smart action did not queue: ${JSON.stringify(prepQueued)}`);await waitEval(cdp,`window.__rkrGame.stations.find(x=>x.type==='prep')?.slot?.state==='chopped'`,5000);const prepResult=await cdp.eval(`(()=>{const g=window.__rkrGame,s=g.stations.find(x=>x.type==='prep');return{slot:s.slot?.kind,state:s.slot?.state,held:g.players[0].held?.kind||null,interactions:g.v8Shift.interactions,action:!!g.__seniorV8.mouse.action};})()`);if(prepResult.slot!=='tomato'||prepResult.state!=='chopped'||prepResult.interactions<2)throw new Error(`Smart prep workflow failed: ${JSON.stringify(prepResult)}`);
+// Continuous smart Prep workflow: place raw tomato and keep working until the
+// ingredient actually becomes chopped. This validates state transition logic,
+// not just target selection.
+const prepQueued=await cdp.eval(`(()=>{const g=window.__rkrGame,p=g.players[0],s=g.stations.find(x=>x.type==='prep');p.group.position.set(s.pos.x,0,s.pos.z+1.35);g.__seniorV8.queueAction(p,s,'smart');return{held:p.held?.kind,target:p.selectedTarget?.type,action:g.__seniorV8.mouse.action?.target?.type};})()`);
+if(prepQueued.held!=='tomato'||prepQueued.target!=='prep'||prepQueued.action!=='prep')throw new Error(`Prep smart action did not queue: ${JSON.stringify(prepQueued)}`);
+await waitEval(cdp,`window.__rkrGame.stations.find(x=>x.type==='prep')?.slot?.state==='chopped'`,6000);
+const prepResult=await cdp.eval(`(()=>{const g=window.__rkrGame,s=g.stations.find(x=>x.type==='prep');return{slot:s.slot?.kind,state:s.slot?.state,held:g.players[0].held?.kind||null,interactions:g.v8Shift.interactions,continuousEvents:g.qaEvents.filter(e=>e.type==='v8-continuous-work').length,action:!!g.__seniorV8.mouse.action};})()`);
+if(prepResult.slot!=='tomato'||prepResult.state!=='chopped'||prepResult.interactions<2||prepResult.continuousEvents<1)throw new Error(`Smart prep workflow failed: ${JSON.stringify(prepResult)}`);
 
-const npc=await cdp.eval(`(()=>{const g=window.__rkrGame;g.spawnTimer=9999;g.spawnParty();const p=g.parties.at(-1);if(!p)return null;return{id:p.id,state:p.state,hasV8:!!p.v8,regular:!!p.v8?.regular,trait:p.v8?.traits,bubble:!!p.v8?.bubble,customers:p.customers.length};})()`);if(!npc||!npc.hasV8||!npc.bubble||npc.customers<1)throw new Error(`Dynamic NPC decoration failed: ${JSON.stringify(npc)}`);
-const board=await cdp.eval(`(()=>{const g=window.__rkrGame;g.updateUI();const el=document.getElementById('v8-service-board');return{text:el.textContent,stock:Object.keys(g.v8Stock).length,clean:g.__seniorV8.cleanliness()};})()`);if(!board.text.includes('CLEANLINESS')||!board.text.includes('Serve 3 tables')||board.stock<4||board.clean<0||board.clean>100)throw new Error(`Service board/management mechanics failed: ${JSON.stringify(board)}`);
+// NPC dynamics and service-management HUD.
+const npc=await cdp.eval(`(()=>{const g=window.__rkrGame;g.spawnTimer=9999;g.spawnParty();const p=g.parties.at(-1);if(!p)return null;return{id:p.id,state:p.state,hasV8:!!p.v8,regular:!!p.v8?.regular,trait:p.v8?.traits,bubble:!!p.v8?.bubble,customers:p.customers.length};})()`);
+if(!npc||!npc.hasV8||!npc.bubble||npc.customers<1)throw new Error(`Dynamic NPC decoration failed: ${JSON.stringify(npc)}`);
+const board=await cdp.eval(`(()=>{const g=window.__rkrGame;g.updateUI();const el=document.getElementById('v8-service-board');return{text:el.textContent,stock:Object.keys(g.v8Stock).length,clean:g.__seniorV8.cleanliness()};})()`);
+if(!board.text.includes('CLEANLINESS')||!board.text.includes('Serve 3 tables')||board.stock<4||board.clean<0||board.clean>100)throw new Error(`Service board/management mechanics failed: ${JSON.stringify(board)}`);
 
-await cdp.eval(`(()=>{const g=window.__rkrGame;g.config.humanCount=3;g.restartService();g.spawnTimer=9999;g.timeLeft=9999;g.players[0].group.position.set(-3,0,.1);g.players[1].group.position.set(0,0,.1);g.players[2].group.position.set(3,0,.1);return true;})()`);const roster3=await cdp.eval(`({players:window.__rkrGame.players.length,bots:window.__rkrGame.players.filter(p=>!p.human).length})`);if(roster3.players!==3||roster3.bots!==0)throw new Error(`Three-human roster failed: ${JSON.stringify(roster3)}`);const p2Before=await cdp.eval(`window.__rkrGame.players[1].group.position.x`);await key(cdp,'KeyD','d',350);const p2After=await cdp.eval(`window.__rkrGame.players[1].group.position.x`);if(!(p2After>p2Before+.35))throw new Error(`P2 WASD movement failed: ${p2Before} -> ${p2After}`);const p3Before=await cdp.eval(`window.__rkrGame.players[2].group.position.z`);await key(cdp,'ArrowDown','ArrowDown',350);const p3After=await cdp.eval(`window.__rkrGame.players[2].group.position.z`);if(!(p3After>p3Before+.35))throw new Error(`P3 arrow movement failed: ${p3Before} -> ${p3After}`);
-if(cdp.exceptions.length)throw new Error(`Runtime exceptions detected: ${cdp.exceptions.join(' | ')}`);if(cdp.consoleErrors.length)throw new Error(`Console errors detected: ${cdp.consoleErrors.join(' | ')}`);console.log('Senior V8 deterministic browser E2E passed:',JSON.stringify({setup,leftInteraction,rightInteraction,prepQueued,prepResult,npc,board,roster3,p2Before,p2After,p3Before,p3After}));cdp.ws.close();
+// Three-player input QA must isolate keyboard behavior from fixture collisions.
+// Find open start/end pairs in the current live restaurant before sending keys.
+const rosterSetup=await cdp.eval(`(()=>{const g=window.__rkrGame;g.config.humanCount=3;g.restartService();g.spawnTimer=9999;g.timeLeft=9999;const b=g.currentBounds();const staticFree=(p,x,z)=>{if(x<-b.xMax+.65||x>b.xMax-.65||z<b.zMin+.65||z>b.zMax-.65)return false;for(const o of g.obstacles)if(Math.abs(x-o.x)<o.w/2+p.radius+.10&&Math.abs(z-o.z)<o.d/2+p.radius+.10)return false;return true;};const findLane=(p,dx,dz,used)=>{for(let z=Math.max(b.zMin+1.0,-.3);z<=Math.min(b.zMax-1.0,1.3);z+=.4){for(let x=-b.xMax+1.0;x<=b.xMax-1.0;x+=.45){const ex=x+dx,ez=z+dz;if(!staticFree(p,x,z)||!staticFree(p,ex,ez))continue;if(used.some(u=>Math.hypot(x-u.x,z-u.z)<1.6||Math.hypot(ex-u.x,ez-u.z)<1.2))continue;return{x,z,ex,ez};}}return null;};const used=[];const lane2=findLane(g.players[1],1.15,0,used);if(lane2)used.push({x:lane2.x,z:lane2.z});const lane3=findLane(g.players[2],0,1.15,used);if(lane3)used.push({x:lane3.x,z:lane3.z});const lane1=findLane(g.players[0],-.9,0,used)||{x:-b.xMax+1,z:b.zMax-1};g.players[0].group.position.set(lane1.x,0,lane1.z);if(lane2)g.players[1].group.position.set(lane2.x,0,lane2.z);if(lane3)g.players[2].group.position.set(lane3.x,0,lane3.z);return{players:g.players.length,bots:g.players.filter(p=>!p.human).length,lane2,lane3,obstacles:g.obstacles.length,state:g.state};})()`);
+if(rosterSetup.players!==3||rosterSetup.bots!==0||!rosterSetup.lane2||!rosterSetup.lane3||rosterSetup.state!=='playing')throw new Error(`Three-human free-lane setup failed: ${JSON.stringify(rosterSetup)}`);
+
+const p2Before=await cdp.eval(`window.__rkrGame.players[1].group.position.x`);
+await key(cdp,'KeyD','d',700);
+const p2After=await cdp.eval(`window.__rkrGame.players[1].group.position.x`);
+if(!(p2After>p2Before+.20))throw new Error(`P2 WASD movement failed in verified free lane: ${p2Before} -> ${p2After}; lane=${JSON.stringify(rosterSetup.lane2)}`);
+
+const p3Before=await cdp.eval(`window.__rkrGame.players[2].group.position.z`);
+await key(cdp,'ArrowDown','ArrowDown',700);
+const p3After=await cdp.eval(`window.__rkrGame.players[2].group.position.z`);
+if(!(p3After>p3Before+.20))throw new Error(`P3 arrow movement failed in verified free lane: ${p3Before} -> ${p3After}; lane=${JSON.stringify(rosterSetup.lane3)}`);
+
+if(cdp.exceptions.length)throw new Error(`Runtime exceptions detected: ${cdp.exceptions.join(' | ')}`);
+if(cdp.consoleErrors.length)throw new Error(`Console errors detected: ${cdp.consoleErrors.join(' | ')}`);
+console.log('Senior V8 deterministic browser E2E passed:',JSON.stringify({setup,leftInteraction,rightInteraction,prepQueued,prepResult,npc,board,rosterSetup,p2Before,p2After,p3Before,p3After}));
+cdp.ws.close();
