@@ -32,8 +32,7 @@ game.interact=function interactV811(player,target,dt,held){
   const resolved=correctedTarget(player,target);if(resolved!==target){v8.selectTarget(player,resolved);game.qaRecord('v8-storage-target-corrected',{from:target?.kind||target?.type||null,to:resolved?.kind||null,phase:'interact'});}return baseInteract(player,resolved,dt,held);
 };
 
-// Expose a deterministic helper for QA and future accessibility controls.
+// Expose deterministic helpers for QA and future accessibility controls.
 v8.nearestStorage=nearestStorage;
 v8.correctedTarget=correctedTarget;
-v8.patchLevel='8.1.1-proximity-safe-grocery';
-console.info('Senior V8.1.1 final layer active: proximity-safe ingredient compartments for left/right mouse interaction.');
+console.info('Senior V8.1 final layer active: proximity-safe ingredient compartments for left/right mouse interaction.');
