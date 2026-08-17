@@ -11,9 +11,10 @@ await mkdir(dist, { recursive: true });
 
 // Senior V8 imports the stable production game and replaces the human-facing
 // control/service layer with reliable click actions, true solo play, richer NPCs,
-// character customization and additional management systems.
+// character customization and additional management systems. The hotfix entry
+// also guarantees that informational HUD layers never capture kitchen clicks.
 await build({
-  entryPoints: [path.join(root, 'src/senior_v8.js')],
+  entryPoints: [path.join(root, 'src/senior_v8_hotfix.js')],
   bundle: true,
   format: 'iife',
   platform: 'browser',
@@ -45,7 +46,6 @@ try {
 
 const standalone = path.join(dist, 'Robledo_Kitchen_Rush_3D_SENIOR_V8_OFFLINE.html');
 await writeFile(standalone, html, 'utf8');
-// Canonical + legacy aliases keep old launchers/bookmarks functional.
 await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_INTERACTION_V7_OFFLINE.html'));
 await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6_OFFLINE.html'));
 await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_OFFLINE.html'));
