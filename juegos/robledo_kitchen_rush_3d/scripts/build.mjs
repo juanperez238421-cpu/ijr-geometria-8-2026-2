@@ -9,11 +9,11 @@ const dist = path.join(root, 'dist');
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 
-// Controls V7 imports the production V6 game first, then installs the dedicated
-// three-player input/interaction layer. This keeps the proven autonomous kitchen
-// mechanics untouched while fixing human station targeting and control ownership.
+// Senior V8.1 imports the stable production game and replaces the human-facing
+// control/service layer with overlay-proof click actions, true solo play, richer
+// NPCs, expanded character customization and proximity-safe grocery targeting.
 await build({
-  entryPoints: [path.join(root, 'src/controls_v7.js')],
+  entryPoints: [path.join(root, 'src/senior_v8_final.js')],
   bundle: true,
   format: 'iife',
   platform: 'browser',
@@ -31,14 +31,8 @@ const bundledGame = await readFile(path.join(dist, 'game.bundle.js'), 'utf8');
 const portableHeartbeat = `if(location.hostname==='127.0.0.1'&&new URLSearchParams(location.search).get('portable')==='1'){const __rkrHeartbeat=()=>fetch('/__heartbeat',{method:'POST',cache:'no-store'}).catch(()=>{});__rkrHeartbeat();setInterval(__rkrHeartbeat,10000);}`;
 const js = portableHeartbeat + bundledGame;
 
-html = html.replace(
-  '<link rel="stylesheet" href="./style.css" />',
-  () => `<style>${css}</style>`,
-);
-html = html.replace(
-  '<script src="./game.js"></script>',
-  () => `<script>${js}</script>`,
-);
+html = html.replace('<link rel="stylesheet" href="./style.css" />', () => `<style>${css}</style>`);
+html = html.replace('<script src="./game.js"></script>', () => `<script>${js}</script>`);
 
 const logoPath = path.resolve(root, '../../assets/logo_colegio_transparente.png');
 try {
@@ -49,28 +43,33 @@ try {
   console.warn('School logo not found at repository asset path; build continues with source path.');
 }
 
-const standalone = path.join(dist, 'Robledo_Kitchen_Rush_3D_INTERACTION_V7_OFFLINE.html');
+const standalone = path.join(dist, 'Robledo_Kitchen_Rush_3D_SENIOR_V8_OFFLINE.html');
 await writeFile(standalone, html, 'utf8');
-// Canonical and legacy aliases remain available for launcher/test compatibility.
+await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_INTERACTION_V7_OFFLINE.html'));
 await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6_OFFLINE.html'));
 await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_OFFLINE.html'));
 await copyFile(standalone, path.join(dist, 'index.html'));
 await rm(path.join(dist, 'game.bundle.js'), { force: true });
 
-await writeFile(path.join(dist, 'README_FIRST.txt'), `ROBLEDO KITCHEN RUSH 3D — INTERACTION CONTROLS V7
+await writeFile(path.join(dist, 'README_FIRST.txt'), `ROBLEDO KITCHEN RUSH 3D — SENIOR V8.1
 
 RECOMMENDED ON WINDOWS
 1. Extract the complete ZIP before playing.
-2. Open PLAY/RobledoKitchenRush3D_InteractionV7_Windows.exe.
+2. Open PLAY/RobledoKitchenRush3D_SeniorV8_Windows.exe.
 3. The launcher serves the complete game only on 127.0.0.1 and opens it in your browser. Everything remains local/offline.
 
-THREE HUMAN PLAYERS — DEDICATED CONTROLS
+TRUE SOLO / LOCAL CO-OP
+- 1 human player means exactly one chef. No AI cooks, waiters or cleaners are spawned.
+- The solo customer cap, party size and patience are balanced so the single chef personally takes every order, collects every ingredient, cooks, serves and cleans.
+- 2 or 3 human players use the same physical kitchen with no hidden AI helpers.
+
 PLAYER 1 — MOUSE
-- Left click on floor: move there.
-- Left click on a kitchen object/table/item: select it and approach it.
-- Right click / hold: interact or work with the selected/nearby object.
+- Left click floor: move there.
+- Left click a kitchen object, table or ingredient: approach it and perform the appropriate interaction automatically.
+- Right click / hold: approach and manually interact/work. Prep boards and sinks support continuous work while held.
 - Middle click: throw the held item.
-- During service, right mouse belongs to P1 interaction; camera presets use C, Home and wheel zoom.
+- Service HUD layers are click-through; ingredient compartments also use proximity-safe targeting so camera perspective cannot select the wrong shelf.
+- During service, right mouse belongs to P1 interaction. Camera presets use C, Home and wheel zoom.
 
 PLAYER 2 — KEYBOARD
 - Move: W A S D
@@ -86,29 +85,43 @@ PLAYER 3 — KEYBOARD
 - Throw: Slash (/)
 - Dash: Right Shift
 
-HUMAN INTERACTION FIXES
-- A carried ingredient/plate is excluded from nearest-target detection, so holding food no longer blocks interaction with counters, prep boards, stove, fryer, oven, sink, grocery compartments or tables.
-- Prep boards and sinks are true hold-to-work stations.
-- Plate rack, counter, grocery, table and cooking stations are edge-triggered: one deliberate press/click performs one action. Holding the button no longer immediately undoes the previous action.
-- Every human player has a visible selection ring and HUD target label.
-- P1 can click a fixture from a distance and will approach until it is inside the interaction radius.
+SENIOR V8.1 GAMEPLAY SYSTEMS
+- Exact recipe routes define grocery, prep, cooking, assembly and serving steps for all six recipes.
+- Contextual action card tells the player the next useful station for the held item.
+- Physical ingredients have animated pickup, idle presentation, station feedback, particles, labeled grocery anchors and clearer state changes.
+- Grocery stock is finite per shift. Empty compartments automatically restock four units for a small business cost when interacted with.
+- Shift goals reward service volume, fast service and no burned food.
+- Kitchen cleanliness tracks dirty tables, dirty sink plates, burned food and dropped items.
+- Persistent chef XP and customer loyalty add longer-term progression.
+- Regular customers can return with loyalty bonuses.
+- NPC traits now affect patience and can trigger service bonuses.
+- Customers display dynamic speech/mood bubbles and stronger waiting/eating gestures.
 
-AUTONOMOUS SERVICE V6 SYSTEMS RETAINED
-- Grocery Market + Freezer with real ingredient compartments.
-- Autonomous waiter takes orders.
-- Bots collect groceries, prep, cook, assemble, serve and clean through physical stations.
-- Progressive restaurant expansion, persistent cash/satisfaction, Fast Service life restoration and Geometry Rescue.
+CHARACTER PERSONALIZATION
+- Name
+- Gender / presentation
+- Six skin tones
+- Four hair styles + six hair colors
+- Six uniform colors
+- Six apron colors
+- Body build
+- Glasses, bandana, neckerchief or no accessory
+- Chef hat, kitchen cap or beanie
+- Uniform stripe details
+- Moustache, short beard or clean-shaven option
+- Gender never restricts hair, clothes, colors or accessories.
 
-BUILD MODE
-- Left click: place selected fixture.
-- Right mouse drag: orbit camera.
-- Mouse wheel: zoom.
-- R: rotate fixture.
-- Delete: remove highlighted fixture and refund its purchase cost.
-- Recommended Layout: creates a compact valid layout for the current restaurant tier.
+IMPROVED RECOMMENDED LAYOUT
+- Grocery wall at the back of the kitchen.
+- Sink and plate rack grouped into a cleaning zone.
+- Prep/cook/assembly stations form a readable production line.
+- Dining tables use wider service aisles and tier-aware spacing.
+
+RECIPE BOOK
+Open the Recipe Book to see the exact physical station path for every dish. Pin a recipe to keep its route visible on the live service board. Clicking an active order card also pins that table's next dish.
 
 HTML FALLBACK
-Robledo_Kitchen_Rush_3D_INTERACTION_V7_OFFLINE.html is fully standalone. Managed browsers can restrict file:// pages, so the Windows launcher is preferred.
+Robledo_Kitchen_Rush_3D_SENIOR_V8_OFFLINE.html is fully standalone. Managed browsers can restrict file:// pages, so the Windows launcher is preferred.
 `);
 
 console.log(`Built ${standalone}`);
