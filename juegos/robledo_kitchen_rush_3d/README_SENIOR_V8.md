@@ -6,6 +6,8 @@ Senior V8 is a full gameplay/interaction revision focused on reliable human cont
 
 Player 1 no longer depends on a fragile select-then-interact sequence. During service, left click on an interactive object performs a smart action: the chef approaches the object and interacts when in range. Right click/hold performs manual interaction/work and is reserved for Player 1 rather than camera orbit. Middle click throws. Player 2 uses WASD + F/E/Q/Left Shift. Player 3 uses arrow keys + Period/Enter/Slash/Right Shift.
 
+Senior V8.0.5 makes the first left/right mouse interaction execute synchronously on pointer-down whenever the chef is already in range. This removes a low-frame-rate race in which a short click could be released before the next WebGL animation frame and therefore appear to do nothing. If the target is farther away, the same click queues approach-and-interact behavior. Prep and sink work also have deterministic continuous-action semantics and a watchdog for throttled embedded browsers.
+
 ## True solo
 
 Selecting one human player creates exactly one chef and no autonomous bots. The single player personally takes orders, gathers ingredients, preps, cooks, assembles, serves and cleans. Solo customer capacity, party size and patience are scaled so the loop remains demanding but playable.
