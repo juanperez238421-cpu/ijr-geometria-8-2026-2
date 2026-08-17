@@ -38,7 +38,7 @@ jobs:
           npm run check
           node --check src/senior_v9.js
           node --check src/senior_v9_final.js
-          node --check scripts/senior_v9_e2e.mjs
+          node --check scripts/senior_v9_release_e2e.mjs
           grep -q "Right click = cancel only" src/senior_v9.js
           grep -q "automatic timed work" src/senior_v9.js
           grep -q "v9-task-complete" src/senior_v9.js
@@ -72,7 +72,7 @@ jobs:
           PY
           node --check /tmp/robledo-kitchen-v9-bundle.js
 
-      - name: Senior V9 browser E2E — real pointer service, cancel-only right click, timed prep, NPCs and co-op
+      - name: Senior V9 release E2E — real pointer service, cancel-only right click, timed prep, NPCs and local co-op
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
@@ -96,7 +96,7 @@ jobs:
           CHROME_PID=$!
           cleanup() { kill "$CHROME_PID" "$HTTP_PID" 2>/dev/null || true; }
           trap cleanup EXIT
-          if ! CDP_PORT=9333 node scripts/senior_v9_e2e.mjs; then
+          if ! CDP_PORT=9333 node scripts/senior_v9_release_e2e.mjs; then
             cat /tmp/rkr-v9-chrome.log || true
             exit 1
           fi
