@@ -24,7 +24,15 @@ function correctedTarget(player,target){
 const baseQueue=v8.queueAction.bind(v8);
 v8.queueAction=function queueActionV811(player,target,mode='smart'){
   const resolved=correctedTarget(player,target);if(resolved!==target)game.qaRecord('v8-storage-target-corrected',{from:target?.kind||target?.type||null,to:resolved?.kind||null,phase:'queue'});
-  return baseQueue(player,resolved,mode);
+  const result=baseQueue(player,resolved,mode);
+  // An action already owns its approach destination. Keeping the old generic
+  // click-to-move destination alive made P1 walk back toward the previous
+  // station immediately after a successful click. That stale motion was the
+  // root cause of the apparent "right click does nothing" failure: the chef
+  // could be pulled out of interaction range between two consecutive actions.
+  if(v8.mouse.action){v8.mouse.moveTarget=null;v8.mouse.action.destination=v8.mouse.action.destination||null;}
+  game.qaRecord('v8-action-destination-isolated',{target:resolved?.type||resolved?.kind||null,kind:resolved?.kind||null,mode,hasAction:!!v8.mouse.action});
+  return result;
 };
 
 const baseInteract=game.interact.bind(game);
@@ -55,4 +63,4 @@ window.addEventListener('auxclick',event=>{
 // Expose deterministic helpers for QA and future accessibility controls.
 v8.nearestStorage=nearestStorage;
 v8.correctedTarget=correctedTarget;
-console.info('Senior V8.1 final layer active: proximity-safe ingredient compartments and auxclick right-mouse fallback.');
+console.info('Senior V8.1 final layer active: isolated action destinations, proximity-safe ingredients and auxclick fallback.');
