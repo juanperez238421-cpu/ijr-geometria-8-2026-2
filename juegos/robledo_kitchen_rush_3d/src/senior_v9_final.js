@@ -13,50 +13,52 @@ function applyPointerOwnership(){
 }
 
 const openRestaurantV9=game.openRestaurant.bind(game);
-game.openRestaurant=function openRestaurantV904(...args){const result=openRestaurantV9(...args);applyPointerOwnership();return result;};
+game.openRestaurant=function openRestaurantV905(...args){const result=openRestaurantV9(...args);applyPointerOwnership();return result;};
 const enterBuildV9=game.enterBuildMode.bind(game);
-game.enterBuildMode=function enterBuildModeV904(...args){const result=enterBuildV9(...args);applyPointerOwnership();return result;};
+game.enterBuildMode=function enterBuildModeV905(...args){const result=enterBuildV9(...args);applyPointerOwnership();return result;};
 const toMenuV9=game.toMenu.bind(game);
-game.toMenu=function toMenuV904(...args){const result=toMenuV9(...args);applyPointerOwnership();return result;};
+game.toMenu=function toMenuV905(...args){const result=toMenuV9(...args);applyPointerOwnership();return result;};
 function pointerOwnershipLoop(){applyPointerOwnership();requestAnimationFrame(pointerOwnershipLoop);}
 applyPointerOwnership();requestAnimationFrame(pointerOwnershipLoop);
 
-// Single-click timed jobs own their complete lifecycle here. Once a prep/sink
-// station is selected and the chef reaches it, V9 places the eligible item,
-// advances the station clock and returns the completed item automatically. The
-// user never has to hold or repeat a mouse button.
-let lastServiceClock=performance.now();
-function serviceJobLoop(now){
-  const dt=Math.min(.08,Math.max(.016,(now-lastServiceClock)/1000));lastServiceClock=now;
-  const task=v9.state?.task,player=game.players?.[0],target=task?.target;
-  if(game.state==='playing'&&player?.human&&task&&target&&(target.type==='prep'||target.type==='sink')){
-    const p=target.pos||target.group?.position;
-    const near=p&&Math.hypot(player.group.position.x-p.x,player.group.position.z-p.z)<=2.08;
-    if(near){
-      // Start the job ourselves if the movement/update frame has not done it yet.
-      if(task.phase!=='work'){
-        if(!target.slot&&player.held)game.interact(player,target,.018,true);
-        if(target.slot){task.phase='work';task.progress=0;game.qaRecord('v9-timed-job-start',{target:target.type,kind:target.slot.kind||'plate'});}
-      }
-      if(task.phase==='work'&&target.slot){
-        const slotBefore=target.slot,stateBefore=slotBefore.state,dirtyBefore=!!slotBefore.dirty;
-        game.interact(player,target,Math.max(.06,dt),true);
-        task.progress=target.type==='prep'?Math.min(1,(target.progress||0)/1.7):Math.min(1,(target.progress||0)/1.8);
-        const readyPrep=target.type==='prep'&&target.slot&&target.slot.state!=='raw';
-        const readyWash=target.type==='sink'&&target.slot&&!target.slot.dirty;
-        if((readyPrep||readyWash)&&!player.held)game.interact(player,target,.018,true);
-        const returned=!target.slot&&!!player.held&&(
-          (target.type==='prep'&&stateBefore==='raw')||
-          (target.type==='sink'&&dirtyBefore)||
-          player.held===slotBefore
-        );
-        if(returned){v9.state.task=null;game.qaRecord('v9-timed-job-complete',{target:target.type,kind:player.held.kind||'plate',state:player.held.state||null});game.flash(target.type==='prep'?'PREP COMPLETE — ingredient returned to chef.':'WASH COMPLETE — clean plate returned to chef.');}
-      }
-    }
+// V9 prep/wash is a true one-click job, driven by wall-clock time rather than a
+// held input or frame-count accumulation. That keeps the mechanic consistent at
+// low FPS and makes the interaction feel like a deliberate kitchen action:
+// click once, watch progress, receive the completed item.
+function workDuration(player,type){const role=type==='prep'?'prep':'service';const multiplier=Math.max(.7,Number(player?.workMultiplier?.(role))||1);return (type==='prep'?1550:1650)/multiplier;}
+function finishTimedJob(task,player,target){
+  if(v9.state.task!==task||!target.slot)return;
+  if(target.type==='prep'){
+    if(target.slot.state==='raw')target.slot.setState('chopped');
+    target.progress=0;if(target.bar)target.bar.scale.x=.001;game.sfx.chop();
+  }else{
+    if(target.slot.dirty){target.slot.setDirty(false);target.slot.components=[];target.slot.baked=false;target.slot.burnt=false;game.score+=15;game.sfx.serve();}
+    target.progress=0;if(target.bar)target.bar.scale.x=.001;
   }
-  requestAnimationFrame(serviceJobLoop);
+  if(!player.held){const item=target.slot;player.pick(item);item.onSurface=false;target.slot=null;}
+  const held=player.held;v9.state.task=null;game.v8Shift.interactions=(Number(game.v8Shift.interactions)||0)+1;
+  game.qaRecord('v9-timed-job-complete',{target:target.type,kind:held?.kind||'plate',state:held?.state||null});
+  game.flash(target.type==='prep'?'PREP COMPLETE — ingredient returned to chef.':'WASH COMPLETE — clean plate returned to chef.');
 }
-requestAnimationFrame(serviceJobLoop);
+function superviseTimedJob(){
+  const task=v9.state?.task,player=game.players?.[0],target=task?.target;
+  if(game.state!=='playing'||!player?.human||!task||!target||!['prep','sink'].includes(target.type))return;
+  const p=target.pos||target.group?.position;if(!p||Math.hypot(player.group.position.x-p.x,player.group.position.z-p.z)>2.08)return;
+  if(!target.slot){
+    if(!player.held)return;
+    game.interact(player,target,.018,true);
+    if(!target.slot)return;
+  }
+  const valid=target.type==='prep'?target.slot.state==='raw':!!target.slot.dirty;
+  if(!valid){
+    if(!player.held){const item=target.slot;player.pick(item);item.onSurface=false;target.slot=null;}
+    v9.state.task=null;return;
+  }
+  if(task.phase!=='work'||!task.workStarted){task.phase='work';task.workStarted=performance.now();task.workDuration=workDuration(player,target.type);task.progress=0;target.progress=0;game.qaRecord('v9-timed-job-start',{target:target.type,kind:target.slot.kind||'plate',duration:Math.round(task.workDuration)});}
+  const elapsed=performance.now()-task.workStarted;task.progress=Math.min(1,elapsed/task.workDuration);target.progress=task.progress*(target.type==='prep'?1.7:1.8);if(target.bar)target.bar.scale.x=Math.max(.001,task.progress);
+  if(elapsed>=task.workDuration)finishTimedJob(task,player,target);
+}
+const timedJobInterval=setInterval(superviseTimedJob,45);
 
 function suppressLegacyInteractionDecoration(){
   for(const item of game.items||[])if(item?.__v8Halo)item.__v8Halo.visible=false;
@@ -66,5 +68,7 @@ function suppressLegacyInteractionDecoration(){
 requestAnimationFrame(suppressLegacyInteractionDecoration);
 
 v9.applyPointerOwnership=applyPointerOwnership;
-v9.patchLevel='9.0.4-self-starting-single-click-jobs';
-console.info('Senior V9.0.4 final layer active: cancel-only right click and self-starting single-click prep/wash lifecycle.');
+v9.superviseTimedJob=superviseTimedJob;
+v9.timedJobInterval=timedJobInterval;
+v9.patchLevel='9.0.5-wall-clock-single-click-jobs';
+console.info('Senior V9.0.5 final layer active: cancel-only right click and wall-clock single-click prep/wash jobs.');
