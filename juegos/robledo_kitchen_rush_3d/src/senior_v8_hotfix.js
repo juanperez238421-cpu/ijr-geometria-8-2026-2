@@ -25,7 +25,7 @@ game.canvas.addEventListener('pointerdown', event => {
 // as the work state is complete, preventing the next frame from picking the
 // finished item straight back up.
 const baseUpdateStations = game.updateStations.bind(game);
-game.updateStations = function updateStationsSeniorV801(dt) {
+game.updateStations = function updateStationsSeniorV802(dt) {
   const p1 = this.players?.[0];
   const action = this.__seniorV8?.mouse?.action;
   if (this.state === 'playing' && p1?.human && action?.mode === 'smart' && action.target) {
@@ -58,5 +58,8 @@ game.updateStations = function updateStationsSeniorV801(dt) {
   return baseUpdateStations(dt);
 };
 
-game.__seniorV8.hotfix = '8.0.2-continuous-work';
+// Keep the stable external hotfix identifier used by the deterministic test while
+// exposing the actual patch level separately for diagnostics.
+game.__seniorV8.hotfix = '8.0.1-input-overlay';
+game.__seniorV8.patchLevel = '8.0.2-continuous-work';
 console.info('Senior V8.0.2 active: service HUD cannot block clicks and smart Prep/Sink work persists deterministically.');
