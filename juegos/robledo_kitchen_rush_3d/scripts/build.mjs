@@ -9,12 +9,11 @@ const dist = path.join(root, 'dist');
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 
-// Senior V8 imports the stable production game and replaces the human-facing
-// control/service layer with reliable click actions, true solo play, richer NPCs,
-// character customization and additional management systems. The hotfix entry
-// also guarantees that informational HUD layers never capture kitchen clicks.
+// Senior V8.1 imports the stable production game and replaces the human-facing
+// control/service layer with overlay-proof click actions, true solo play, richer
+// NPCs, expanded character customization and proximity-safe grocery targeting.
 await build({
-  entryPoints: [path.join(root, 'src/senior_v8_hotfix.js')],
+  entryPoints: [path.join(root, 'src/senior_v8_final.js')],
   bundle: true,
   format: 'iife',
   platform: 'browser',
@@ -52,7 +51,7 @@ await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_OFFLINE.html
 await copyFile(standalone, path.join(dist, 'index.html'));
 await rm(path.join(dist, 'game.bundle.js'), { force: true });
 
-await writeFile(path.join(dist, 'README_FIRST.txt'), `ROBLEDO KITCHEN RUSH 3D — SENIOR V8
+await writeFile(path.join(dist, 'README_FIRST.txt'), `ROBLEDO KITCHEN RUSH 3D — SENIOR V8.1
 
 RECOMMENDED ON WINDOWS
 1. Extract the complete ZIP before playing.
@@ -69,6 +68,7 @@ PLAYER 1 — MOUSE
 - Left click a kitchen object, table or ingredient: approach it and perform the appropriate interaction automatically.
 - Right click / hold: approach and manually interact/work. Prep boards and sinks support continuous work while held.
 - Middle click: throw the held item.
+- Service HUD layers are click-through; ingredient compartments also use proximity-safe targeting so camera perspective cannot select the wrong shelf.
 - During service, right mouse belongs to P1 interaction. Camera presets use C, Home and wheel zoom.
 
 PLAYER 2 — KEYBOARD
@@ -85,15 +85,16 @@ PLAYER 3 — KEYBOARD
 - Throw: Slash (/)
 - Dash: Right Shift
 
-SENIOR V8 GAMEPLAY SYSTEMS
+SENIOR V8.1 GAMEPLAY SYSTEMS
 - Exact recipe routes define grocery, prep, cooking, assembly and serving steps for all six recipes.
 - Contextual action card tells the player the next useful station for the held item.
-- Physical ingredients have animated pickup, idle presentation, station feedback, particles and clearer state changes.
+- Physical ingredients have animated pickup, idle presentation, station feedback, particles, labeled grocery anchors and clearer state changes.
 - Grocery stock is finite per shift. Empty compartments automatically restock four units for a small business cost when interacted with.
 - Shift goals reward service volume, fast service and no burned food.
 - Kitchen cleanliness tracks dirty tables, dirty sink plates, burned food and dropped items.
 - Persistent chef XP and customer loyalty add longer-term progression.
 - Regular customers can return with loyalty bonuses.
+- NPC traits now affect patience and can trigger service bonuses.
 - Customers display dynamic speech/mood bubbles and stronger waiting/eating gestures.
 
 CHARACTER PERSONALIZATION
@@ -105,6 +106,9 @@ CHARACTER PERSONALIZATION
 - Six apron colors
 - Body build
 - Glasses, bandana, neckerchief or no accessory
+- Chef hat, kitchen cap or beanie
+- Uniform stripe details
+- Moustache, short beard or clean-shaven option
 - Gender never restricts hair, clothes, colors or accessories.
 
 IMPROVED RECOMMENDED LAYOUT
