@@ -46,7 +46,7 @@ const v8Tokens = [
   "event.button===0",
   "event.button===2",
   "mode='smart'",
-  "mode='hold'",
+  "queueAction(p1,target,'hold')",
   'targetFromPointer',
   'approachPoint',
   'ergonomicLayout',
@@ -67,7 +67,7 @@ const v8Tokens = [
   'decorateParty',
   'partyBubbleText',
   'v8-human-interact',
-  'Smart left click',
+  'Both mouse buttons now perform a real action',
 ];
 for (const token of v8Tokens) if (!senior.includes(token)) throw new Error(`Missing Senior V8 token: ${token}`);
 for (const recipe of ['burger','salad','fries','pizza','grill','toast']) if (!senior.includes(`${recipe}:{id:'${recipe}'`)) throw new Error(`Missing V8 recipe route: ${recipe}`);
