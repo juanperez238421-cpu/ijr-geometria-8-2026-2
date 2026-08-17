@@ -22,9 +22,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Apply reachable interaction-ring navigation correction
-        run: python juegos/robledo_kitchen_rush_3d/fix_v6_interaction_ring.py
-
       - name: Node 22
         uses: actions/setup-node@v4
         with:
@@ -34,34 +31,36 @@ jobs:
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Static Autonomous V6 + Interaction V7 QA
+      - name: Static Senior V8 QA
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
           npm run check
-          node --check src/controls_v7.js
-          node --check scripts/controls_v7_smoke.mjs
-          grep -q "PLAYER 1 — MOUSE" scripts/build.mjs
-          grep -q "P2 • WASD" src/controls_v7.js
-          grep -q "P3 • Arrows" src/controls_v7.js
-          grep -q "heldByPlayerNear" src/controls_v7.js
-          grep -q "continuousWork" src/controls_v7.js
+          node --check src/senior_v8.js
+          node --check scripts/senior_v8_smoke.mjs
+          grep -q "true solo" README_SENIOR_V8.md
+          grep -q "Left click object" scripts/build.mjs
+          grep -q "event.button===0" src/senior_v8.js
+          grep -q "event.button===2" src/senior_v8.js
+          grep -q "v8-customization" src/senior_v8.js
+          grep -q "RECIPE_BOOK" src/senior_v8.js
+          grep -q "decorateParty" src/senior_v8.js
+          grep -q "ergonomicLayout" src/senior_v8.js
 
       - name: Build single-file offline Three.js game
         working-directory: juegos/robledo_kitchen_rush_3d
         run: npm run build
 
-      - name: Verify Interaction V7 standalone output
+      - name: Verify Senior V8 standalone output
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          test -s dist/Robledo_Kitchen_Rush_3D_INTERACTION_V7_OFFLINE.html
-          test -s dist/Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6_OFFLINE.html
+          test -s dist/Robledo_Kitchen_Rush_3D_SENIOR_V8_OFFLINE.html
           test -s dist/Robledo_Kitchen_Rush_3D_OFFLINE.html
           python - <<'PY'
           from pathlib import Path
-          html = Path('dist/Robledo_Kitchen_Rush_3D_INTERACTION_V7_OFFLINE.html').read_text(encoding='utf-8')
-          for token in ['ROBLEDO KITCHEN RUSH 3D','GROCERY MARKET','WAITER NEEDED','BUSINESS CASH','data:image/png;base64','Controls V7 active']:
+          html = Path('dist/Robledo_Kitchen_Rush_3D_SENIOR_V8_OFFLINE.html').read_text(encoding='utf-8')
+          for token in ['ROBLEDO KITCHEN RUSH 3D','GROCERY MARKET','BUSINESS CASH','data:image/png;base64','Senior V8 active','CHARACTER PERSONALIZATION','CLEANLINESS']:
               assert token in html, token
           assert 'href="./style.css"' not in html
           assert '<script src="./game.js"></script>' not in html
@@ -70,41 +69,37 @@ jobs:
           start = html.index('<script>') + len('<script>')
           end = html.rindex('</script>')
           bundle = html[start:end]
-          Path('/tmp/robledo-kitchen-v7-bundle.js').write_text(bundle, encoding='utf-8')
-          print('Interaction V7 standalone bytes:', len(html.encode('utf-8')))
+          Path('/tmp/robledo-kitchen-v8-bundle.js').write_text(bundle, encoding='utf-8')
+          print('Senior V8 standalone bytes:', len(html.encode('utf-8')))
           PY
-          node --check /tmp/robledo-kitchen-v7-bundle.js
+          node --check /tmp/robledo-kitchen-v8-bundle.js
 
-      - name: Professional browser E2E — autonomous waiter, grocery, cooking, serving and cleaning
+      - name: Senior browser E2E — solo clicks, recipes, prep, NPCs and three-player controls
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
           CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           test -n "$CHROME_BIN"
-          rm -rf /tmp/rkr-v7-chrome-profile
-          python3 -m http.server 8765 --bind 127.0.0.1 --directory dist >/tmp/rkr-v7-http.log 2>&1 &
+          rm -rf /tmp/rkr-v8-chrome-profile
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory dist >/tmp/rkr-v8-http.log 2>&1 &
           HTTP_PID=$!
           xvfb-run -a "$CHROME_BIN" \
             --no-sandbox \
             --disable-dev-shm-usage \
             --no-first-run \
             --no-default-browser-check \
-            --user-data-dir=/tmp/rkr-v7-chrome-profile \
+            --user-data-dir=/tmp/rkr-v8-chrome-profile \
             --remote-debugging-port=9333 \
             --remote-allow-origins='*' \
-            --window-size=1280,800 \
+            --window-size=1365,900 \
             --enable-unsafe-swiftshader \
             --use-angle=swiftshader \
-            http://127.0.0.1:8765/index.html >/tmp/rkr-v7-chrome.log 2>&1 &
+            http://127.0.0.1:8765/index.html >/tmp/rkr-v8-chrome.log 2>&1 &
           CHROME_PID=$!
           cleanup() { kill "$CHROME_PID" "$HTTP_PID" 2>/dev/null || true; }
           trap cleanup EXIT
-          if ! CDP_PORT=9333 node scripts/smoke.mjs; then
-            cat /tmp/rkr-v7-chrome.log || true
-            exit 1
-          fi
-          if ! CDP_PORT=9333 node scripts/controls_v7_smoke.mjs; then
-            cat /tmp/rkr-v7-chrome.log || true
+          if ! CDP_PORT=9333 node scripts/senior_v8_smoke.mjs; then
+            cat /tmp/rkr-v8-chrome.log || true
             exit 1
           fi
 
@@ -114,22 +109,22 @@ jobs:
           go-version: '1.23.x'
           cache: false
 
-      - name: Build Interaction V7 portable launchers
+      - name: Build Senior V8 portable launchers
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          cp dist/Robledo_Kitchen_Rush_3D_INTERACTION_V7_OFFLINE.html launcher/game.html
-          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags='-s -w -H=windowsgui' -o dist/RobledoKitchenRush3D_InteractionV7_Windows.exe ./launcher
-          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o dist/RobledoKitchenRush3D_InteractionV7_Linux ./launcher
-          test -s dist/RobledoKitchenRush3D_InteractionV7_Windows.exe
-          test -s dist/RobledoKitchenRush3D_InteractionV7_Linux
+          cp dist/Robledo_Kitchen_Rush_3D_SENIOR_V8_OFFLINE.html launcher/game.html
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags='-s -w -H=windowsgui' -o dist/RobledoKitchenRush3D_SeniorV8_Windows.exe ./launcher
+          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o dist/RobledoKitchenRush3D_SeniorV8_Linux ./launcher
+          test -s dist/RobledoKitchenRush3D_SeniorV8_Windows.exe
+          test -s dist/RobledoKitchenRush3D_SeniorV8_Linux
 
-      - name: Verify V7 portable launcher
+      - name: Verify Senior V8 portable launcher
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
-          chmod +x dist/RobledoKitchenRush3D_InteractionV7_Linux
-          dist/RobledoKitchenRush3D_InteractionV7_Linux --no-open --port 8766 >/tmp/rkr-v7-launcher.log 2>&1 &
+          chmod +x dist/RobledoKitchenRush3D_SeniorV8_Linux
+          dist/RobledoKitchenRush3D_SeniorV8_Linux --no-open --port 8766 >/tmp/rkr-v8-launcher.log 2>&1 &
           PID=$!
           trap 'kill "$PID" 2>/dev/null || true' EXIT
           for i in $(seq 1 30); do
@@ -137,29 +132,29 @@ jobs:
             sleep .2
           done
           curl -fsS http://127.0.0.1:8766/__health | grep -q OK
-          curl -fsS http://127.0.0.1:8766/ -o /tmp/rkr-v7-served.html
-          grep -q 'GROCERY MARKET' /tmp/rkr-v7-served.html
-          grep -q 'WAITER NEEDED' /tmp/rkr-v7-served.html
-          grep -q 'Controls V7 active' /tmp/rkr-v7-served.html
-          test $(wc -c </tmp/rkr-v7-served.html) -gt 550000
+          curl -fsS http://127.0.0.1:8766/ -o /tmp/rkr-v8-served.html
+          grep -q 'GROCERY MARKET' /tmp/rkr-v8-served.html
+          grep -q 'Senior V8 active' /tmp/rkr-v8-served.html
+          grep -q 'CHARACTER PERSONALIZATION' /tmp/rkr-v8-served.html
+          test $(wc -c </tmp/rkr-v8-served.html) -gt 580000
 
-      - name: Package Interaction V7 plus editable source and QA reports
+      - name: Package Senior V8 plus editable source and QA reports
         working-directory: juegos/robledo_kitchen_rush_3d
         run: |
           set -euxo pipefail
           rm -rf package
-          mkdir -p package/Robledo_Kitchen_Rush_3D_INTERACTION_V7/PLAY package/Robledo_Kitchen_Rush_3D_INTERACTION_V7/SOURCE
-          cp dist/RobledoKitchenRush3D_InteractionV7_Windows.exe dist/RobledoKitchenRush3D_InteractionV7_Linux dist/Robledo_Kitchen_Rush_3D_INTERACTION_V7_OFFLINE.html dist/README_FIRST.txt package/Robledo_Kitchen_Rush_3D_INTERACTION_V7/PLAY/
-          cp index.html style.css package.json package-lock.json README.md README_PROGRESSIVE_V5.txt README_AUTONOMOUS_V6.txt SENIOR_PROGRESSIVE_V5_NOTES.md SENIOR_V6_QA_REPORT.md go.mod package/Robledo_Kitchen_Rush_3D_INTERACTION_V7/SOURCE/
-          cp -a src scripts launcher package/Robledo_Kitchen_Rush_3D_INTERACTION_V7/SOURCE/
+          mkdir -p package/Robledo_Kitchen_Rush_3D_SENIOR_V8/PLAY package/Robledo_Kitchen_Rush_3D_SENIOR_V8/SOURCE
+          cp dist/RobledoKitchenRush3D_SeniorV8_Windows.exe dist/RobledoKitchenRush3D_SeniorV8_Linux dist/Robledo_Kitchen_Rush_3D_SENIOR_V8_OFFLINE.html dist/README_FIRST.txt package/Robledo_Kitchen_Rush_3D_SENIOR_V8/PLAY/
+          cp index.html style.css package.json package-lock.json README.md README_SENIOR_V8.md README_PROGRESSIVE_V5.txt README_AUTONOMOUS_V6.txt SENIOR_PROGRESSIVE_V5_NOTES.md SENIOR_V6_QA_REPORT.md go.mod package/Robledo_Kitchen_Rush_3D_SENIOR_V8/SOURCE/
+          cp -a src scripts launcher package/Robledo_Kitchen_Rush_3D_SENIOR_V8/SOURCE/
           cd package
-          zip -qr Robledo_Kitchen_Rush_3D_SENIOR_INTERACTION_V7_FULL_LOCAL.zip Robledo_Kitchen_Rush_3D_INTERACTION_V7
-          test -s Robledo_Kitchen_Rush_3D_SENIOR_INTERACTION_V7_FULL_LOCAL.zip
+          zip -qr Robledo_Kitchen_Rush_3D_SENIOR_V8_FULL_LOCAL.zip Robledo_Kitchen_Rush_3D_SENIOR_V8
+          test -s Robledo_Kitchen_Rush_3D_SENIOR_V8_FULL_LOCAL.zip
 
-      - name: Upload Interaction V7 downloadable build
+      - name: Upload Senior V8 downloadable build
         uses: actions/upload-artifact@v4
         with:
-          name: Robledo-Kitchen-Rush-3D-Senior-Interaction-V7
-          path: juegos/robledo_kitchen_rush_3d/package/Robledo_Kitchen_Rush_3D_SENIOR_INTERACTION_V7_FULL_LOCAL.zip
+          name: Robledo-Kitchen-Rush-3D-Senior-V8
+          path: juegos/robledo_kitchen_rush_3d/package/Robledo_Kitchen_Rush_3D_SENIOR_V8_FULL_LOCAL.zip
           if-no-files-found: error
           retention-days: 90
