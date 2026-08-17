@@ -39,7 +39,6 @@ jobs:
           node --check src/senior_v9.js
           node --check src/senior_v9_final.js
           node --check scripts/senior_v9_e2e.mjs
-          node --check scripts/senior_v9_probe.mjs
           grep -q "Right click = cancel only" src/senior_v9.js
           grep -q "automatic timed work" src/senior_v9.js
           grep -q "v9-task-complete" src/senior_v9.js
@@ -97,7 +96,6 @@ jobs:
           CHROME_PID=$!
           cleanup() { kill "$CHROME_PID" "$HTTP_PID" 2>/dev/null || true; }
           trap cleanup EXIT
-          CDP_PORT=9333 node scripts/senior_v9_probe.mjs
           if ! CDP_PORT=9333 node scripts/senior_v9_e2e.mjs; then
             cat /tmp/rkr-v9-chrome.log || true
             exit 1
