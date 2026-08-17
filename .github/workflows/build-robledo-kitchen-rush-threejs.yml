@@ -39,7 +39,7 @@ jobs:
           node --check src/senior_v8.js
           node --check scripts/senior_v8_smoke.mjs
           grep -q "true solo" README_SENIOR_V8.md
-          grep -q "Left click object" scripts/build.mjs
+          grep -q "Left click a kitchen object" scripts/build.mjs
           grep -q "event.button===0" src/senior_v8.js
           grep -q "event.button===2" src/senior_v8.js
           grep -q "v8-customization" src/senior_v8.js
