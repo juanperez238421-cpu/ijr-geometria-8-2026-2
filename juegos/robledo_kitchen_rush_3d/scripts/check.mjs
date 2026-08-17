@@ -18,7 +18,6 @@ const senior = await readFile(v8, 'utf8');
 const html = await readFile(path.join(root, 'index.html'), 'utf8');
 const css = await readFile(path.join(root, 'style.css'), 'utf8');
 
-// Preserve the stable physical restaurant engine underneath V8.
 const mechanicTokens = [
   'class InputManager','class CameraRig','class CrewMember','class BotBrain','class CustomerParty',
   'PerspectiveCamera','identifyRecipe','openGeometryRescue','enterBuildMode','autoLayout','planRequirements',
@@ -35,44 +34,16 @@ for (const role of ['Head Chef','Prep Specialist','Service Captain']) if (!src.i
 if (!src.includes("recipes:['salad','burger']")) throw new Error('Starter tier must begin with two recipes');
 if (src.includes('Tomato Crate') || src.includes('Lettuce Crate') || src.includes('Meat Crate')) throw new Error('Legacy grocery crates must not return');
 
-// Senior V8 requirements from the current QA brief.
 const v8Tokens = [
-  "const V8_VERSION = '8.0.0'",
-  'game.__seniorV8',
-  'spawnPlayersV8',
-  'this.players=keep',
-  'bots:0',
-  'queueAction',
-  "event.button===0",
-  "event.button===2",
-  "mode='smart'",
-  "queueAction(p1,target,'hold')",
-  'targetFromPointer',
-  'approachPoint',
-  'ergonomicLayout',
-  'v8-customization',
-  "gender:'neutral'",
-  'SKIN_TONES',
-  'UNIFORM_COLORS',
-  'APRON_COLORS',
-  'RECIPE_BOOK',
-  'v8-flow',
-  'identifyRecipeV8',
-  'v8Stock',
-  'Restocked',
-  'v8Shift',
-  'CLEANLINESS',
-  'chefXP',
-  'loyalty',
-  'decorateParty',
-  'partyBubbleText',
-  'v8-human-interact',
-  'Both mouse buttons now perform a real action',
+  "const V8_VERSION = '8.0.0'",'game.__seniorV8','spawnPlayersV8','this.players=keep','bots:0','queueAction',
+  "event.button===0","event.button===2","mode='smart'","queueAction(p1,target,'hold')",'targetFromPointer','approachPoint',
+  'ergonomicLayout','v8-customization',"gender:'neutral'",'SKIN_TONES','UNIFORM_COLORS','APRON_COLORS','RECIPE_BOOK','v8-flow',
+  'identifyRecipeV8','v8Stock','Restocked','v8Shift','CLEANLINESS','chefXP','loyalty','decorateParty','partyBubbleText',
+  'v8-human-interact','Both mouse buttons now perform a real action','SOLO SHIFT — you are alone','no AI helpers',
 ];
 for (const token of v8Tokens) if (!senior.includes(token)) throw new Error(`Missing Senior V8 token: ${token}`);
 for (const recipe of ['burger','salad','fries','pizza','grill','toast']) if (!senior.includes(`${recipe}:{id:'${recipe}'`)) throw new Error(`Missing V8 recipe route: ${recipe}`);
 if (!senior.includes("if(humans===1)return{...t,customerCap:")) throw new Error('Solo customer scaling is missing');
-if (!senior.includes("game.flash(this.players.length===1?'SOLO SHIFT")) throw new Error('True solo shift messaging is missing');
 if (!senior.includes("Left click object:</b> approach + interact automatically")) throw new Error('P1 left-click action copy is missing');
 if (!senior.includes("Right click / hold:</b> interact / work manually")) throw new Error('P1 right-click action copy is missing');
 
