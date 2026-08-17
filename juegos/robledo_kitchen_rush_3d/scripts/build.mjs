@@ -3,125 +3,41 @@ import { readFile, writeFile, mkdir, rm, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const root = path.resolve(here, '..');
-const dist = path.join(root, 'dist');
-await rm(dist, { recursive: true, force: true });
-await mkdir(dist, { recursive: true });
+const here=path.dirname(fileURLToPath(import.meta.url));
+const root=path.resolve(here,'..');
+const dist=path.join(root,'dist');
+await rm(dist,{recursive:true,force:true});
+await mkdir(dist,{recursive:true});
 
-// Senior V8.1 imports the stable production game and replaces the human-facing
-// control/service layer with overlay-proof click actions, true solo play, richer
-// NPCs, expanded character customization and proximity-safe grocery targeting.
 await build({
-  entryPoints: [path.join(root, 'src/senior_v8_final.js')],
-  bundle: true,
-  format: 'iife',
-  platform: 'browser',
-  target: ['chrome110', 'edge110', 'firefox115'],
-  minify: true,
-  sourcemap: false,
-  outfile: path.join(dist, 'game.bundle.js'),
-  legalComments: 'none',
+  entryPoints:[path.join(root,'src/senior_v9_final.js')],
+  bundle:true,
+  format:'iife',
+  platform:'browser',
+  target:['chrome110','edge110','firefox115'],
+  minify:true,
+  sourcemap:false,
+  outfile:path.join(dist,'game.bundle.js'),
+  legalComments:'none',
 });
 
-let html = await readFile(path.join(root, 'index.html'), 'utf8');
-const css = await readFile(path.join(root, 'style.css'), 'utf8');
-const bundledGame = await readFile(path.join(dist, 'game.bundle.js'), 'utf8');
+let html=await readFile(path.join(root,'index.html'),'utf8');
+const css=await readFile(path.join(root,'style.css'),'utf8');
+const bundledGame=await readFile(path.join(dist,'game.bundle.js'),'utf8');
+const portableHeartbeat=`if(location.hostname==='127.0.0.1'&&new URLSearchParams(location.search).get('portable')==='1'){const __rkrHeartbeat=()=>fetch('/__heartbeat',{method:'POST',cache:'no-store'}).catch(()=>{});__rkrHeartbeat();setInterval(__rkrHeartbeat,10000);}`;
+const js=portableHeartbeat+bundledGame;
+html=html.replace('<link rel="stylesheet" href="./style.css" />',()=>`<style>${css}</style>`);
+html=html.replace('<script src="./game.js"></script>',()=>`<script>${js}</script>`);
 
-const portableHeartbeat = `if(location.hostname==='127.0.0.1'&&new URLSearchParams(location.search).get('portable')==='1'){const __rkrHeartbeat=()=>fetch('/__heartbeat',{method:'POST',cache:'no-store'}).catch(()=>{});__rkrHeartbeat();setInterval(__rkrHeartbeat,10000);}`;
-const js = portableHeartbeat + bundledGame;
+const logoPath=path.resolve(root,'../../assets/logo_colegio_transparente.png');
+try{const logo=await readFile(logoPath);html=html.replaceAll('../../assets/logo_colegio_transparente.png',`data:image/png;base64,${logo.toString('base64')}`);}catch{console.warn('School logo not found; source path retained.');}
 
-html = html.replace('<link rel="stylesheet" href="./style.css" />', () => `<style>${css}</style>`);
-html = html.replace('<script src="./game.js"></script>', () => `<script>${js}</script>`);
+const standalone=path.join(dist,'Robledo_Kitchen_Rush_3D_SENIOR_V9_OFFLINE.html');
+await writeFile(standalone,html,'utf8');
+await copyFile(standalone,path.join(dist,'Robledo_Kitchen_Rush_3D_OFFLINE.html'));
+await copyFile(standalone,path.join(dist,'index.html'));
+await rm(path.join(dist,'game.bundle.js'),{force:true});
 
-const logoPath = path.resolve(root, '../../assets/logo_colegio_transparente.png');
-try {
-  const logo = await readFile(logoPath);
-  const data = `data:image/png;base64,${logo.toString('base64')}`;
-  html = html.replaceAll('../../assets/logo_colegio_transparente.png', data);
-} catch {
-  console.warn('School logo not found at repository asset path; build continues with source path.');
-}
-
-const standalone = path.join(dist, 'Robledo_Kitchen_Rush_3D_SENIOR_V8_OFFLINE.html');
-await writeFile(standalone, html, 'utf8');
-await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_INTERACTION_V7_OFFLINE.html'));
-await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_AUTONOMOUS_V6_OFFLINE.html'));
-await copyFile(standalone, path.join(dist, 'Robledo_Kitchen_Rush_3D_OFFLINE.html'));
-await copyFile(standalone, path.join(dist, 'index.html'));
-await rm(path.join(dist, 'game.bundle.js'), { force: true });
-
-await writeFile(path.join(dist, 'README_FIRST.txt'), `ROBLEDO KITCHEN RUSH 3D — SENIOR V8.1
-
-RECOMMENDED ON WINDOWS
-1. Extract the complete ZIP before playing.
-2. Open PLAY/RobledoKitchenRush3D_SeniorV8_Windows.exe.
-3. The launcher serves the complete game only on 127.0.0.1 and opens it in your browser. Everything remains local/offline.
-
-TRUE SOLO / LOCAL CO-OP
-- 1 human player means exactly one chef. No AI cooks, waiters or cleaners are spawned.
-- The solo customer cap, party size and patience are balanced so the single chef personally takes every order, collects every ingredient, cooks, serves and cleans.
-- 2 or 3 human players use the same physical kitchen with no hidden AI helpers.
-
-PLAYER 1 — MOUSE
-- Left click floor: move there.
-- Left click a kitchen object, table or ingredient: approach it and perform the appropriate interaction automatically.
-- Right click / hold: approach and manually interact/work. Prep boards and sinks support continuous work while held.
-- Middle click: throw the held item.
-- Service HUD layers are click-through; ingredient compartments also use proximity-safe targeting so camera perspective cannot select the wrong shelf.
-- During service, right mouse belongs to P1 interaction. Camera presets use C, Home and wheel zoom.
-
-PLAYER 2 — KEYBOARD
-- Move: W A S D
-- Select / cycle nearby target: F
-- Interact / work: E
-- Throw: Q
-- Dash: Left Shift
-
-PLAYER 3 — KEYBOARD
-- Move: Arrow keys
-- Select / cycle nearby target: Period (.)
-- Interact / work: Enter
-- Throw: Slash (/)
-- Dash: Right Shift
-
-SENIOR V8.1 GAMEPLAY SYSTEMS
-- Exact recipe routes define grocery, prep, cooking, assembly and serving steps for all six recipes.
-- Contextual action card tells the player the next useful station for the held item.
-- Physical ingredients have animated pickup, idle presentation, station feedback, particles, labeled grocery anchors and clearer state changes.
-- Grocery stock is finite per shift. Empty compartments automatically restock four units for a small business cost when interacted with.
-- Shift goals reward service volume, fast service and no burned food.
-- Kitchen cleanliness tracks dirty tables, dirty sink plates, burned food and dropped items.
-- Persistent chef XP and customer loyalty add longer-term progression.
-- Regular customers can return with loyalty bonuses.
-- NPC traits now affect patience and can trigger service bonuses.
-- Customers display dynamic speech/mood bubbles and stronger waiting/eating gestures.
-
-CHARACTER PERSONALIZATION
-- Name
-- Gender / presentation
-- Six skin tones
-- Four hair styles + six hair colors
-- Six uniform colors
-- Six apron colors
-- Body build
-- Glasses, bandana, neckerchief or no accessory
-- Chef hat, kitchen cap or beanie
-- Uniform stripe details
-- Moustache, short beard or clean-shaven option
-- Gender never restricts hair, clothes, colors or accessories.
-
-IMPROVED RECOMMENDED LAYOUT
-- Grocery wall at the back of the kitchen.
-- Sink and plate rack grouped into a cleaning zone.
-- Prep/cook/assembly stations form a readable production line.
-- Dining tables use wider service aisles and tier-aware spacing.
-
-RECIPE BOOK
-Open the Recipe Book to see the exact physical station path for every dish. Pin a recipe to keep its route visible on the live service board. Clicking an active order card also pins that table's next dish.
-
-HTML FALLBACK
-Robledo_Kitchen_Rush_3D_SENIOR_V8_OFFLINE.html is fully standalone. Managed browsers can restrict file:// pages, so the Windows launcher is preferred.
-`);
+await writeFile(path.join(dist,'README_FIRST.txt'),`ROBLEDO KITCHEN RUSH 3D — SENIOR V9\n\nRECOMMENDED ON WINDOWS\n1. Extract the ZIP completely.\n2. Open PLAY/RobledoKitchenRush3D_SeniorV9_Windows.exe.\n3. The launcher serves the game locally on 127.0.0.1. No internet is required.\n\nPLAYER 1 — REBUILT SERVICE MODEL\n- Left click floor: move.\n- Left click a kitchen object/table/ingredient: approach it and perform ONE contextual action.\n- Prep and sink are now single-click timed jobs. No mouse-button holding is required.\n- Right click: CANCEL ONLY. It never chops, washes, cooks, picks up food or rotates the service camera.\n- Middle click: throw the held item.\n- E or Space: use the currently selected/nearest target.\n- Wheel: zoom. C cycles camera presets. Home resets camera.\n- Build mode restores normal right-drag camera orbit.\n\nWHY V9 CHANGED\nSenior QA found that V8.1 had too many overlapping interaction paths: canvas pointer handlers, window fallbacks, right-hold state, auxclick recovery, watchdog interaction and visual pulse/particle feedback. Although the QA made those paths reliable, the result felt mechanical and over-engineered. V9 replaces that service layer with one explicit state machine.\n\nSERVICE FLOW\n1. Click a table to take an order.\n2. Click the required grocery ingredient.\n3. Click prep once when chopping is required; the job finishes automatically and returns the prepared ingredient to the chef.\n4. Click stove/fryer/oven once to place food. Cooking continues in real time while you perform other work.\n5. Click ready food to collect it.\n6. Click a counter to place/combine ingredients with a clean plate.\n7. Click the matching table to serve.\n8. Click dirty tables, then click the sink once to wash automatically.\n\nPRESENTATION\n- No right-click hold animation.\n- No interaction particle burst or pulsing selection spam for Player 1.\n- One static target ring shows the current target.\n- A compact action panel explains what a click will do.\n- Prep/wash use a clean progress bar.\n- The service board reports active station states such as COOKING, READY and BURNED.\n\nSOLO / LOCAL CO-OP\n- 1 player = exactly one human chef and zero AI helpers.\n- 2/3-player modes contain only the selected human players.\n- Existing recipe, stock, business, loyalty, cleanliness, NPC, customization and expansion systems remain active.\n\nCHARACTER CUSTOMIZATION\nName, gender/presentation, six skin tones, body build, hair style/color, uniform/apron colors, accessories and extended appearance options remain available.\n\nLAYOUT\nThe V9 recommended layout uses a compact work triangle: grocery wall at the back, cleaning on the left, production wings around the kitchen, central pass/counters and wider dining/service lanes.\n\nHTML FALLBACK\nRobledo_Kitchen_Rush_3D_SENIOR_V9_OFFLINE.html is a complete single-file offline build.\n`);
 
 console.log(`Built ${standalone}`);
