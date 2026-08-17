@@ -9,6 +9,7 @@ const dist=path.join(root,'dist');
 await rm(dist,{recursive:true,force:true});
 await mkdir(dist,{recursive:true});
 
+// Senior V9 production bundle: single-click contextual service with cancel-only right click.
 await build({
   entryPoints:[path.join(root,'src/senior_v9_final.js')],
   bundle:true,
