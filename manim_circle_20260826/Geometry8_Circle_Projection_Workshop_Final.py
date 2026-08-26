@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Runtime-safe final entry point for the 3D→2D circle workshop."""
+"""Runtime-safe final entry point for the 3D→2D circle workshop.
+
+This file is intentionally tiny: the full pedagogical scene lives in
+Geometry8_Circle_Projection_Workshop.py; these aliases guarantee compatibility
+with the current senior-QA palette/timing names before Manim instantiates it.
+"""
 import Geometry8_Circle_Projection_Workshop as m
 
-# Map the projection-scene semantic names onto the senior-QA palette and timing
-# already defined by Geometry8_Circle_Pi_Mixed_Workshop.
 m.ACCENT_ORANGE = m.ORANGE
 m.ACCENT_GREEN = m.MINT_DARK
 m.ACCENT_RED = "#A45143"
