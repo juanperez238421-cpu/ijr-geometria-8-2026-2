@@ -3,6 +3,8 @@ name: Render Circle Senior Smooth PQH
 on:
   push:
     branches: [circle-area-pi-workshop-20260826]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -78,7 +80,7 @@ jobs:
           SRC="$(find final_media_senior_smooth -type f -name 'Geometry8CircleProjectionWorkshopSeniorSmooth.mp4' -print -quit)"
           test -n "$SRC"
           test -s "$SRC"
-          OUT='delivery_senior_smooth/Geometry8_Circle_3D_to_2D_SENIOR_SMOOTH_FINAL_pqh.mp4'
+          OUT='delivery_senior_smooth/Geometry8_Circle_3D_to_2D_SENIOR_SMOOTH_V3_MERGEFREE_FINAL_pqh.mp4'
           cp "$SRC" "$OUT"
           ffprobe -v error -select_streams v:0 \
             -show_entries stream=codec_name,width,height,pix_fmt,r_frame_rate \
@@ -100,8 +102,6 @@ jobs:
       - name: Upload verified senior smooth render
         uses: actions/upload-artifact@v4
         with:
-          name: geometry8-circle-senior-smooth-pqh
+          name: geometry8-circle-senior-smooth-v3-mergefree-pqh
           path: manim_circle_20260826/delivery_senior_smooth/
           if-no-files-found: error
-
-# trigger: senior smooth QA pass 2
