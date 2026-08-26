@@ -30,7 +30,7 @@ class Geometry8CirclePiMixedWorkshop(JPMathClassroomScene):
         assert 3.13 < ratios[1] < 3.16
         assert 3.13 < ratios[2] < 3.16
         assert_close(14 * math.pi, 43.982297150257104, label="circumference d14")
-        assert_close(31.42 / math.pi, 10.000900243663837, label="inverse diameter")
+        assert_close(31.42 / math.pi, 10.001296623894703, label="inverse diameter")
         assert_close(math.pi * 6**2, 113.09733552923255, label="area r6")
         assert_close(math.pi * 4.5**2, 63.61725123519331, label="area d9")
         assert_close(2 * math.pi * 6, 37.69911184307752, label="mixed circumference")
@@ -66,7 +66,7 @@ class Geometry8CirclePiMixedWorkshop(JPMathClassroomScene):
         self.play(self.shade_cells(table, [(1, 3), (2, 3), (3, 3)]), run_time=RUN_NORMAL)
         self.wait(PAUSE_WORK)
         conclusion = self.formula_panel(r"\frac{C}{d}\approx 3.14\approx \pi", width=7.0, height=1.15, font_size=58)
-        conclusion.to_edge(DOWN, buff=0.34)
+        conclusion.move_to(DOWN * 3.05)
         self.play(FadeIn(conclusion), run_time=RUN_NORMAL)
         self.wait(PAUSE_SUMMARY)
         self.focus_on(conclusion, width=7.8, pause=PAUSE_EXPLAIN)
@@ -181,7 +181,7 @@ class Geometry8CirclePiMixedWorkshop(JPMathClassroomScene):
         self.fit(route, 13.9, 4.8)
         formulas = self.formula_panel(r"d=2r\qquad C=\pi d=2\pi r\qquad A=\pi r^2",
                                       width=10.2, height=1.15, font_size=50)
-        formulas.to_edge(DOWN, buff=0.30)
+        formulas.move_to(DOWN * 3.05)
         self.assert_content_safe(VGroup(route, formulas), "final formula decision map")
         self.play(LaggedStart(*[FadeIn(card, shift=UP * 0.10) for card in route], lag_ratio=0.09), run_time=RUN_SLOW * 1.8)
         self.wait(PAUSE_WORK)
