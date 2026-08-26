@@ -99,16 +99,23 @@ jobs:
         run: |
           set -euo pipefail
           cd manim_circle_20260826
+          rm -rf delivery
           mkdir -p delivery
-          AREA_SRC="$(find media -type f -name 'Geometry8CircleAreaVisualDerivation.mp4' | sort | tail -n 1)"
-          MIXED_SRC="$(find media -type f -name 'Geometry8CirclePiMixedWorkshop.mp4' | sort | tail -n 1)"
+
+          # Select the final 1080p30 renders explicitly; never pick the PQL 480p15 previews.
+          AREA_SRC="$(find media/videos -type f -path '*/1080p30/Geometry8CircleAreaVisualDerivation.mp4' -print -quit)"
+          MIXED_SRC="$(find media/videos -type f -path '*/1080p30/Geometry8CirclePiMixedWorkshop.mp4' -print -quit)"
           test -n "$AREA_SRC"
           test -n "$MIXED_SRC"
+          case "$AREA_SRC" in */1080p30/*) ;; *) echo "Unexpected AREA source: $AREA_SRC"; exit 1;; esac
+          case "$MIXED_SRC" in */1080p30/*) ;; *) echo "Unexpected MIXED source: $MIXED_SRC"; exit 1;; esac
+
           cp "$AREA_SRC" delivery/Geometry8_Circle_Area_Visual_Derivation_FINAL_pqh.mp4
           cp "$MIXED_SRC" delivery/Geometry8_Circle_Pi_Mixed_Workshop_FINAL_pqh.mp4
           cp Geometry8_Circle_Area_Visual_Derivation.py delivery/
           cp Geometry8_Circle_Pi_Mixed_Workshop.py delivery/
           cp circle_classroom_style.py delivery/
+
           for VIDEO in delivery/*.mp4; do
             test -s "$VIDEO"
             ffprobe -v error -select_streams v:0 \
@@ -119,6 +126,7 @@ jobs:
             ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of csv=p=0 "$VIDEO" | grep -Eq '^(30/1|60/2)$'
             ffmpeg -v error -i "$VIDEO" -f null -
           done
+
           sha256sum delivery/* > delivery/SHA256SUMS.txt
           ls -lh delivery
 
