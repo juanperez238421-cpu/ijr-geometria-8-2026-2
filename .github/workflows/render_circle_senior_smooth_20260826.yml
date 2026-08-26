@@ -69,9 +69,9 @@ jobs:
             -v /tmp/manim-bin:/tmp/manim-bin:ro \
             -w /manim --entrypoint bash \
             manimcommunity/manim:v0.20.1 \
-            -c 'export PATH="/tmp/manim-bin:$PATH"; printf "import os\nif not hasattr(os, \"startfile\"):\n    os.startfile = lambda *args, **kwargs: None\n" > /tmp/sitecustomize.py; export PYTHONPATH="/tmp${PYTHONPATH:+:$PYTHONPATH}"; manim -pqh Geometry8_Circle_2D_Only_Workshop_Final.py Geometry8Circle2DOnlyWorkshopFinal --format=mp4 --disable_caching --fps 30 --resolution 1920,1080 --media_dir final_media_2d_only'
+            -c 'export PATH="/tmp/manim-bin:$PATH"; printf "import os\nif not hasattr(os, \"startfile\"):\n    os.startfile = lambda *args, **kwargs: None\n" > /tmp/sitecustomize.py; export PYTHONPATH="/tmp${PYTHONPATH:+:$PYTHONPATH}"; manim -pqh Geometry8_Circle_2D_Only_Workshop_Final.py Geometry8Circle2DOnlyWorkshopFinal --format=mp4 --disable_caching --resolution 1920,1080 --media_dir final_media_2d_only'
 
-      - name: Verify decode and package
+      - name: Normalize verify decode and package
         shell: bash
         run: |
           set -euo pipefail
@@ -82,7 +82,15 @@ jobs:
           test -n "$SRC"
           test -s "$SRC"
           OUT='delivery_2d_only/Geometry8_Circle_2D_Only_Workshop_SENIOR_QA_FINAL_pqh.mp4'
-          cp "$SRC" "$OUT"
+
+          # Keep the required literal -pqh render above. ManimCE's PQH preset is
+          # 60 fps, so normalize the delivery master to the classroom protocol's
+          # exact 30 fps while preserving 1920x1080 H.264/yuv420p.
+          ffmpeg -y -v error -i "$SRC" \
+            -vf fps=30 \
+            -c:v libx264 -preset medium -crf 17 \
+            -pix_fmt yuv420p -an "$OUT"
+
           ffprobe -v error -select_streams v:0 \
             -show_entries stream=codec_name,width,height,pix_fmt,r_frame_rate \
             -of json "$OUT" > delivery_2d_only/ffprobe.json
