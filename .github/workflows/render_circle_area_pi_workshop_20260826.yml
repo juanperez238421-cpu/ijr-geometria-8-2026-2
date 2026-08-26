@@ -96,7 +96,7 @@ jobs:
             manimcommunity/manim:v0.20.1 \
             -c 'export PATH="/tmp/manim-bin:$PATH"; manim -pqh Geometry8_Circle_Pi_Mixed_Workshop.py Geometry8CirclePiMixedWorkshop --format=mp4 --disable_caching --fps 30 --resolution 1920,1080 --media_dir final_media_mixed'
 
-      - name: Verify and stage delivery
+      - name: Verify, checksum and build two-video ZIP
         shell: bash
         run: |
           set -euo pipefail
@@ -104,31 +104,60 @@ jobs:
           rm -rf delivery
           mkdir -p delivery
 
-          # Final renders live in dedicated media roots, so PQL preview files cannot be selected.
           AREA_SRC="$(find final_media_area -type f -name 'Geometry8CircleAreaVisualDerivation.mp4' -print -quit)"
           MIXED_SRC="$(find final_media_mixed -type f -name 'Geometry8CirclePiMixedWorkshop.mp4' -print -quit)"
           test -n "$AREA_SRC"
           test -n "$MIXED_SRC"
+          test -s "$AREA_SRC"
+          test -s "$MIXED_SRC"
 
-          cp "$AREA_SRC" delivery/Geometry8_Circle_Area_Visual_Derivation_FINAL_pqh.mp4
-          cp "$MIXED_SRC" delivery/Geometry8_Circle_Pi_Mixed_Workshop_FINAL_pqh.mp4
-          cp Geometry8_Circle_Area_Visual_Derivation.py delivery/
-          cp Geometry8_Circle_Pi_Mixed_Workshop.py delivery/
-          cp circle_classroom_style.py delivery/
+          AREA_OUT='delivery/Geometry8_Circle_Area_Visual_Derivation_FINAL_pqh.mp4'
+          MIXED_OUT='delivery/Geometry8_Circle_Pi_Mixed_Workshop_FINAL_pqh.mp4'
+          ZIP_OUT='delivery/Geometry8_Circle_Area_and_Pi_PQH.zip'
+          cp "$AREA_SRC" "$AREA_OUT"
+          cp "$MIXED_SRC" "$MIXED_OUT"
 
-          for VIDEO in delivery/*.mp4; do
-            test -s "$VIDEO"
+          if ! command -v ffprobe >/dev/null 2>&1 || ! command -v ffmpeg >/dev/null 2>&1 || ! command -v zip >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ffmpeg zip
+          fi
+
+          for VIDEO in "$AREA_OUT" "$MIXED_OUT"; do
+            PROBE="${VIDEO%.mp4}_ffprobe.json"
             ffprobe -v error -select_streams v:0 \
               -show_entries stream=codec_name,width,height,pix_fmt,r_frame_rate \
-              -of default=noprint_wrappers=1 "$VIDEO" | tee "${VIDEO%.mp4}_ffprobe.txt"
-            ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$VIDEO" | grep -qx '1920'
-            ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$VIDEO" | grep -qx '1080'
-            ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate -of csv=p=0 "$VIDEO" | grep -Eq '^(30/1|60/2)$'
+              -of json "$VIDEO" > "$PROBE"
+            cat "$PROBE"
+            python3 - "$VIDEO" "$PROBE" <<'PY'
+          import json
+          import sys
+          from fractions import Fraction
+
+          video, probe_path = sys.argv[1:3]
+          with open(probe_path, encoding='utf-8') as fh:
+              data = json.load(fh)
+          streams = data.get('streams') or []
+          if len(streams) != 1:
+              raise SystemExit(f'{video}: expected exactly one selected video stream')
+          stream = streams[0]
+          assert int(stream['width']) == 1920, (video, stream)
+          assert int(stream['height']) == 1080, (video, stream)
+          assert Fraction(stream['r_frame_rate']) == 30, (video, stream)
+          assert stream['codec_name'] == 'h264', (video, stream)
+          assert stream['pix_fmt'] == 'yuv420p', (video, stream)
+          print(f"VERIFIED {video}: 1920x1080, 30 fps, H.264, yuv420p")
+          PY
             ffmpeg -v error -i "$VIDEO" -f null -
           done
 
-          sha256sum delivery/* > delivery/SHA256SUMS.txt
+          zip -j "$ZIP_OUT" "$AREA_OUT" "$MIXED_OUT"
+          test -s "$ZIP_OUT"
+          sha256sum "$AREA_OUT" "$MIXED_OUT" "$ZIP_OUT" > delivery/SHA256SUMS.txt
+          cp Geometry8_Circle_Area_Visual_Derivation.py delivery/
+          cp Geometry8_Circle_Pi_Mixed_Workshop.py delivery/
+          cp circle_classroom_style.py delivery/
           ls -lh delivery
+          unzip -l "$ZIP_OUT"
 
       - name: Upload verified presentation package
         uses: actions/upload-artifact@v4
