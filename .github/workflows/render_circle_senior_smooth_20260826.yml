@@ -103,3 +103,5 @@ jobs:
           name: geometry8-circle-senior-smooth-pqh
           path: manim_circle_20260826/delivery_senior_smooth/
           if-no-files-found: error
+
+# trigger: senior smooth QA pass 2
