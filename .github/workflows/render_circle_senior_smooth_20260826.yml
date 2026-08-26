@@ -83,9 +83,8 @@ jobs:
           test -s "$SRC"
           OUT='delivery_2d_only/Geometry8_Circle_2D_Only_Workshop_SENIOR_QA_FINAL_pqh.mp4'
 
-          # Keep the required literal -pqh render above. ManimCE's PQH preset is
-          # 60 fps, so normalize the delivery master to the classroom protocol's
-          # exact 30 fps while preserving 1920x1080 H.264/yuv420p.
+          # Preserve the required literal -pqh render, then normalize the delivery
+          # master to the classroom protocol's exact 30 fps.
           ffmpeg -y -v error -i "$SRC" \
             -vf fps=30 \
             -c:v libx264 -preset medium -crf 17 \
@@ -108,8 +107,24 @@ jobs:
           cp Geometry8_Circle_2D_Only_Workshop.py delivery_2d_only/
           cp Geometry8_Circle_2D_Only_Workshop_Final.py delivery_2d_only/
           sha256sum "$OUT" > delivery_2d_only/SHA256SUMS.txt
-          zip -j delivery_2d_only/Geometry8_Circle_2D_Only_Workshop_PQH.zip \
-            "$OUT" Geometry8_Circle_2D_Only_Workshop.py Geometry8_Circle_2D_Only_Workshop_Final.py delivery_2d_only/ffprobe.json delivery_2d_only/SHA256SUMS.txt
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          delivery = Path('delivery_2d_only')
+          paths = [
+              delivery / 'Geometry8_Circle_2D_Only_Workshop_SENIOR_QA_FINAL_pqh.mp4',
+              Path('Geometry8_Circle_2D_Only_Workshop.py'),
+              Path('Geometry8_Circle_2D_Only_Workshop_Final.py'),
+              delivery / 'ffprobe.json',
+              delivery / 'SHA256SUMS.txt',
+          ]
+          archive = delivery / 'Geometry8_Circle_2D_Only_Workshop_PQH.zip'
+          with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+              for path in paths:
+                  z.write(path, arcname=path.name)
+          print(f'PACKAGED {archive}')
+          PY
 
       - name: Upload verified 2D-only render
         uses: actions/upload-artifact@v4
