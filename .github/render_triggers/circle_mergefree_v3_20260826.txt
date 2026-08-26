@@ -1,0 +1,3 @@
+Trigger dedicated Geometry 8 Circle SeniorSmooth V3 merge-free PQH render.
+Source branch: circle-area-pi-workshop-mergefree-v3-20260826
+Requested QA: remove 3D/2D merge ghosts, safe-fit headers, sequential hatching and dimensions.
