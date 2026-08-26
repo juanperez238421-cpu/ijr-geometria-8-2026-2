@@ -5,7 +5,7 @@
 Design intent
 -------------
 The previous smooth version still allowed complex boolean geometry to morph while
-the physical 3D model remained faintly visible.  That produced transient merged
+the physical 3D model remained faintly visible. That produced transient merged
 shapes (especially the annulus, patio hole and rug) and occasional visual clutter.
 
 This revision uses a stricter choreography:
@@ -13,16 +13,40 @@ This revision uses a stricter choreography:
     OBSERVE 3D -> ISOLATE FACE -> TOP VIEW -> REMOVE 3D CONTEXT ->
     MOVE THE SAME FACE -> CLEAN CROSSFADE -> HATCH REGION -> DIMENSIONS -> SOLVE
 
-The selected face itself is moved and scaled without changing topology.  Only
+The selected face itself is moved and scaled without changing topology. Only
 when it has reached the final analysis position is it cross-faded into the clean
-2D region.  The 3D stage is already gone at that point, so no two incompatible
+2D region. The 3D stage is already gone at that point, so no two incompatible
 geometries can occupy the same visual space.
 
 ManimCE 0.20.x. Final target: literal -pqh, 1920x1080, 30 fps.
 """
 from __future__ import annotations
 
+import builtins
 from manim import *
+
+# Import bootstrap: semantic constants in the legacy projection base are used
+# in method defaults, which Python evaluates while the class is being defined.
+# These neutral values make that import deterministic; the monochrome wrapper
+# replaces the actual module globals immediately after import.
+_BOOTSTRAP = {
+    "ACCENT_ORANGE": "#000000",
+    "ACCENT_GREEN": "#000000",
+    "ACCENT_RED": "#000000",
+    "ACCENT_TEAL": "#000000",
+    "ACCENT_BLUE": "#000000",
+    "LIGHT_GRAY": "#AAAAAA",
+    "WHITE_FILL": "#FFFFFF",
+    "VERY_LIGHT_GRAY": "#EEEEEE",
+    "PAPER_GRAY": "#D7D7D7",
+    "BLACK_LINE": "#000000",
+    "RUN_QUICK": 0.45,
+    "RUN_NORMAL": 0.90,
+    "PAUSE_WORK": 1.20,
+}
+for _name, _value in _BOOTSTRAP.items():
+    if not hasattr(builtins, _name):
+        setattr(builtins, _name, _value)
 
 from Geometry8_Circle_Projection_Workshop_Final import (
     Geometry8CircleProjectionWorkshopFinal,
@@ -37,33 +61,25 @@ import Geometry8_Circle_Projection_Workshop as m
 class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWorkshopFinal):
     """Senior-expert workshop with topology-safe, merge-free 3D->2D transitions."""
 
-    # ------------------------------------------------------------------
-    # Header QA: reserve generous projector margins for every problem.
-    # ------------------------------------------------------------------
     def make_header(self, data: m.ProblemData) -> VGroup:
+        """Projector-safe header: no title may touch the frame margins."""
         eyebrow = self.text(
             f"PROBLEM {data.number:02d}  ·  {data.eyebrow}", 15, BOLD
         ).move_to(UP * 4.02)
-
         title = self.text(data.title, 31, BOLD)
         self.fit(title, 11.85, 0.50)
         title.move_to(UP * 3.56)
-
         prompt = self.text(data.prompt, 18)
         self.fit(prompt, 12.55, 0.46)
         prompt.move_to(UP * 3.08)
-
         rule = Line(
             LEFT * 6.40, RIGHT * 6.40,
             color=GRID_DARK, stroke_width=1.35,
         ).move_to(UP * 2.72)
-
         return VGroup(eyebrow, title, prompt, rule)
 
-    # ------------------------------------------------------------------
-    # Compact progress cue. It only exists while the lower screen is free.
-    # ------------------------------------------------------------------
     def bridge_strip(self, active: int) -> VGroup:
+        """Compact progress cue used only while the lower screen is empty."""
         labels = ("3D FACE", "TOP VIEW", "2D PLAN")
         items = VGroup()
         for i, label in enumerate(labels):
@@ -95,7 +111,6 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
         return new
 
     def _reveal_hatching(self, hatch: Mobject) -> None:
-        """Progressively draw hatching only after the clean 2D region exists."""
         if isinstance(hatch, VGroup) and len(hatch) > 0:
             self.play(
                 LaggedStart(*[Create(line) for line in hatch], lag_ratio=0.030),
@@ -110,9 +125,6 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
             return target[0], target[1]
         return target, None
 
-    # ------------------------------------------------------------------
-    # Core QA fix: no ReplacementTransform between complex shapes.
-    # ------------------------------------------------------------------
     def project_problem(
         self,
         stage: VGroup,
@@ -124,16 +136,10 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
         theta: float,
         phi: float,
     ) -> VGroup:
-        """Topology-safe 3D->2D transition with explicit temporal separation.
-
-        Critical invariant: when the clean 2D plan appears, the 3D stage has
-        already been removed.  The selected face is first moved as itself; it is
-        never morphed into a different boolean path while both objects are visible.
-        """
+        """Topology-safe transition with no simultaneous incompatible shapes."""
         floor, model = stage[0], stage[1]
         region, hatch = self._region_and_hatch(target)
 
-        # STEP 1 — establish physical context.
         self.set_projection_step(
             1,
             "OBSERVE THE PHYSICAL 3D OBJECT",
@@ -152,7 +158,6 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
             )
         else:
             self.play(FadeIn(model), FadeIn(strip), run_time=1.20)
-
         self.move_camera(
             phi=phi * DEGREES,
             theta=theta * DEGREES,
@@ -162,7 +167,6 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
         )
         self.wait(0.35)
 
-        # STEP 2 — isolate the exact face and suppress nonessential 3D geometry.
         self.set_projection_step(
             2,
             "ISOLATE THE SURFACE USED BY THE QUESTION",
@@ -178,7 +182,6 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
         self.play(Indicate(focus, color=BLACK_INK, scale_factor=1.035), run_time=0.85)
         self.wait(0.30)
 
-        # STEP 3 — rotate while the selected face remains stationary in the model.
         self.set_projection_step(
             3,
             "ROTATE TO AN ORTHOGRAPHIC TOP VIEW",
@@ -198,7 +201,6 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
         bridge = self._replace_bridge(bridge, 1)
         self.wait(0.30)
 
-        # STEP 4A — remove ALL physical context first. Focus remains alone.
         self.set_projection_step(
             4,
             "EXTRACT THE FACE — REMOVE THE 3D CONTEXT",
@@ -213,13 +215,12 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
         self.remove(stage)
         self.wait(0.22)
 
-        # STEP 4B — move the SAME face to the analysis position without morphing it.
+        # Move the SAME face; do not interpolate one boolean path into another.
         fw = max(float(focus.width), 1e-6)
         fh = max(float(focus.height), 1e-6)
         rw = max(float(region.width), 1e-6)
         rh = max(float(region.height), 1e-6)
         scale_factor = min(rw / fw, rh / fh)
-
         self.play(
             focus.animate.scale(scale_factor).move_to(region.get_center()),
             run_time=1.55,
@@ -228,7 +229,7 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
         bridge = self._replace_bridge(bridge, 2)
         self.wait(0.25)
 
-        # CLEAN CROSSFADE — same position, same size, no boolean-path interpolation.
+        # Aligned crossfade at the destination: no ReplacementTransform ghosts.
         region.set_opacity(0.0)
         self.add(region)
         self.play(
@@ -238,23 +239,18 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
             rate_func=smooth,
         )
         self.remove(focus)
-
-        # The progress strip exits BEFORE hatching/tags appear: no lower-screen merges.
         self.play(FadeOut(bridge), run_time=0.30)
         self.remove(bridge)
 
-        # STEP 5 — reveal the mathematical information in layers.
         self.set_projection_step(
             5,
             "READ THE CLEAN 2D MODEL",
             "First identify the requested region; then read dimensions and translate the drawing into a formula.",
             BLACK_INK,
         )
-
         if hatch is not None:
             self._reveal_hatching(hatch)
 
-        # Separate geometry/dimensions from boxed explanatory tags.
         numeric_details = VGroup()
         tag_details = VGroup()
         for mob in details:
@@ -283,12 +279,10 @@ class Geometry8CircleProjectionWorkshopSeniorSmooth(Geometry8CircleProjectionWor
                 ),
                 run_time=0.78,
             )
-
         self.wait(0.42)
         return VGroup(target, details)
 
     def finish_problem(self, diagram: VGroup, solution: VGroup) -> None:
-        """Clear one layer at a time before resetting the camera for the next problem."""
         self.play(FadeOut(solution, shift=RIGHT * 0.04), run_time=0.45)
         self.play(FadeOut(diagram), run_time=0.52)
         self.remove(diagram, solution)
