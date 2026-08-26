@@ -77,7 +77,7 @@ class Geometry8CircleAreaVisualDerivation(JPMathClassroomScene):
         source_center = LEFT * 3.55 + DOWN * 0.25
         sectors = VGroup()
         for i in range(n):
-            sector = Sector(outer_radius=radius, angle=theta, start_angle=i * theta,
+            sector = Sector(radius=radius, angle=theta, start_angle=i * theta,
                             stroke_color=BLACK_LINE, stroke_width=1.2,
                             fill_color=VERY_LIGHT_GRAY if i % 2 == 0 else WHITE, fill_opacity=1.0)
             sector.shift(source_center)
@@ -107,7 +107,7 @@ class Geometry8CircleAreaVisualDerivation(JPMathClassroomScene):
         total_row_width = (len(top_indices) - 1) * arc_width
         x0 = -total_row_width / 2
         for i, sector in enumerate(sectors):
-            target = Sector(outer_radius=radius, angle=theta, start_angle=-theta / 2,
+            target = Sector(radius=radius, angle=theta, start_angle=-theta / 2,
                             stroke_color=BLACK_LINE, stroke_width=1.2,
                             fill_color=VERY_LIGHT_GRAY if i % 2 == 0 else WHITE, fill_opacity=1.0)
             if i % 2 == 0:
