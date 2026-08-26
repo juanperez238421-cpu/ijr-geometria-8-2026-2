@@ -24,7 +24,8 @@ jobs:
           python -m py_compile \
             circle_classroom_style.py \
             Geometry8_Circle_Pi_Mixed_Workshop.py \
-            Geometry8_Circle_Projection_Workshop.py
+            Geometry8_Circle_Projection_Workshop.py \
+            Geometry8_Circle_Projection_Workshop_Final.py
 
       - name: Pull pinned ManimCE image
         run: docker pull manimcommunity/manim:v0.20.1
@@ -46,7 +47,7 @@ jobs:
             -w /manim \
             --entrypoint bash \
             manimcommunity/manim:v0.20.1 \
-            -c 'export PATH="/tmp/manim-bin:$PATH"; manim -pql Geometry8_Circle_Projection_Workshop.py Geometry8CircleProjectionWorkshop --format=mp4 --disable_caching' 
+            -c 'export PATH="/tmp/manim-bin:$PATH"; manim -pql Geometry8_Circle_Projection_Workshop_Final.py Geometry8CircleProjectionWorkshopFinal --format=mp4 --disable_caching'
 
       - name: Final literal PQH render
         shell: bash
@@ -66,9 +67,9 @@ jobs:
             -w /manim \
             --entrypoint bash \
             manimcommunity/manim:v0.20.1 \
-            -c 'export PATH="/tmp/manim-bin:$PATH"; manim -pqh Geometry8_Circle_Projection_Workshop.py Geometry8CircleProjectionWorkshop --format=mp4 --disable_caching --fps 30 --resolution 1920,1080 --media_dir final_media_projection'
+            -c 'export PATH="/tmp/manim-bin:$PATH"; manim -pqh Geometry8_Circle_Projection_Workshop_Final.py Geometry8CircleProjectionWorkshopFinal --format=mp4 --disable_caching --fps 30 --resolution 1920,1080 --media_dir final_media_projection'
 
-      - name: Verify, checksum and package
+      - name: Verify, decode, checksum and package
         shell: bash
         run: |
           set -euo pipefail
@@ -76,7 +77,7 @@ jobs:
           rm -rf delivery_projection
           mkdir -p delivery_projection
 
-          SRC="$(find final_media_projection -type f -name 'Geometry8CircleProjectionWorkshop.mp4' -print -quit)"
+          SRC="$(find final_media_projection -type f -name 'Geometry8CircleProjectionWorkshopFinal.mp4' -print -quit)"
           test -n "$SRC"
           test -s "$SRC"
           OUT='delivery_projection/Geometry8_Circle_Projection_Workshop_FINAL_pqh.mp4'
@@ -114,9 +115,11 @@ jobs:
           ffmpeg -v error -i "$OUT" -f null -
 
           cp Geometry8_Circle_Projection_Workshop.py delivery_projection/
+          cp Geometry8_Circle_Projection_Workshop_Final.py delivery_projection/
           cp Geometry8_Circle_Pi_Mixed_Workshop.py delivery_projection/
           cp circle_classroom_style.py delivery_projection/
-          zip -j "$ZIP" "$OUT" delivery_projection/Geometry8_Circle_Projection_Workshop.py
+          zip -j "$ZIP" "$OUT" delivery_projection/Geometry8_Circle_Projection_Workshop.py delivery_projection/Geometry8_Circle_Projection_Workshop_Final.py
+          test -s "$ZIP"
           sha256sum "$OUT" "$ZIP" > delivery_projection/SHA256SUMS.txt
           ls -lh delivery_projection
 
