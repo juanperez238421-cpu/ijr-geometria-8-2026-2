@@ -61,6 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           cd manim_circle_20260826
+          rm -rf final_media_area
           mkdir -p /tmp/manim-bin
           printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/manim-bin/xdg-open
           chmod +x /tmp/manim-bin/xdg-open
@@ -73,13 +74,14 @@ jobs:
             -w /manim \
             --entrypoint bash \
             manimcommunity/manim:v0.20.1 \
-            -c 'export PATH="/tmp/manim-bin:$PATH"; manim -pqh Geometry8_Circle_Area_Visual_Derivation.py Geometry8CircleAreaVisualDerivation --format=mp4 --disable_caching --fps 30 --resolution 1920,1080'
+            -c 'export PATH="/tmp/manim-bin:$PATH"; manim -pqh Geometry8_Circle_Area_Visual_Derivation.py Geometry8CircleAreaVisualDerivation --format=mp4 --disable_caching --fps 30 --resolution 1920,1080 --media_dir final_media_area'
 
       - name: Final literal PQH render — Pi Mixed Workshop
         shell: bash
         run: |
           set -euo pipefail
           cd manim_circle_20260826
+          rm -rf final_media_mixed
           mkdir -p /tmp/manim-bin
           printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/manim-bin/xdg-open
           chmod +x /tmp/manim-bin/xdg-open
@@ -92,7 +94,7 @@ jobs:
             -w /manim \
             --entrypoint bash \
             manimcommunity/manim:v0.20.1 \
-            -c 'export PATH="/tmp/manim-bin:$PATH"; manim -pqh Geometry8_Circle_Pi_Mixed_Workshop.py Geometry8CirclePiMixedWorkshop --format=mp4 --disable_caching --fps 30 --resolution 1920,1080'
+            -c 'export PATH="/tmp/manim-bin:$PATH"; manim -pqh Geometry8_Circle_Pi_Mixed_Workshop.py Geometry8CirclePiMixedWorkshop --format=mp4 --disable_caching --fps 30 --resolution 1920,1080 --media_dir final_media_mixed'
 
       - name: Verify and stage delivery
         shell: bash
@@ -102,13 +104,11 @@ jobs:
           rm -rf delivery
           mkdir -p delivery
 
-          # Select the final 1080p30 renders explicitly; never pick the PQL 480p15 previews.
-          AREA_SRC="$(find media/videos -type f -path '*/1080p30/Geometry8CircleAreaVisualDerivation.mp4' -print -quit)"
-          MIXED_SRC="$(find media/videos -type f -path '*/1080p30/Geometry8CirclePiMixedWorkshop.mp4' -print -quit)"
+          # Final renders live in dedicated media roots, so PQL preview files cannot be selected.
+          AREA_SRC="$(find final_media_area -type f -name 'Geometry8CircleAreaVisualDerivation.mp4' -print -quit)"
+          MIXED_SRC="$(find final_media_mixed -type f -name 'Geometry8CirclePiMixedWorkshop.mp4' -print -quit)"
           test -n "$AREA_SRC"
           test -n "$MIXED_SRC"
-          case "$AREA_SRC" in */1080p30/*) ;; *) echo "Unexpected AREA source: $AREA_SRC"; exit 1;; esac
-          case "$MIXED_SRC" in */1080p30/*) ;; *) echo "Unexpected MIXED source: $MIXED_SRC"; exit 1;; esac
 
           cp "$AREA_SRC" delivery/Geometry8_Circle_Area_Visual_Derivation_FINAL_pqh.mp4
           cp "$MIXED_SRC" delivery/Geometry8_Circle_Pi_Mixed_Workshop_FINAL_pqh.mp4
