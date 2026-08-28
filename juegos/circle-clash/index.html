@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#12372a">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Circle Clash Arena · Geometría 8°</title>
+  <link rel="stylesheet" href="./styles.css?v=20260828-1">
+</head>
+<body>
+  <div class="bg-rings" aria-hidden="true"></div>
+  <header class="site-header">
+    <div class="brand">
+      <img src="../../assets/logo_colegio_transparente.png" alt="Instituto Jorge Robledo" class="logo">
+      <div>
+        <p class="eyebrow">Geometría 8° · Multiplayer Math Battle</p>
+        <h1>Circle Clash Arena <span>π</span></h1>
+        <p class="subtitle">Radio · diámetro · circunferencia · área · número π</p>
+      </div>
+    </div>
+    <div id="connectionBadge" class="connection-badge" data-state="idle" aria-live="polite">
+      <span class="dot"></span><span id="connectionText">Sin conexión</span>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section id="joinScreen" class="join-card panel">
+      <div class="join-copy">
+        <span class="pill">Actividad competitiva por equipos</span>
+        <h2>Entra a la arena</h2>
+        <p>Responde correctamente para cargar ataques. Durante la fase de batalla podrás reducir la puntuación de otro equipo o proteger la tuya.</p>
+        <div class="rule-strip" role="list">
+          <div role="listitem"><strong>100</strong><span>puntos iniciales</span></div>
+          <div role="listitem"><strong>5.0</strong><span>nota inicial</span></div>
+          <div role="listitem"><strong>12</strong><span>rondas</span></div>
+        </div>
+      </div>
+
+      <form id="joinForm" class="join-form" autocomplete="off">
+        <label>
+          <span>Nombre del equipo</span>
+          <input id="teamName" name="teamName" maxlength="40" minlength="2" placeholder="Ej. Los Arquímedes" required>
+        </label>
+        <div class="field-row">
+          <label>
+            <span>Grupo</span>
+            <select id="groupCode" name="groupCode" required>
+              <option value="8A">8A</option>
+              <option value="8B">8B</option>
+              <option value="8C">8C</option>
+            </select>
+          </label>
+          <label>
+            <span>Código de sala</span>
+            <input id="joinCode" name="joinCode" value="CIRCULO" pattern="[A-Za-z0-9-]{4,12}" maxlength="12" required>
+          </label>
+        </div>
+        <button id="joinButton" class="primary-button" type="submit">Entrar al juego</button>
+        <p id="joinMessage" class="form-message" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="gameScreen" class="game-screen" hidden>
+      <section class="game-top panel">
+        <div class="room-meta">
+          <span class="pill" id="roomLabel">Sala —</span>
+          <strong id="phaseLabel">Lobby</strong>
+          <span id="roundLabel">Ronda 0 / 12</span>
+        </div>
+        <div class="timer-wrap" aria-label="Tiempo restante">
+          <span id="timerLabel">--</span>
+          <div class="timer-track"><div id="timerBar" class="timer-bar"></div></div>
+        </div>
+        <button id="leaveButton" class="ghost-button" type="button">Salir</button>
+      </section>
+
+      <section class="stats-grid" aria-label="Estado del equipo">
+        <article class="stat-card grade-card">
+          <span>Puntuación / Nota</span>
+          <strong><b id="gradePoints">100</b> <small>pts</small></strong>
+          <div class="grade-line"><span id="gradeValue">5.0</span> / 5.0</div>
+        </article>
+        <article class="stat-card">
+          <span>Carga de ataque</span>
+          <strong id="chargeValue">0</strong>
+          <div class="mini-track"><div id="chargeBar" class="mini-bar"></div></div>
+        </article>
+        <article class="stat-card">
+          <span>Escudo</span>
+          <strong id="shieldValue">0</strong>
+          <div class="mini-track"><div id="shieldBar" class="mini-bar"></div></div>
+        </article>
+        <article class="stat-card">
+          <span>Aciertos</span>
+          <strong id="correctValue">0 / 0</strong>
+          <small id="streakValue">Racha: 0</small>
+        </article>
+      </section>
+
+      <section class="battle-layout">
+        <article class="panel arena-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="kicker">ARENA 2D</span>
+              <h2>Equipos conectados</h2>
+            </div>
+            <span id="teamCount" class="pill">0 equipos</span>
+          </div>
+          <div class="arena-ring" aria-hidden="true">
+            <div class="ring ring-1"></div><div class="ring ring-2"></div><div class="ring ring-3"></div>
+            <div class="pi-core">π</div>
+          </div>
+          <div id="teamGrid" class="team-grid" aria-live="polite"></div>
+        </article>
+
+        <article class="panel question-panel">
+          <div class="panel-heading">
+            <div>
+              <span class="kicker" id="skillLabel">PREPARACIÓN</span>
+              <h2 id="questionTitle">Esperando equipos…</h2>
+            </div>
+            <span id="answerState" class="pill neutral">Sin respuesta</span>
+          </div>
+
+          <div id="circleVisual" class="circle-visual" aria-hidden="true">
+            <div class="visual-circle"><span class="radius-line"></span><span class="diameter-line"></span><span class="center-dot"></span></div>
+            <span id="visualLabel" class="visual-label">r · d · π</span>
+          </div>
+
+          <p id="questionPrompt" class="question-prompt">La partida inicia automáticamente cuando hay al menos dos equipos.</p>
+          <div id="expressionBox" class="expression-box">C = πd = 2πr · A = πr²</div>
+          <div id="optionsGrid" class="options-grid" role="group" aria-label="Opciones de respuesta"></div>
+          <div id="explanationBox" class="explanation" hidden></div>
+        </article>
+      </section>
+
+      <section id="attackPanel" class="panel attack-panel" hidden>
+        <div class="panel-heading">
+          <div>
+            <span class="kicker">FASE DE BATALLA</span>
+            <h2>Usa tu respuesta correcta</h2>
+          </div>
+          <span id="attackHint" class="pill">Elige una acción</span>
+        </div>
+        <div class="attack-controls">
+          <label class="target-field">
+            <span>Objetivo</span>
+            <select id="targetSelect"></select>
+          </label>
+          <button class="action-button" data-action="arc" type="button"><b>⌒</b><span>Arc Bolt</span><small>10 carga · −5 pts</small></button>
+          <button class="action-button" data-action="pi" type="button"><b>π</b><span>Pi Cannon</span><small>16 carga · −8 pts</small></button>
+          <button class="action-button shield-action" data-action="shield" type="button"><b>◉</b><span>Diameter Shield</span><small>12 carga · +8 escudo</small></button>
+        </div>
+      </section>
+
+      <section class="lower-grid">
+        <article class="panel leaderboard-panel">
+          <div class="panel-heading"><h2>Clasificación en vivo</h2><span class="kicker">NOTA = PUNTOS ÷ 20</span></div>
+          <ol id="leaderboard" class="leaderboard"></ol>
+        </article>
+        <article class="panel feed-panel">
+          <div class="panel-heading"><h2>Eventos</h2><span class="kicker">RECONNECT-SAFE</span></div>
+          <div id="eventFeed" class="event-feed" aria-live="polite"></div>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <div id="finalOverlay" class="final-overlay" hidden>
+    <div class="final-card panel">
+      <span class="pill">Partida terminada</span>
+      <h2>Resultados finales</h2>
+      <p>La puntuación final se convierte a nota sobre 5.0 dividiendo entre 20.</p>
+      <ol id="finalRanking" class="leaderboard final-ranking"></ol>
+      <button id="closeFinal" class="primary-button" type="button">Ver tablero</button>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js?v=20260828-1"></script>
+</body>
+</html>

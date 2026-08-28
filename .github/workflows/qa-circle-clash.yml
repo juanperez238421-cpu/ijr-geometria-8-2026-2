@@ -1,0 +1,35 @@
+name: QA · Circle Clash Arena
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'juegos/circle-clash/**'
+      - '.github/workflows/qa-circle-clash.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: circle-clash-qa-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Static architecture QA
+        run: node juegos/circle-clash/qa/static.mjs
+
+      - name: Live Supabase integration QA
+        run: node juegos/circle-clash/qa/integration.mjs
