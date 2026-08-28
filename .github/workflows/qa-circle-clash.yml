@@ -32,6 +32,12 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Syntax QA
+        run: |
+          node --check juegos/circle-clash/app.js
+          node --check juegos/circle-clash/three-arena.js
+          python3 -m py_compile juegos/circle-clash/cad/arena_spec.py
+
       - name: Static architecture QA
         run: node juegos/circle-clash/qa/static.mjs
 
