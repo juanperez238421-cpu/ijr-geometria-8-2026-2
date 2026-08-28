@@ -7,6 +7,7 @@
   <meta name="robots" content="noindex,nofollow">
   <title>Circle Clash Arena · Geometría 8°</title>
   <link rel="stylesheet" href="./styles.css?v=20260828-1">
+  <link rel="stylesheet" href="./arena-v2.css?v=20260828-3">
   <style>[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -17,7 +18,7 @@
       <div>
         <p class="eyebrow">Geometría 8° · Multiplayer Math Battle</p>
         <h1>Circle Clash Arena <span>π</span></h1>
-        <p class="subtitle">Radio · diámetro · circunferencia · área · número π</p>
+        <p class="subtitle">Muévete · resuelve · apunta · ataca · protege</p>
       </div>
     </div>
     <div id="connectionBadge" class="connection-badge" data-state="idle" aria-live="polite">
@@ -28,9 +29,9 @@
   <main class="app-shell">
     <section id="joinScreen" class="join-card panel">
       <div class="join-copy">
-        <span class="pill">Actividad competitiva por equipos</span>
+        <span class="pill">Arena multijugador 2.5D</span>
         <h2>Entra a la arena</h2>
-        <p>Responde correctamente para cargar ataques. Durante la fase de batalla podrás reducir la puntuación de otro equipo o proteger la tuya.</p>
+        <p>Cada grupo controla un jugador en tiempo real. Responde correctamente para cargar ataques y luego selecciona físicamente a otro equipo en la arena para atacarlo.</p>
         <div class="rule-strip" role="list">
           <div role="listitem"><strong>100</strong><span>puntos iniciales</span></div>
           <div role="listitem"><strong>5.0</strong><span>nota inicial</span></div>
@@ -82,53 +83,52 @@
           <strong><b id="gradePoints">100</b> <small>pts</small></strong>
           <div class="grade-line"><span id="gradeValue">5.0</span> / 5.0</div>
         </article>
-        <article class="stat-card">
-          <span>Carga de ataque</span>
-          <strong id="chargeValue">0</strong>
-          <div class="mini-track"><div id="chargeBar" class="mini-bar"></div></div>
-        </article>
-        <article class="stat-card">
-          <span>Escudo</span>
-          <strong id="shieldValue">0</strong>
-          <div class="mini-track"><div id="shieldBar" class="mini-bar"></div></div>
-        </article>
-        <article class="stat-card">
-          <span>Aciertos</span>
-          <strong id="correctValue">0 / 0</strong>
-          <small id="streakValue">Racha: 0</small>
-        </article>
+        <article class="stat-card"><span>Carga de ataque</span><strong id="chargeValue">0</strong><div class="mini-track"><div id="chargeBar" class="mini-bar"></div></div></article>
+        <article class="stat-card"><span>Escudo</span><strong id="shieldValue">0</strong><div class="mini-track"><div id="shieldBar" class="mini-bar"></div></div></article>
+        <article class="stat-card"><span>Aciertos</span><strong id="correctValue">0 / 0</strong><small id="streakValue">Racha: 0</small></article>
       </section>
 
-      <section class="battle-layout">
-        <article class="panel arena-panel">
+      <section class="battle-layout interactive-layout">
+        <article class="panel arena-panel live-arena-panel">
           <div class="panel-heading">
-            <div>
-              <span class="kicker">ARENA 2D</span>
-              <h2>Equipos conectados</h2>
-            </div>
+            <div><span class="kicker">ARENA 2.5D · MULTIJUGADOR</span><h2>Muévete y selecciona rivales</h2></div>
             <span id="teamCount" class="pill">0 equipos</span>
           </div>
-          <div class="arena-ring" aria-hidden="true">
-            <div class="ring ring-1"></div><div class="ring ring-2"></div><div class="ring ring-3"></div>
-            <div class="pi-core">π</div>
+
+          <div id="battlefield" class="battlefield" tabindex="0" aria-label="Arena interactiva. Usa W A S D o flechas para mover tu equipo.">
+            <div class="field-grid" aria-hidden="true"></div>
+            <div class="field-ring ring-a" aria-hidden="true"></div>
+            <div class="field-ring ring-b" aria-hidden="true"></div>
+            <div class="field-core" aria-hidden="true">π</div>
+            <div id="projectileLayer" class="projectile-layer" aria-hidden="true"></div>
+            <div id="avatarLayer" class="avatar-layer"></div>
           </div>
-          <div id="teamGrid" class="team-grid" aria-live="polite"></div>
+
+          <div class="arena-controls">
+            <div class="movement-copy">
+              <strong id="arenaStatus">WASD / flechas para moverte</strong>
+              <span id="movementHint">Haz clic en un rival para fijarlo como objetivo.</span>
+            </div>
+            <div class="dpad" aria-label="Controles de movimiento">
+              <button type="button" class="move-button up" data-move="up" aria-label="Mover arriba">▲</button>
+              <button type="button" class="move-button left" data-move="left" aria-label="Mover izquierda">◀</button>
+              <button type="button" class="move-button down" data-move="down" aria-label="Mover abajo">▼</button>
+              <button type="button" class="move-button right" data-move="right" aria-label="Mover derecha">▶</button>
+            </div>
+          </div>
+
+          <div id="teamGrid" class="team-grid compact-team-grid" aria-live="polite"></div>
         </article>
 
         <article class="panel question-panel">
           <div class="panel-heading">
-            <div>
-              <span class="kicker" id="skillLabel">PREPARACIÓN</span>
-              <h2 id="questionTitle">Esperando equipos…</h2>
-            </div>
+            <div><span class="kicker" id="skillLabel">PREPARACIÓN</span><h2 id="questionTitle">Esperando equipos…</h2></div>
             <span id="answerState" class="pill neutral">Sin respuesta</span>
           </div>
-
           <div id="circleVisual" class="circle-visual" aria-hidden="true">
             <div class="visual-circle"><span class="radius-line"></span><span class="diameter-line"></span><span class="center-dot"></span></div>
             <span id="visualLabel" class="visual-label">r · d · π</span>
           </div>
-
           <p id="questionPrompt" class="question-prompt">La partida inicia automáticamente cuando hay al menos dos equipos.</p>
           <div id="expressionBox" class="expression-box">C = πd = 2πr · A = πr²</div>
           <div id="optionsGrid" class="options-grid" role="group" aria-label="Opciones de respuesta"></div>
@@ -138,17 +138,11 @@
 
       <section id="attackPanel" class="panel attack-panel" hidden>
         <div class="panel-heading">
-          <div>
-            <span class="kicker">FASE DE BATALLA</span>
-            <h2>Usa tu respuesta correcta</h2>
-          </div>
+          <div><span class="kicker">FASE DE BATALLA</span><h2>Apunta y dispara</h2></div>
           <span id="attackHint" class="pill">Elige una acción</span>
         </div>
         <div class="attack-controls">
-          <label class="target-field">
-            <span>Objetivo</span>
-            <select id="targetSelect"></select>
-          </label>
+          <label class="target-field"><span>Objetivo seleccionado</span><select id="targetSelect"></select></label>
           <button class="action-button" data-action="arc" type="button"><b>⌒</b><span>Arc Bolt</span><small>10 carga · −5 pts</small></button>
           <button class="action-button" data-action="pi" type="button"><b>π</b><span>Pi Cannon</span><small>16 carga · −8 pts</small></button>
           <button class="action-button shield-action" data-action="shield" type="button"><b>◉</b><span>Diameter Shield</span><small>12 carga · +8 escudo</small></button>
@@ -156,14 +150,8 @@
       </section>
 
       <section class="lower-grid">
-        <article class="panel leaderboard-panel">
-          <div class="panel-heading"><h2>Clasificación en vivo</h2><span class="kicker">NOTA = PUNTOS ÷ 20</span></div>
-          <ol id="leaderboard" class="leaderboard"></ol>
-        </article>
-        <article class="panel feed-panel">
-          <div class="panel-heading"><h2>Eventos</h2><span class="kicker">RECONNECT-SAFE</span></div>
-          <div id="eventFeed" class="event-feed" aria-live="polite"></div>
-        </article>
+        <article class="panel leaderboard-panel"><div class="panel-heading"><h2>Clasificación en vivo</h2><span class="kicker">NOTA = PUNTOS ÷ 20</span></div><ol id="leaderboard" class="leaderboard"></ol></article>
+        <article class="panel feed-panel"><div class="panel-heading"><h2>Eventos</h2><span class="kicker">RECONNECT-SAFE</span></div><div id="eventFeed" class="event-feed" aria-live="polite"></div></article>
       </section>
     </section>
   </main>
@@ -171,14 +159,13 @@
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <div id="finalOverlay" class="final-overlay" hidden>
     <div class="final-card panel">
-      <span class="pill">Partida terminada</span>
-      <h2>Resultados finales</h2>
+      <span class="pill">Partida terminada</span><h2>Resultados finales</h2>
       <p>La puntuación final se convierte a nota sobre 5.0 dividiendo entre 20.</p>
       <ol id="finalRanking" class="leaderboard final-ranking"></ol>
       <button id="closeFinal" class="primary-button" type="button">Ver tablero</button>
     </div>
   </div>
 
-  <script type="module" src="./app.js?v=20260828-1"></script>
+  <script type="module" src="./app.js?v=20260828-3"></script>
 </body>
 </html>
