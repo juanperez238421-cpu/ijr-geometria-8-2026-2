@@ -2,6 +2,10 @@ name: QA · Circle Clash Arena
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'juegos/circle-clash/**'
+      - '.github/workflows/qa-circle-clash.yml'
   push:
     branches: [main]
     paths:
@@ -23,10 +27,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
+
+      - name: Syntax QA
+        run: |
+          node --check juegos/circle-clash/app.js
+          node --check juegos/circle-clash/three-arena.js
+          python3 -m py_compile juegos/circle-clash/cad/arena_spec.py
 
       - name: Static architecture QA
         run: node juegos/circle-clash/qa/static.mjs
