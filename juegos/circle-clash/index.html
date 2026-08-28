@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#12372a">
   <meta name="robots" content="noindex,nofollow">
-  <title>Circle Clash Arena · Geometría 8°</title>
+  <title>Circle Clash Arena 3D · Geometría 8°</title>
   <link rel="stylesheet" href="./styles.css?v=20260828-1">
   <link rel="stylesheet" href="./arena-v2.css?v=20260828-3">
+  <link rel="stylesheet" href="./three-arena.css?v=20260828-1">
   <style>[hidden]{display:none!important}</style>
 </head>
 <body>
@@ -18,7 +19,7 @@
       <div>
         <p class="eyebrow">Geometría 8° · Multiplayer Math Battle</p>
         <h1>Circle Clash Arena <span>π</span></h1>
-        <p class="subtitle">Muévete · resuelve · apunta · ataca · protege</p>
+        <p class="subtitle">Muévete en 3D · resuelve · apunta · ataca · protege</p>
       </div>
     </div>
     <div id="connectionBadge" class="connection-badge" data-state="idle" aria-live="polite">
@@ -29,9 +30,9 @@
   <main class="app-shell">
     <section id="joinScreen" class="join-card panel">
       <div class="join-copy">
-        <span class="pill">Arena multijugador 2.5D</span>
+        <span class="pill">Arena multijugador 3D · Three.js</span>
         <h2>Entra a la arena</h2>
-        <p>Cada grupo controla un jugador en tiempo real. Responde correctamente para cargar ataques y luego selecciona físicamente a otro equipo en la arena para atacarlo.</p>
+        <p>Cada grupo controla un jugador dentro del mismo espacio tridimensional. El movimiento y la batalla se sincronizan con el servidor; responde correctamente para cargar ataques y selecciona directamente a otro jugador dentro de la escena 3D.</p>
         <div class="rule-strip" role="list">
           <div role="listitem"><strong>100</strong><span>puntos iniciales</span></div>
           <div role="listitem"><strong>5.0</strong><span>nota inicial</span></div>
@@ -58,7 +59,7 @@
             <input id="joinCode" name="joinCode" value="CIRCULO" pattern="[A-Za-z0-9-]{4,12}" maxlength="12" required>
           </label>
         </div>
-        <button id="joinButton" class="primary-button" type="submit">Entrar al juego</button>
+        <button id="joinButton" class="primary-button" type="submit">Entrar al juego 3D</button>
         <p id="joinMessage" class="form-message" aria-live="polite"></p>
       </form>
     </section>
@@ -91,11 +92,11 @@
       <section class="battle-layout interactive-layout">
         <article class="panel arena-panel live-arena-panel">
           <div class="panel-heading">
-            <div><span class="kicker">ARENA 2.5D · MULTIJUGADOR</span><h2>Muévete y selecciona rivales</h2></div>
+            <div><span class="kicker" data-three-label>ARENA 3D · THREE.JS · MULTIJUGADOR</span><h2>Muévete, gira la cámara y selecciona rivales</h2></div>
             <span id="teamCount" class="pill">0 equipos</span>
           </div>
 
-          <div id="battlefield" class="battlefield" tabindex="0" aria-label="Arena interactiva. Usa W A S D o flechas para mover tu equipo.">
+          <div id="battlefield" class="battlefield" data-renderer="threejs" tabindex="0" aria-label="Arena tridimensional interactiva. Usa W A S D o flechas para mover tu equipo. Arrastra para girar la cámara y haz clic sobre un rival para apuntar.">
             <div class="field-grid" aria-hidden="true"></div>
             <div class="field-ring ring-a" aria-hidden="true"></div>
             <div class="field-ring ring-b" aria-hidden="true"></div>
@@ -104,15 +105,24 @@
             <div id="avatarLayer" class="avatar-layer"></div>
           </div>
 
+          <div class="arena-3d-help" aria-label="Controles 3D">
+            <span class="three-mode-badge">Vista 3D paramétrica</span>
+            <span><kbd>WASD</kbd> mover</span>
+            <span><kbd>↔</kbd> arrastrar cámara</span>
+            <span><kbd>Wheel</kbd> zoom</span>
+            <span><kbd>Click</kbd> fijar rival</span>
+            <span><kbd>2×</kbd> reset cámara</span>
+          </div>
+
           <div class="arena-controls">
             <div class="movement-copy">
               <strong id="arenaStatus">WASD / flechas para moverte</strong>
-              <span id="movementHint">Haz clic en un rival para fijarlo como objetivo.</span>
+              <span id="movementHint">Haz clic directamente sobre un rival 3D para fijarlo como objetivo.</span>
             </div>
             <div class="dpad" aria-label="Controles de movimiento">
-              <button type="button" class="move-button up" data-move="up" aria-label="Mover arriba">▲</button>
+              <button type="button" class="move-button up" data-move="up" aria-label="Mover adelante">▲</button>
               <button type="button" class="move-button left" data-move="left" aria-label="Mover izquierda">◀</button>
-              <button type="button" class="move-button down" data-move="down" aria-label="Mover abajo">▼</button>
+              <button type="button" class="move-button down" data-move="down" aria-label="Mover atrás">▼</button>
               <button type="button" class="move-button right" data-move="right" aria-label="Mover derecha">▶</button>
             </div>
           </div>
@@ -138,7 +148,7 @@
 
       <section id="attackPanel" class="panel attack-panel" hidden>
         <div class="panel-heading">
-          <div><span class="kicker">FASE DE BATALLA</span><h2>Apunta y dispara</h2></div>
+          <div><span class="kicker">FASE DE BATALLA</span><h2>Apunta y dispara en la arena 3D</h2></div>
           <span id="attackHint" class="pill">Elige una acción</span>
         </div>
         <div class="attack-controls">
@@ -167,5 +177,6 @@
   </div>
 
   <script type="module" src="./app.js?v=20260828-3"></script>
+  <script type="module" src="./three-arena.js?v=20260828-1"></script>
 </body>
 </html>
