@@ -18,18 +18,14 @@ async function request(payload, { origin = GOOD_ORIGIN, expect = 200 } = {}) {
   try {
     const response = await fetch(API, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Origin': origin, 'X-Client-Version': 'circle-clash-integration-qa' },
+      headers: { 'Content-Type': 'application/json', 'Origin': origin, 'X-Client-Version': 'circle-clash-integration-qa-v2' },
       body: JSON.stringify(payload),
       signal: controller.signal
     });
     const data = await response.json().catch(() => ({}));
-    if (response.status !== expect) {
-      throw new Error(`Expected HTTP ${expect}, got ${response.status}: ${JSON.stringify(data)}`);
-    }
+    if (response.status !== expect) throw new Error(`Expected HTTP ${expect}, got ${response.status}: ${JSON.stringify(data)}`);
     return { response, data };
-  } finally {
-    clearTimeout(timeout);
-  }
+  } finally { clearTimeout(timeout); }
 }
 
 async function snap(team, lastEventId = 0) {
@@ -55,6 +51,7 @@ const healthResponse = await fetch(API, { headers: { Origin: GOOD_ORIGIN } });
 const health = await healthResponse.json();
 assert(healthResponse.ok && health.ok === true, 'Edge Function health check is live');
 assert(health.rounds === 12, 'Server exposes exactly 12 circle rounds');
+assert(String(health.version || '').includes('v2-arena'), 'Server exposes interactive arena version');
 
 const badOrigin = await request({ action: 'snapshot', team_id: randomUUID(), team_token: token(), last_event_id: 0 }, { origin: 'https://example.com', expect: 403 });
 assert(badOrigin.data.error === 'origin_denied', 'CORS/custom origin guard rejects non-course origins');
@@ -67,12 +64,20 @@ const joinedA = (await request({ action: 'join', join_code: room, group_code: '8
 teamA.id = joinedA.session.team_id;
 assert(Boolean(teamA.id), 'Team A joins and receives an opaque server team id');
 assert(joinedA.snapshot.me.grade_points === 100, 'Team A starts at 100 grade points = 5.0');
+assert(Number.isFinite(joinedA.snapshot.me.arena_x) && Number.isFinite(joinedA.snapshot.me.arena_y), 'Team A receives authoritative arena coordinates');
 
 const joinedB = (await request({ action: 'join', join_code: room, group_code: '8C', team_name: teamB.name, team_token: teamB.token, client_join_id: teamB.joinId })).data;
 teamB.id = joinedB.session.team_id;
 assert(Boolean(teamB.id), 'Team B joins the same room');
 assert(joinedB.snapshot.room.id === joinedA.snapshot.room.id, 'Both teams resolve to one authoritative room');
 assert(joinedB.snapshot.room.lobby_ends_at, 'Second team starts the server-side lobby countdown');
+
+const moveA = (await request({ action: 'move', team_id: teamA.id, team_token: teamA.token, x: 22.5, y: 77.25 })).data;
+assert(Math.abs(moveA.x - 22.5) < 0.05 && Math.abs(moveA.y - 77.25) < 0.05, 'Server accepts synchronized player movement');
+await sleep(150);
+const movementSeenByB = await snap(teamB);
+const remoteA = movementSeenByB.teams.find(t => t.id === teamA.id);
+assert(Math.abs(remoteA.arena_x - 22.5) < 0.05 && Math.abs(remoteA.arena_y - 77.25) < 0.05, 'Other team receives remote player position through authoritative snapshot');
 
 console.log('Waiting for the real 15 s lobby countdown…');
 let solveA = await waitForPhase(teamA, 'solve', 22000);
@@ -116,5 +121,7 @@ assert(Math.abs(finalB.me.grade_points / 20 - 4.65) < 1e-9, 'Final points conver
 const eventTypes = new Set((finalB.events || []).map(e => e.event_type));
 assert(eventTypes.has('answer_correct') && eventTypes.has('answer_wrong') && eventTypes.has('attack'), 'Reconnect-safe event stream contains answer and attack history');
 assert((finalB.teams || []).length === 2, 'Snapshot synchronizes both teams after battle');
+const finalRemoteA = finalB.teams.find(t => t.id === teamA.id);
+assert(Math.abs(finalRemoteA.arena_x - 22.5) < 0.05, 'Reconnect snapshot preserves multiplayer arena position');
 
 console.log(`\nCircle Clash live integration QA: PASS in ${((Date.now() - started) / 1000).toFixed(1)} s`);
