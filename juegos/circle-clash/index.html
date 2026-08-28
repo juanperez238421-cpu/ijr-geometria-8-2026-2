@@ -177,6 +177,8 @@
   </div>
 
   <script type="module" src="./app.js?v=20260828-3"></script>
-  <script type="module" src="./three-arena.js?v=20260828-1"></script>
+  <script type="module">
+    window.addEventListener("pageshow", () => import("./three-arena.js?v=20260828-1"), { once: true });
+  </script>
 </body>
 </html>
