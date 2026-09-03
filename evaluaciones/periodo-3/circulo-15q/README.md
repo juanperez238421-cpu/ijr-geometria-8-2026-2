@@ -2,14 +2,19 @@
 
 Senior LaTeX assessment package for the first Period III grade after Semana Robledista.
 
-## Final structure
+## Final compact structure
 
-- Version A: 15 open-response questions, 5 pages, 45 points.
-- Version B: 15 open-response questions, 5 pages, 45 points.
-- Version C: 15 open-response questions, 5 pages, 45 points.
-- Teacher key for all three versions.
-- Combined print master: 15 student pages.
-- All diagrams are native TikZ/vector graphics.
+- Version A: 15 open-response questions, 3 pages, 45 points.
+- Version B: 15 open-response questions, 3 pages, 45 points.
+- Version C: 15 open-response questions, 3 pages, 45 points.
+- Combined student print master: 9 pages total.
+- Teacher key is delivered separately and does not count toward the 9-page student master.
+- All diagrams remain native TikZ/vector graphics.
+- The real-application question set and 45-point weighting are preserved.
+
+## Space-optimization strategy
+
+The final print layout uses a compact two-column card system: four half-width questions plus one full-width question per page. This keeps five questions on each page while preserving readable prompts, diagrams and dedicated calculation lines. Students are explicitly allowed to continue calculations on the back of the sheet when additional space is needed.
 
 ## Curricular scope
 
@@ -35,14 +40,16 @@ The assessment remains inside the current circle block and the repository Circle
 
 ## Senior QA
 
-The final revision was compiled from LaTeX and rendered page-by-page. Figure geometry was checked against the stated numerical relationships. In particular:
+The compact revision was compiled from LaTeX, rendered page-by-page and preflighted after final pagination. Figure geometry was checked against the stated numerical relationships. In particular:
 
 - diameter/radius constructions pass through the exact center;
-- pizza drawings are proportional to the stated diameters in each version;
+- pizza drawings remain proportional to the stated diameters in each version;
 - garden redesign figures use the exact stated scale factor;
-- sprinkler and plaza before/after circles are proportional to the stated radius change;
+- sprinkler and plaza before/after circles remain proportional to the stated radius change;
 - the patio paving grid is clipped to the circular boundary;
 - the running-path radius is represented on the track centerline;
-- all versions were preflighted and the 15-page combined PDF is openable, vector/text based and unencrypted.
+- no overfull/underfull box warnings remain in the three student LaTeX builds;
+- each version compiles to exactly 3 pages;
+- the combined student PDF compiles to exactly 9 pages, is openable, vector/text based and unencrypted.
 
-Editable LaTeX sources are stored beside this README. Final rendered PDFs are produced from these sources and distributed as the classroom artifact package.
+Editable compact LaTeX sources are distributed with the classroom artifact package.
