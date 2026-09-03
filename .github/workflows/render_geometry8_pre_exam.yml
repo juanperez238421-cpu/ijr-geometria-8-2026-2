@@ -1,0 +1,71 @@
+name: Render Geometry 8 Pre-Exam Workshop
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "manim/pre_exam_2026_08_03/**"
+      - ".github/workflows/render_geometry8_pre_exam.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore and validate Manim source
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC_DIR="manim/pre_exam_2026_08_03"
+          base64 -d "$SRC_DIR/geometry8_pre_exam_workshop.py.gz.b64" | gzip -d > "$SRC_DIR/geometry8_pre_exam_workshop.py"
+          python -m py_compile "$SRC_DIR/geometry8_pre_exam_workshop.py"
+          test -s "$SRC_DIR/geometry8_pre_exam_workshop.py"
+
+      - name: Pull ManimCE 0.20.1
+        shell: bash
+        run: docker pull manimcommunity/manim:v0.20.1
+
+      - name: Render corrected problems video in high quality
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp/manim-home \
+            -v "$PWD:/manim" \
+            -w /manim \
+            manimcommunity/manim:v0.20.1 \
+            manim -qh manim/pre_exam_2026_08_03/geometry8_pre_exam_workshop.py \
+              Geometry8_PreExam_Workshop_Problems \
+              --format=mp4 --disable_caching \
+              --output_file Geometry8_PreExam_Workshop_Problems_1080p \
+              2>&1 | tee render_problems.log
+
+      - name: Inventory corrected render
+        shell: bash
+        run: |
+          set -euo pipefail
+          find "$PWD" -type f -name '*.mp4' -printf '%s %p\n' | sort -nr | tee render_inventory.txt
+          test "$(find "$PWD" -type f -name '*.mp4' | wc -l)" -ge 1
+
+      - name: Upload corrected problems video
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: geometry8-pre-exam-workshop-problems-corrected
+          path: |
+            media/
+            manim/pre_exam_2026_08_03/geometry8_pre_exam_workshop.py
+            render_problems.log
+            render_inventory.txt
+          if-no-files-found: warn
+          retention-days: 14
