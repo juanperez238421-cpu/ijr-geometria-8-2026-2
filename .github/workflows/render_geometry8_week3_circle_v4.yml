@@ -1,0 +1,299 @@
+name: Render Geometry8 Week3 Circle V4 PQH
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reconstruct and patch exact V4 sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p render_v4
+          cat manim_week3_v3_payload/payload.part* | base64 -d > render_v4/v3_payload.tar.gz
+          cd render_v4
+          tar -xzf v3_payload.tar.gz
+
+          # Bring the previously verified V3 payload to the exact delivered V3 source.
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py')
+          s = p.read_text(encoding='utf-8')
+          for old, new in [
+              ('r"\\boxed{C=\\pi d}"', 'r"C=\\pi d"'),
+              ('r"\\boxed{C=2\\pi r}"', 'r"C=2\\pi r"'),
+              ('Geometry8Week3CircleTheorySeniorV3 --format',
+               'Geometry8Week3CircleTheorySeniorV3Final --format'),
+          ]:
+              if old in s:
+                  s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+
+          cat > v3_to_v4.patch <<'PATCH'
+          --- Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py
+          +++ Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py
+          @@ -1,13 +1,13 @@
+           #!/usr/bin/env python3
+           # -*- coding: utf-8 -*-
+          -"""Geometry 8 — Period 3 — Week 3 — Circle Theory — Senior V3
+          +"""Geometry 8 — Period 3 — Week 3 — Circle Theory — Senior V4
+           
+           Deep prerequisite lesson for shaded-area work.
+           Target: Manim Community Edition 0.20.x + jp_classroom_style.py
+           
+           Final render:
+          -    manim -pqh Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py \
+          -        Geometry8Week3CircleTheorySeniorV3Final --format=mp4 --disable_caching
+          +    manim -pqh Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py \
+          +        Geometry8Week3CircleTheorySeniorV4Final --format=mp4 --disable_caching
+           """
+           from __future__ import annotations
+           
+          @@ -32,7 +32,7 @@
+           RECT_SHADED = RECT_W * RECT_H - math.pi * RECT_R**2
+           
+           
+          -class Geometry8Week3CircleTheorySeniorV3Final(JPMathClassroomScene):
+          +class Geometry8Week3CircleTheorySeniorV4Final(JPMathClassroomScene):
+               """A deep, projector-safe introduction to circle geometry."""
+           
+               def validate_lesson_data(self) -> None:
+          @@ -71,18 +71,65 @@
+                       self.add(new)
+                       self.play(FadeIn(new), run_time=RUN_QUICK * 0.55)
+           
+          -    def card(self, title: str, body: list[str], *, width: float = 6.0, title_size: int = 42,
+          -             body_size: int = 37) -> VGroup:
+          +    def card(
+          +        self,
+          +        title: str,
+          +        body: list[str],
+          +        *,
+          +        width: float = 6.0,
+          +        height: float | None = None,
+          +        title_size: int = 42,
+          +        body_size: int = 37,
+          +        padding_x: float = 0.38,
+          +        padding_y: float = 0.34,
+          +        title_gap: float = 0.27,
+          +        line_gap: float = 0.17,
+          +    ) -> VGroup:
+          +        """Projector-safe card with guaranteed internal padding.
+          +
+          +        V3 fitted each line independently, which allowed the combined text block
+          +        to sit too close to a border. V4 fits the COMPLETE content block into an
+          +        inset rectangle and asserts the resulting padding numerically.
+          +        """
+                   heading = self.text(title, title_size, BOLD)
+          -        self.fit(heading, width - 0.55, 0.65)
+          -        lines = VGroup(*[self.text(t, body_size) for t in body]).arrange(DOWN, aligned_edge=LEFT, buff=0.12)
+          +        lines = VGroup(*[self.text(t, body_size) for t in body])
+          +        lines.arrange(DOWN, aligned_edge=LEFT, buff=line_gap)
+          +
+          +        inner_w = width - 2 * padding_x
+          +        self.fit(heading, inner_w, 0.72)
+                   for line in lines:
+          -            self.fit(line, width - 0.55, 0.55)
+          -        content = VGroup(heading, lines).arrange(DOWN, aligned_edge=LEFT, buff=0.20)
+          -        box = RoundedRectangle(width=width, height=max(1.62, content.height + 0.55), corner_radius=0.12,
+          -                               stroke_color=BLACK_LINE, stroke_width=1.9,
+          -                               fill_color=WHITE, fill_opacity=1.0)
+          -        content.move_to(box).align_to(box, LEFT).shift(RIGHT * 0.28)
+          +            self.fit(line, inner_w, 0.60)
+          +
+          +        content = VGroup(heading, lines).arrange(
+          +            DOWN, aligned_edge=LEFT, buff=title_gap
+          +        )
+          +
+          +        natural_h = content.height + 2 * padding_y
+          +        box_h = max(1.78, natural_h) if height is None else height
+          +        if box_h <= 2 * padding_y + 0.35:
+          +            raise ValueError(f"Card '{title}' height is too small for safe padding")
+          +
+          +        # Final fit is applied to the complete block, not to isolated lines.
+          +        self.fit(content, inner_w, box_h - 2 * padding_y)
+          +
+          +        box = RoundedRectangle(
+          +            width=width, height=box_h, corner_radius=0.12,
+          +            stroke_color=BLACK_LINE, stroke_width=1.9,
+          +            fill_color=WHITE, fill_opacity=1.0,
+          +        )
+          +        content.move_to(box).align_to(box, LEFT).shift(RIGHT * padding_x)
+          +
+          +        # Hard layout assertions: a render must fail rather than ship merged text.
+          +        eps = 1e-6
+          +        if content.get_left()[0] < box.get_left()[0] + padding_x - eps:
+          +            raise ValueError(f"Card '{title}' violates left padding")
+          +        if content.get_right()[0] > box.get_right()[0] - padding_x + eps:
+          +            raise ValueError(f"Card '{title}' violates right padding")
+          +        if content.get_top()[1] > box.get_top()[1] - padding_y + eps:
+          +            raise ValueError(f"Card '{title}' violates top padding")
+          +        if content.get_bottom()[1] < box.get_bottom()[1] + padding_y - eps:
+          +            raise ValueError(f"Card '{title}' violates bottom padding")
+          +
+                   return VGroup(box, content)
+           
+               def formula_box(self, tex: str, *, width: float = 6.15, size: int = 62) -> VGroup:
+          @@ -148,13 +195,40 @@
+               # 01
+               def why_circle(self) -> None:
+                   self.big_header(1, "WHY LEARN CIRCLES NOW?", "Shaded areas will mix polygons and circles. Learn the circle once, then reuse it.")
+          -        left = self.card("WHAT YOU ALREADY KNOW", ["Rectangle / square area", "Decomposition", "Whole − missing"], width=5.8, body_size=40)
+          -        right = self.card("NEW TOOL", ["Radius and diameter", "Circumference", "Circle area"], width=5.8, body_size=40)
+          -        left.move_to(LEFT * 3.35 + UP * 0.25)
+          -        right.move_to(RIGHT * 3.35 + UP * 0.25)
+          -        arrow = Arrow(LEFT * 0.75, RIGHT * 0.75, color=BLACK_LINE, stroke_width=4.0).move_to(DOWN * 0.05)
+          -        bridge = self.formula_box(r"\text{circle geometry}\ \longrightarrow\ \text{circular shaded areas}", width=9.8, size=50)
+          +        # Equal fixed-height cards guarantee symmetric margins and stable typography.
+          +        left = self.card(
+          +            "WHAT YOU ALREADY KNOW",
+          +            ["Rectangle / square area", "Decomposition", "Whole − missing"],
+          +            width=5.55, height=3.25, title_size=39, body_size=38,
+          +            padding_x=0.42, padding_y=0.38, title_gap=0.30, line_gap=0.19,
+          +        )
+          +        right = self.card(
+          +            "NEW TOOL",
+          +            ["Radius and diameter", "Circumference", "Circle area"],
+          +            width=5.55, height=3.25, title_size=39, body_size=38,
+          +            padding_x=0.42, padding_y=0.38, title_gap=0.30, line_gap=0.19,
+          +        )
+          +        left.move_to(LEFT * 3.42 + UP * 0.20)
+          +        right.move_to(RIGHT * 3.42 + UP * 0.20)
+          +
+          +        # Build the arrow from the actual card edges. It can no longer enter a panel.
+          +        arrow_start = left.get_right() + RIGHT * 0.10
+          +        arrow_end = right.get_left() + LEFT * 0.10
+          +        arrow = Arrow(
+          +            arrow_start, arrow_end, buff=0.0,
+          +            color=BLACK_LINE, stroke_width=4.0, tip_length=0.24,
+          +        )
+          +
+          +        bridge = self.formula_box(
+          +            r"\text{circle geometry}\ \longrightarrow\ \text{circular shaded areas}",
+          +            width=9.6, size=49,
+          +        )
+                   bridge.to_edge(DOWN, buff=0.48)
+          +
+          +        if arrow.get_left()[0] <= left.get_right()[0]:
+          +            raise ValueError("why_circle arrow overlaps the left card")
+          +        if arrow.get_right()[0] >= right.get_left()[0]:
+          +            raise ValueError("why_circle arrow overlaps the right card")
+                   self.assert_content_safe(VGroup(left, right, arrow, bridge), "why_circle layout")
+                   self.play(FadeIn(left), run_time=RUN_NORMAL)
+                   self.play(GrowArrow(arrow), FadeIn(right), run_time=RUN_NORMAL)
+          @@ -263,6 +337,7 @@
+                   panel = RIGHT * 3.45
+                   c_card = self.card("CIRCUMFERENCE", ["Measures the boundary", "Units: cm, m, units"], width=6.0, body_size=40).move_to(panel + UP * 1.25)
+                   a_card = self.card("AREA", ["Measures the surface inside", "Units: cm², m², units²"], width=6.0, body_size=40).move_to(panel + DOWN * 1.05)
+          +        self.assert_content_safe(VGroup(circle, boundary, c_card, a_card), "area meaning layout")
+                   self.play(FadeIn(circle), run_time=RUN_NORMAL)
+                   self.play(Create(boundary), FadeIn(c_card), run_time=RUN_NORMAL)
+                   self.wait(PAUSE_READ)
+          @@ -372,6 +447,7 @@
+                   c2 = self.card("INSIDE THE CIRCLE", ["Use area", "A = πr²", "Answer in square units"], width=6.15, body_size=40)
+                   c1.move_to(LEFT * 3.45 + UP * 0.10)
+                   c2.move_to(RIGHT * 3.45 + UP * 0.10)
+          +        self.assert_content_safe(VGroup(c1, c2), "formula choice cards")
+                   self.play(FadeIn(c1), run_time=RUN_NORMAL)
+                   self.wait(PAUSE_READ)
+                   self.play(FadeIn(c2), run_time=RUN_NORMAL)
+          @@ -420,12 +496,13 @@
+                                   fill_color=WHITE, fill_opacity=1.0).move_to(rect)
+                   radius = Line(circle.get_center(), circle.get_left(), color=BLACK_LINE, stroke_width=3.8)
+                   rlab = self.math(r"r=5\,\mathrm{cm}", 47).next_to(radius, UP, buff=0.08)
+          -        dw = self.hdimension(rect.get_corner(UL), rect.get_corner(UR), r"14\,\mathrm{cm}", y_shift=0.30, size=45)
+          +        dw = self.hdimension(rect.get_corner(UL), rect.get_corner(UR), r"14\,\mathrm{cm}", y_shift=-0.34, size=45)
+                   dh = self.vdimension(rect.get_corner(UL), rect.get_corner(DL), r"10\,\mathrm{cm}", x_shift=-0.30, size=43)
+                   panel = RIGHT * 3.45
+                   p1 = self.math(r"A_{\text{rectangle}}=14(10)=140", 56).move_to(panel + UP * 1.10)
+                   p2 = self.math(r"A_{\text{circle}}=25\pi", 58).move_to(panel + UP * 0.15)
+                   p3 = self.formula_box(r"A_{\text{shaded}}=140-25\pi", width=6.1, size=60).move_to(panel + DOWN * 1.15)
+          +        self.assert_content_safe(VGroup(rect, circle, radius, rlab, dw, dh, p1, p2, p3), "shaded bridge layout")
+                   self.play(FadeIn(rect), FadeIn(dw), FadeIn(dh), run_time=RUN_NORMAL)
+                   self.play(FadeIn(circle), Create(radius), FadeIn(rlab), run_time=RUN_NORMAL)
+                   self.play(FadeIn(p1), run_time=RUN_NORMAL)
+          PATCH
+
+          patch --batch Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py < v3_to_v4.patch
+          mv Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py
+          python -m py_compile Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py jp_classroom_style.py
+          echo "source sha256: $(sha256sum Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py | awk '{print $1}')"
+          test "$(sha256sum Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py | awk '{print $1}')" = "5f30e8b3e4f741373f7e2358386a03b11841baea8c9973e2f0a256d5a39b87b7"
+          test "$(sha256sum jp_classroom_style.py | awk '{print $1}')" = "75ebb3b37b8b925ddf87ef0256c63e8c47a5f014f549f0330d600f540361921a"
+
+      - name: Pull official ManimCE 0.20.1 image
+        run: docker pull manimcommunity/manim:v0.20.1
+
+      - name: PQL layout QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd render_v4
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp/manim-home \
+            -e LESSON_TIME_SCALE=0.04 \
+            -v "$PWD:/manim" -w /manim \
+            --entrypoint bash manimcommunity/manim:v0.20.1 \
+            -c "set -euo pipefail; mkdir -p /tmp/colab-bin; printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/colab-bin/xdg-open; chmod +x /tmp/colab-bin/xdg-open; export PATH=/tmp/colab-bin:\$PATH; manim -pql Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py Geometry8Week3CircleTheorySeniorV4Final --format=mp4 --disable_caching" \
+            2>&1 | tee render_circle_v4_pql.log
+
+      - name: Final literal -pqh render
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd render_v4
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp/manim-home \
+            -e LESSON_TIME_SCALE=1.0 \
+            -v "$PWD:/manim" -w /manim \
+            --entrypoint bash manimcommunity/manim:v0.20.1 \
+            -c "set -euo pipefail; mkdir -p /tmp/colab-bin; printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/colab-bin/xdg-open; chmod +x /tmp/colab-bin/xdg-open; export PATH=/tmp/colab-bin:\$PATH; manim -pqh Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py Geometry8Week3CircleTheorySeniorV4Final --format=mp4 --disable_caching" \
+            2>&1 | tee render_circle_v4_pqh.log
+
+      - name: Verify and stage delivery
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd render_v4
+          command -v ffprobe >/dev/null
+          command -v ffmpeg >/dev/null
+          mkdir -p delivery
+          VIDEO="$(find media -type f -name 'Geometry8Week3CircleTheorySeniorV4Final.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
+          test -n "$VIDEO" && test -s "$VIDEO"
+          cp "$VIDEO" delivery/Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL_pqh.mp4
+          cp Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL.py delivery/
+          cp jp_classroom_style.py delivery/
+          cp render_circle_v4_pql.log render_circle_v4_pqh.log delivery/
+          META=delivery/Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL_pqh.ffprobe.txt
+          ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt -show_entries format=duration,size -of default=noprint_wrappers=1 delivery/Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL_pqh.mp4 > "$META"
+          cat "$META"
+          grep -q '^codec_name=h264$' "$META"
+          grep -q '^width=1920$' "$META"
+          grep -q '^height=1080$' "$META"
+          grep -q '^pix_fmt=yuv420p$' "$META"
+          grep -q '^r_frame_rate=30/1$' "$META"
+          ffmpeg -v error -i delivery/Geometry8_Week3_Class1_CircleTheory_Senior_V4_FINAL_pqh.mp4 -f null -
+          sha256sum delivery/* > delivery/SHA256SUMS.txt
+          ls -lh delivery
+
+      - name: Upload verified V4 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: geometry8-week3-circle-v4-pqh
+          path: render_v4/delivery/
+          if-no-files-found: error
+          retention-days: 7
