@@ -74,13 +74,21 @@ jobs:
           cp "$RAW" delivery/Geometry8_Shaded_Areas_First_Steps_V1_FINAL_pqh.mp4
           cp Geometry8_Shaded_Areas_First_Steps_V1.py delivery/
           cp render_pql.log render_pqh.log source_sha256.txt delivery/
-          ffprobe -v error \
-            -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt \
-            -show_entries format=duration,size \
-            -of default=noprint_wrappers=1 \
-            delivery/Geometry8_Shaded_Areas_First_Steps_V1_FINAL_pqh.mp4 | tee delivery/FFPROBE.txt
+
+          # Keep media verification inside the same pinned ManimCE image used to render.
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp/manim-home \
+            -v "$PWD:/manim" \
+            -w /manim \
+            --entrypoint bash \
+            manimcommunity/manim:v0.20.1 \
+            -c "set -euo pipefail; command -v ffprobe; ffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt -show_entries format=duration,size -of default=noprint_wrappers=1 delivery/Geometry8_Shaded_Areas_First_Steps_V1_FINAL_pqh.mp4" \
+            | tee delivery/FFPROBE.txt
+
           grep -q '^width=1920$' delivery/FFPROBE.txt
           grep -q '^height=1080$' delivery/FFPROBE.txt
+          grep -q '^r_frame_rate=30/1$' delivery/FFPROBE.txt
           sha256sum delivery/* > delivery/SHA256SUMS.txt
           ls -lh delivery
 
