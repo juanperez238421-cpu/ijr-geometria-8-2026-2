@@ -174,7 +174,7 @@ jobs:
               -ss "$ts" -i "$FINAL" \
               -frames:v 1 \
               -vf "scale=960:-1" \
-              "$OUT/qa_frames/events/\${problem}__\${label}.jpg"
+              "$OUT/qa_frames/events/${problem}__${label}.jpg"
           done < "$OUT/QA_EVENTS.txt"
 
           sha256sum \
@@ -183,11 +183,11 @@ jobs:
             > "$OUT/SHA256SUMS.txt"
 
           {
-            echo "branch=\${GITHUB_REF_NAME}"
-            echo "commit_sha=\${GITHUB_SHA}"
-            echo "actions_run_id=\${GITHUB_RUN_ID}"
-            echo "actions_run_number=\${GITHUB_RUN_NUMBER}"
-            echo "workflow=\${GITHUB_WORKFLOW}"
+            echo "branch=${GITHUB_REF_NAME}"
+            echo "commit_sha=${GITHUB_SHA}"
+            echo "actions_run_id=${GITHUB_RUN_ID}"
+            echo "actions_run_number=${GITHUB_RUN_NUMBER}"
+            echo "workflow=${GITHUB_WORKFLOW}"
             echo "artifact_name=geometry8-shaded-areas-class2-complex-v5-final"
             echo "manim_image=manimcommunity/manim:v0.20.1"
             echo "preview_time_scale=0.05"
