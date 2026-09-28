@@ -147,11 +147,11 @@ class Geometry8ShadedAreasOpus55V3(Geometry8ShadedAreasMixedBasicsV2):
                         fill_color=WHITE, fill_opacity=1)
         window.move_to(body.get_center()+RIGHT*1.05+UP*0.28)
         labels = VGroup(
-            self.txt("12 cm", 20, BOLD).next_to(body, DOWN, buff=0.10),
-            self.txt("8 cm", 20, BOLD).next_to(body, LEFT, buff=0.09),
-            self.txt("roof h=5", 19, BOLD).next_to(roof, RIGHT, buff=0.10),
-            self.txt("door 3×5", 18, BOLD).next_to(door, DOWN, buff=0.06),
-            self.txt("r=2", 18, BOLD).next_to(window, RIGHT, buff=0.06),
+            self.txt("12 cm", 20, BOLD).next_to(body, DOWN, buff=0.24),
+            self.txt("8 cm", 20, BOLD).next_to(body, LEFT, buff=0.11),
+            self.txt("roof h = 5 cm", 18, BOLD).next_to(roof, RIGHT, buff=0.12),
+            self.txt("3 × 5", 16, BOLD).move_to(door.get_center()),
+            self.txt("r = 2", 16, BOLD).move_to(window.get_center()),
         )
         return VGroup(VGroup(body, roof), door, window, labels)
 
@@ -162,14 +162,24 @@ class Geometry8ShadedAreasOpus55V3(Geometry8ShadedAreasMixedBasicsV2):
         center = Rectangle(width=4*sx, height=2*sy, stroke_color=BLACK, stroke_width=2.5,
                            fill_color=WHITE, fill_opacity=1).move_to(outer)
         r = 3*min(sx,sy)
-        q1 = Circle(radius=r, stroke_color=BLACK, stroke_width=2.4,
-                    fill_color=WHITE, fill_opacity=1).move_to(outer.get_corner(UL))
-        q2 = q1.copy().move_to(outer.get_corner(DR))
+        # True quarter-circle cutouts, not full circles centered at the corners.
+        q1 = Sector(
+            outer_radius=r, inner_radius=0, angle=PI/2, start_angle=-PI/2,
+            arc_center=outer.get_corner(UL),
+            stroke_color=BLACK, stroke_width=2.4,
+            fill_color=WHITE, fill_opacity=1,
+        )
+        q2 = Sector(
+            outer_radius=r, inner_radius=0, angle=PI/2, start_angle=PI/2,
+            arc_center=outer.get_corner(DR),
+            stroke_color=BLACK, stroke_width=2.4,
+            fill_color=WHITE, fill_opacity=1,
+        )
         labels = VGroup(
-            self.txt("14 cm", 20, BOLD).next_to(outer, DOWN, buff=0.10),
-            self.txt("10 cm", 20, BOLD).next_to(outer, LEFT, buff=0.09),
-            self.txt("4×2", 18, BOLD).next_to(center, UP, buff=0.05),
-            self.txt("quarter-circle gaps: r=3", 18, BOLD).next_to(outer, UP, buff=0.15),
+            self.txt("14 cm", 20, BOLD).next_to(outer, DOWN, buff=0.12),
+            self.txt("10 cm", 20, BOLD).next_to(outer, LEFT, buff=0.11),
+            self.txt("4 × 2", 17, BOLD).next_to(center, UP, buff=0.07),
+            self.txt("2 quarter-circle gaps · r = 3", 17, BOLD).next_to(outer, UP, buff=0.18),
         )
         return VGroup(outer, center, q1, q2, labels)
 
