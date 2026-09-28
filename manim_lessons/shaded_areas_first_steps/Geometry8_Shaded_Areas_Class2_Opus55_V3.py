@@ -20,6 +20,7 @@ import numpy as np
 from manim import *
 
 config.background_color = WHITE
+config.frame_rate = 30
 
 BLACK_TEXT = BLACK
 DARK_GRAY = "#444444"
