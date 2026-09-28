@@ -26,6 +26,140 @@ class Geometry8ShadedAreasClass2ComplexOpus55V5Final(
     """
 
     # ------------------------------------------------------------------
+    # EVENT-TIMELINE QA HOOKS
+    # ------------------------------------------------------------------
+    def _qa_event(self, label: str) -> None:
+        """Emit a production-render timestamp for frame-exact QA extraction."""
+        problem = getattr(self, "_qa_problem", "global") or "global"
+        safe = "".join(ch if ch.isalnum() else "_" for ch in label).strip("_")
+        timestamp = float(getattr(self.renderer, "time", 0.0))
+        print(f"QA_EVENT|{problem}|{safe}|{timestamp:.3f}", flush=True)
+
+    def step(self, index):
+        self._qa_step_index = index
+        result = super().step(index)
+        # step 4 happens while the final equation is still visible, immediately
+        # before the CHECK reasoning card replaces it.
+        if getattr(self, "_qa_problem", "") and index == 4:
+            self._qa_event("final_equation")
+        elif getattr(self, "_qa_problem", "") and index == 1:
+            self._qa_event("decomposition")
+        return result
+
+    def swap_left(self, mob):
+        result = super().swap_left(mob)
+        if (
+            getattr(self, "_qa_problem", "")
+            and getattr(self, "_qa_step_index", None) == 0
+        ):
+            self._qa_event("initial_complete_figure")
+        return result
+
+    def equation_card(self, *args, **kwargs):
+        card = super().equation_card(*args, **kwargs)
+        title = args[0] if args else kwargs.get("title", "")
+        card._qa_title = str(title)
+        return card
+
+    def reason_card(self, *args, **kwargs):
+        card = super().reason_card(*args, **kwargs)
+        title = args[0] if args else kwargs.get("title", "")
+        card._qa_title = str(title)
+        return card
+
+    def swap_right(self, mob):
+        result = super().swap_right(mob)
+        title = getattr(mob, "_qa_title", "")
+        if title in {"POSITIVE SUBTOTAL", "NEGATIVE SUBTOTAL", "CHECK", "FINAL CHECK"}:
+            self._qa_event(title.lower())
+        return result
+
+    def mark_signed(self, positives, negatives):
+        badges = super().mark_signed(positives, negatives)
+        if getattr(self, "_qa_problem", ""):
+            self._qa_event("signed_classification_complete")
+        return badges
+
+    def local_calc(self, target, title, equations, side=RIGHT):
+        """V4 local zoom with a timestamp while the completed calculation is visible."""
+        old_reasoning = self.reasoning
+
+        focus_target = target.copy().set_z_index(20)
+        self.add(focus_target)
+
+        fade_anims = []
+        if self.geometry is not None:
+            fade_anims.append(self.geometry.animate.set_opacity(0.14))
+        if old_reasoning is not None:
+            fade_anims.append(old_reasoning.animate.set_opacity(0.0))
+        if getattr(self, "active_badges", None) is not None:
+            fade_anims.append(self.active_badges.animate.set_opacity(0.0))
+        if fade_anims:
+            self.play(*fade_anims, run_time=RUN_NORMAL)
+
+        heading = self.txt(title, 17, BOLD)
+        eqs = VGroup(*[
+            self.math(eq, 27) for eq in equations
+        ]).arrange(DOWN, aligned_edge=LEFT, buff=0.12)
+        content = VGroup(heading, eqs).arrange(
+            DOWN, aligned_edge=LEFT, buff=0.14
+        )
+        self.fit(content, 3.95, 2.45)
+
+        box = SurroundingRectangle(
+            content,
+            buff=0.18,
+            corner_radius=0.08,
+            stroke_color=BLACK,
+            stroke_width=1.8,
+            fill_color=WHITE,
+            fill_opacity=0.985,
+        )
+        card = VGroup(box, content).set_z_index(30)
+
+        frame_cx = focus_target.get_center()[0]
+        if side is DOWN:
+            card.next_to(focus_target, DOWN, buff=0.48)
+        elif frame_cx < -3.4:
+            card.next_to(focus_target, RIGHT, buff=0.46)
+        else:
+            card.next_to(focus_target, LEFT, buff=0.46)
+
+        focus = VGroup(focus_target, card)
+        zoom_width = max(6.2, min(12.4, focus.width * 1.60))
+
+        self.play(
+            self.camera.frame.animate.move_to(focus).set(width=zoom_width),
+            run_time=RUN_SLOW,
+        )
+        self.play(
+            Indicate(focus_target, scale_factor=1.035),
+            run_time=RUN_NORMAL,
+        )
+        self.play(FadeIn(box), FadeIn(heading), run_time=RUN_NORMAL)
+
+        for eq in eqs:
+            self.play(Write(eq), run_time=RUN_SLOW)
+            self.wait(PAUSE_READ)
+
+        self._qa_event(f"local_calc_{title}")
+        self.wait(PAUSE_WORK)
+
+        self.play(FadeOut(card), FadeOut(focus_target), run_time=RUN_NORMAL)
+        self.play(
+            self.camera.frame.animate.move_to(ORIGIN).set(width=config.frame_width),
+            run_time=RUN_SLOW,
+        )
+
+        restore_anims = []
+        if self.geometry is not None:
+            restore_anims.append(self.geometry.animate.set_opacity(1.0))
+        if old_reasoning is not None:
+            restore_anims.append(old_reasoning.animate.set_opacity(1.0))
+        if restore_anims:
+            self.play(*restore_anims, run_time=RUN_NORMAL)
+
+    # ------------------------------------------------------------------
     # NUMERICAL / GEOMETRY QA HELPERS
     # ------------------------------------------------------------------
     @staticmethod
@@ -668,10 +802,20 @@ class Geometry8ShadedAreasClass2ComplexOpus55V5Final(
         self.formula_atlas()
         self.build_workbench_class2()
 
+        self._qa_problem = "facade"
         self.beat_facade_v3()
+
+        self._qa_problem = "parallelogram"
         self.beat_parallelogram_v3()
+
+        self._qa_problem = "stadium"
         self.beat_stadium_v3()
+
+        self._qa_problem = "hexagon"
         self.beat_hexagon_v3()
+
+        self._qa_problem = "capstone"
         self.beat_capstone_v3()
 
+        self._qa_problem = ""
         self.closing_v4()
