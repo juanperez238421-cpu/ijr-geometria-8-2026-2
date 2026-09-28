@@ -126,7 +126,16 @@ class Geometry8ShadedAreasClass2ComplexOpus55V5Final(
             card.next_to(focus_target, LEFT, buff=0.46)
 
         focus = VGroup(focus_target, card)
-        zoom_width = max(6.2, min(12.4, focus.width * 1.60))
+
+        # Camera safety must be checked in BOTH axes. V4/V5 run 4 exposed a
+        # vertical crop on the stadium "two quarters" card because the zoom
+        # width was derived only from focus.width. Convert required height to
+        # an equivalent 16:9 camera width and keep generous margins.
+        frame_aspect = config.frame_width / config.frame_height
+        width_need = focus.width * 1.60
+        height_need_as_width = focus.height * frame_aspect * 1.55
+        zoom_width = max(6.2, width_need, height_need_as_width)
+        zoom_width = min(15.4, zoom_width)
 
         self.play(
             self.camera.frame.animate.move_to(focus).set(width=zoom_width),
