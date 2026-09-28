@@ -490,6 +490,176 @@ class Geometry8ShadedAreasClass2ComplexOpus55V5Final(
         return VGroup(VGroup(body, roof, cap), circle, rhombus, sector, labels)
 
     # ------------------------------------------------------------------
+    # PEDAGOGICAL COMPLETION — explicit subtotals for Problems 2 and 4
+    # ------------------------------------------------------------------
+    def beat_parallelogram_v3(self):
+        self.step(0)
+        geo = self.parallelogram_region()
+        self.swap_left(geo)
+        outer, rh, tri, hline, _ = geo
+
+        self.swap_right(self.reason_card(
+            "EXAMPLE 2 · THREE FORMULAS",
+            [
+                "Whole = parallelogram.",
+                "Gaps = rhombus + triangle.",
+                "The perpendicular height matters.",
+            ],
+        ))
+        self.wait(PAUSE_EXPLAIN)
+
+        self.step(1)
+        self.play(
+            Indicate(hline),
+            Indicate(rh),
+            Indicate(tri),
+            run_time=RUN_NORMAL,
+        )
+        self.wait(PAUSE_READ)
+
+        self.step(2)
+        badges = self.mark_signed([outer], [rh, tri])
+        self.swap_right(self.signed_ledger(
+            ["A1 parallelogram"],
+            ["A2 rhombus", "A3 triangle"],
+        ))
+        self.wait(PAUSE_EXPLAIN)
+
+        self.step(3)
+        self.local_calc(
+            outer,
+            "A1 · PARALLELOGRAM (+)",
+            [r"A_1=bh", r"A_1=16(9)", r"A_1=144\,cm^2"],
+            RIGHT,
+        )
+        self.swap_right(self.equation_card(
+            "POSITIVE SUBTOTAL",
+            r"A_{(+)}=144\,cm^2",
+            31,
+        ))
+        self.wait(PAUSE_WORK)
+
+        self.local_calc(
+            rh,
+            "A2 · RHOMBUS GAP (−)",
+            [r"A_2=\frac{Dd}{2}", r"A_2=\frac{8(6)}{2}", r"A_2=24\,cm^2"],
+            RIGHT,
+        )
+        self.local_calc(
+            tri,
+            "A3 · TRIANGLE GAP (−)",
+            [r"A_3=\frac{bh}{2}", r"A_3=\frac{6(4)}{2}", r"A_3=12\,cm^2"],
+            LEFT,
+        )
+        self.swap_right(self.equation_card(
+            "NEGATIVE SUBTOTAL",
+            r"A_{(-)}=24+12=36\,cm^2",
+            31,
+        ))
+        self.wait(PAUSE_WORK)
+
+        final = VGroup(
+            self.math(r"A_s=A_{(+)}-A_{(-)}", 30),
+            self.math(r"A_s=144-36", 32),
+            self.math(r"A_s=108\,cm^2", 34),
+        ).arrange(DOWN, buff=0.20)
+        self.swap_right(final)
+        self.wait(PAUSE_WORK)
+
+        self.step(4)
+        self.swap_right(self.reason_card(
+            "CHECK",
+            [
+                "Slanted side was not used as h.",
+                "Rhombus uses diagonals.",
+                "108 < 144 ✓",
+                "Square units ✓",
+            ],
+        ))
+        self.wait(PAUSE_EXPLAIN)
+        self.play(FadeOut(badges), run_time=RUN_NORMAL)
+
+    def beat_hexagon_v3(self):
+        self.step(0)
+        geo = self.hexagon_sector_region()
+        self.swap_left(geo)
+        hx, sector, apothem, _ = geo
+
+        self.swap_right(self.reason_card(
+            "EXAMPLE 4 · POLYGON + SECTOR",
+            [
+                "Whole = regular hexagon.",
+                "Gap = 120° sector.",
+                "Use perimeter + apothem, then angle fraction.",
+            ],
+        ))
+        self.wait(PAUSE_EXPLAIN)
+
+        self.step(1)
+        self.play(
+            Indicate(apothem),
+            Indicate(sector),
+            run_time=RUN_NORMAL,
+        )
+        self.wait(PAUSE_READ)
+
+        self.step(2)
+        badges = self.mark_signed([hx], [sector])
+        self.swap_right(self.signed_ledger(
+            ["A1 regular hexagon"],
+            ["A2 120° sector"],
+        ))
+        self.wait(PAUSE_EXPLAIN)
+
+        self.step(3)
+        self.local_calc(
+            hx,
+            "A1 · HEXAGON (+)",
+            [r"A_1=\frac{Pa}{2}", r"A_1=\frac{36(3\sqrt3)}{2}", r"A_1=54\sqrt3\,cm^2"],
+            RIGHT,
+        )
+        self.swap_right(self.equation_card(
+            "POSITIVE SUBTOTAL",
+            r"A_{(+)}=54\sqrt3\,cm^2",
+            31,
+        ))
+        self.wait(PAUSE_WORK)
+
+        self.local_calc(
+            sector,
+            "A2 · 120° SECTOR (−)",
+            [r"A_2=\frac{120}{360}\pi(3)^2", r"A_2=3\pi\,cm^2"],
+            LEFT,
+        )
+        self.swap_right(self.equation_card(
+            "NEGATIVE SUBTOTAL",
+            r"A_{(-)}=3\pi\,cm^2",
+            31,
+        ))
+        self.wait(PAUSE_WORK)
+
+        final = VGroup(
+            self.math(r"A_s=A_{(+)}-A_{(-)}", 29),
+            self.math(r"A_s=54\sqrt3-3\pi", 31),
+            self.math(r"A_s\approx84.11\,cm^2", 31),
+        ).arrange(DOWN, buff=0.18)
+        self.swap_right(final)
+        self.wait(PAUSE_WORK)
+
+        self.step(4)
+        self.swap_right(self.reason_card(
+            "CHECK",
+            [
+                "Apothem is perpendicular.",
+                "120/360 = 1/3 ✓",
+                "Exact radical and π kept until the end.",
+                "Square units ✓",
+            ],
+        ))
+        self.wait(PAUSE_EXPLAIN)
+        self.play(FadeOut(badges), run_time=RUN_NORMAL)
+
+    # ------------------------------------------------------------------
     # FINAL ASSEMBLY — preserve V4 pedagogy/camera architecture
     # ------------------------------------------------------------------
     def construct(self):
