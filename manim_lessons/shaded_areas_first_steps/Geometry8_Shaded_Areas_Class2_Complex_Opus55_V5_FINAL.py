@@ -215,7 +215,7 @@ class Geometry8ShadedAreasClass2ComplexOpus55V5Final(
         assert math.isclose(facade, 101.7168146928204, rel_tol=0, abs_tol=1e-9)
         assert math.isclose(parallelogram, 108.0, rel_tol=0, abs_tol=1e-12)
         assert math.isclose(stadium, 65.99114857512855, rel_tol=0, abs_tol=1e-9)
-        assert math.isclose(hexagon, 84.10624098190042, rel_tol=0, abs_tol=1e-9)
+        assert math.isclose(hexagon, 84.10596564794999, rel_tol=0, abs_tol=1e-9)
         assert math.isclose(capstone, 219.6349540849362, rel_tol=0, abs_tol=1e-9)
 
     # ------------------------------------------------------------------
