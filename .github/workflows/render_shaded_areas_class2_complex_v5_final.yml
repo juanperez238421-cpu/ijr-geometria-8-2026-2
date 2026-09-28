@@ -168,14 +168,33 @@ jobs:
           print(f"QA event timeline PASS: {len(times)} events, max={max(times):.3f}s")
           PY
 
-          while IFS='|' read -r prefix problem label ts; do
-            test "$prefix" = "QA_EVENT"
-            ffmpeg -hide_banner -loglevel error \
-              -ss "$ts" -i "$FINAL" \
-              -frames:v 1 \
-              -vf "scale=960:-1" \
-              "$OUT/qa_frames/events/${problem}__${label}.jpg"
-          done < "$OUT/QA_EVENTS.txt"
+          python - "$FINAL" "$OUT/QA_EVENTS.txt" "$OUT/qa_frames/events" <<'PY'
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          video = Path(sys.argv[1])
+          events_file = Path(sys.argv[2])
+          out_dir = Path(sys.argv[3])
+          out_dir.mkdir(parents=True, exist_ok=True)
+
+          lines = [x.strip() for x in events_file.read_text().splitlines() if x.strip()]
+          for line in lines:
+              prefix, problem, label, ts = line.split("|", 3)
+              assert prefix == "QA_EVENT", line
+              output = out_dir / f"{problem}__{label}.jpg"
+              cmd = [
+                  "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                  "-i", str(video), "-ss", ts,
+                  "-frames:v", "1",
+                  "-vf", "scale=960:-1",
+                  str(output),
+              ]
+              subprocess.run(cmd, check=True)
+              assert output.exists() and output.stat().st_size > 0, output
+
+          print(f"Extracted {len(lines)} event QA frames")
+          PY
 
           sha256sum \
             "$FINAL" \
