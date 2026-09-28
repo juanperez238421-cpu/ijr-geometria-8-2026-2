@@ -164,13 +164,13 @@ class Geometry8ShadedAreasOpus55V3(Geometry8ShadedAreasMixedBasicsV2):
         r = 3*min(sx,sy)
         # True quarter-circle cutouts, not full circles centered at the corners.
         q1 = Sector(
-            outer_radius=r, inner_radius=0, angle=PI/2, start_angle=-PI/2,
+            radius=r, angle=PI/2, start_angle=-PI/2,
             arc_center=outer.get_corner(UL),
             stroke_color=BLACK, stroke_width=2.4,
             fill_color=WHITE, fill_opacity=1,
         )
         q2 = Sector(
-            outer_radius=r, inner_radius=0, angle=PI/2, start_angle=PI/2,
+            radius=r, angle=PI/2, start_angle=PI/2,
             arc_center=outer.get_corner(DR),
             stroke_color=BLACK, stroke_width=2.4,
             fill_color=WHITE, fill_opacity=1,
