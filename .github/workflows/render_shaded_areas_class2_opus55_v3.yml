@@ -94,18 +94,10 @@ jobs:
 
           ffmpeg -v error -i delivery_class2_v3/Geometry8_Shaded_Areas_Class2_Opus55_V3_FINAL_pqh.mp4 -f null -
 
-          DURATION="$(ffprobe -v error -show_entries format=duration -of csv=p=0 delivery_class2_v3/Geometry8_Shaded_Areas_Class2_Opus55_V3_FINAL_pqh.mp4)"
-          python - "$DURATION" > delivery_class2_v3/frame_times.txt <<'PY'
-import sys
-d=float(sys.argv[1])
-fractions=[0.03,0.08,0.14,0.20,0.27,0.34,0.41,0.48,0.55,0.62,0.69,0.76,0.83,0.90,0.96]
-for i, frac in enumerate(fractions,1):
-    print(f"{i:02d} {d*frac:.3f}")
-PY
-
-          while read idx ts; do
-            ffmpeg -v error -ss "$ts" -i delivery_class2_v3/Geometry8_Shaded_Areas_Class2_Opus55_V3_FINAL_pqh.mp4 -frames:v 1 -q:v 2 "delivery_class2_v3/qa_frames/frame_"$idx".jpg"
-          done < delivery_class2_v3/frame_times.txt
+          ffmpeg -v error \
+            -i delivery_class2_v3/Geometry8_Shaded_Areas_Class2_Opus55_V3_FINAL_pqh.mp4 \
+            -vf "fps=1/20,scale=960:-1" \
+            -frames:v 24 delivery_class2_v3/qa_frames/frame_%02d.jpg
 
           sha256sum delivery_class2_v3/Geometry8_Shaded_Areas_Class2_Opus55_V3_FINAL_pqh.mp4 \
                     delivery_class2_v3/Geometry8_Shaded_Areas_Class2_Opus55_V3.py \
