@@ -399,7 +399,7 @@ class Geometry8ShadedAreasComplexAdvancedV3(
 
         # Rhombus D=8, d=6
         D, d = 8*s, 6*s
-        rc = np.array([-0.72, 0.20, 0])
+        rc = np.array([-0.30, 0.45, 0])
         rh_verts = [
             rc + LEFT*(D/2),
             rc + UP*(d/2),
@@ -442,7 +442,7 @@ class Geometry8ShadedAreasComplexAdvancedV3(
         ).move_to(cc)
 
         # Semicircle r=2
-        sc = np.array([-2.00, -0.66, 0])
+        sc = np.array([-1.75, -0.55, 0])
         sr = 2*s
         semi = Sector(
             radius=sr,
@@ -467,7 +467,7 @@ class Geometry8ShadedAreasComplexAdvancedV3(
         self._assert_points_in_polygon(tri_verts, verts, "P2 triangle")
         self._assert_points_in_polygon(self._circle_sample_points(cc, cr), verts, "P2 circle")
         self._assert_points_in_polygon(
-            self._sector_sample_points(sc, sr, 0, PI),
+            self._sector_sample_points(sc, sr, PI, PI),
             verts,
             "P2 semicircle",
         )
@@ -478,7 +478,7 @@ class Geometry8ShadedAreasComplexAdvancedV3(
             self.txt("D=8 · d=6", 13, BOLD).move_to(rh),
             self.txt("b=6 · h=4", 12, BOLD).move_to(tri),
             self.txt("r=1", 11, BOLD).move_to(circle),
-            self.txt("semicircle r=2", 11, BOLD).move_to(sc + UP*0.18),
+            self.txt("semicircle r=2", 11, BOLD).move_to(sc + DOWN*0.18),
         )
         return VGroup(outer, rh, tri, circle, semi, hline, labels)
 
