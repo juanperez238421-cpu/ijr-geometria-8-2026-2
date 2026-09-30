@@ -1,0 +1,227 @@
+name: Render Geometry8 Shaded Areas Class3 Advanced Complex V3
+
+on:
+  push:
+    branches:
+      - temp/shaded-areas-class3-advanced-complex-v3-20260930
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate source hierarchy and Senior V3
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd manim_lessons/shaded_areas_first_steps
+
+          python -m py_compile             Geometry8_Shaded_Areas_Mixed_Basics_V2.py             Geometry8_Shaded_Areas_Opus55_V3.py             Geometry8_Shaded_Areas_Class2_Complex_Opus55_V1.py             Geometry8_Shaded_Areas_Class2_Complex_Opus55_V3.py             Geometry8_Shaded_Areas_Class2_Complex_Opus55_V4_QA_FIXED.py             Geometry8_Shaded_Areas_Class2_Complex_Opus55_V5_FINAL.py             Geometry8_Shaded_Areas_Class2_Complex_4Plus_V6.py             Geometry8_Shaded_Areas_Class3_Advanced_Complex_V3.py
+
+          grep -n "class Geometry8ShadedAreasClass3AdvancedComplexV3"             Geometry8_Shaded_Areas_Class3_Advanced_Complex_V3.py
+
+          grep -n "component_counts"             Geometry8_Shaded_Areas_Class3_Advanced_Complex_V3.py
+
+          sha256sum Geometry8_Shaded_Areas_Class3_Advanced_Complex_V3.py             | tee source_sha256.txt
+
+      - name: Pull exact ManimCE 0.20.1 image
+        run: docker pull manimcommunity/manim:v0.20.1
+
+      - name: PQL structural and geometry QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd manim_lessons/shaded_areas_first_steps
+
+          docker run --rm             --user "$(id -u):$(id -g)"             -e HOME=/tmp/manim-home             -e LESSON_TIME_SCALE=0.04             -v "$PWD:/manim"             -w /manim             --entrypoint bash             manimcommunity/manim:v0.20.1             -c "set -euo pipefail;                 mkdir -p /tmp/bin;                 printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/bin/xdg-open;                 chmod +x /tmp/bin/xdg-open;                 export PATH=/tmp/bin:\$PATH;                 manim -pql                   Geometry8_Shaded_Areas_Class3_Advanced_Complex_V3.py                   Geometry8ShadedAreasClass3AdvancedComplexV3                   --format=mp4                   --disable_caching"             2>&1 | tee render_pql.log
+
+      - name: Full literal PQH production render
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd manim_lessons/shaded_areas_first_steps
+
+          docker run --rm             --user "$(id -u):$(id -g)"             -e HOME=/tmp/manim-home             -e LESSON_TIME_SCALE=1.0             -v "$PWD:/manim"             -w /manim             --entrypoint bash             manimcommunity/manim:v0.20.1             -c "set -euo pipefail;                 mkdir -p /tmp/bin;                 printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/bin/xdg-open;                 chmod +x /tmp/bin/xdg-open;                 export PATH=/tmp/bin:\$PATH;                 manim -pqh                   Geometry8_Shaded_Areas_Class3_Advanced_Complex_V3.py                   Geometry8ShadedAreasClass3AdvancedComplexV3                   --format=mp4                   --disable_caching"             2>&1 | tee render_pqh.log
+
+      - name: Install media QA tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          python -m pip install --quiet pillow
+
+      - name: Verify final MP4 and extract QA frames
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd manim_lessons/shaded_areas_first_steps
+
+          RAW="$(find media -type f             -name 'Geometry8ShadedAreasClass3AdvancedComplexV3.mp4'             -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
+
+          test -n "$RAW"
+          test -s "$RAW"
+
+          OUT="delivery_class3_advanced_v3"
+          FINAL="$OUT/Geometry8_Shaded_Areas_Class3_Advanced_Complex_V3_FINAL_pqh.mp4"
+
+          rm -rf "$OUT"
+          mkdir -p             "$OUT/qa_frames/broad"             "$OUT/qa_frames/events"             "$OUT/qa_contact_sheets"
+
+          cp "$RAW" "$FINAL"
+          cp Geometry8_Shaded_Areas_Class3_Advanced_Complex_V3.py "$OUT/"
+          cp render_pql.log render_pqh.log source_sha256.txt "$OUT/"
+
+          ffprobe -v error             -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt             -show_entries format=duration,size             -of default=noprint_wrappers=1             "$FINAL" | tee "$OUT/FFPROBE.txt"
+
+          grep -q '^codec_name=h264$' "$OUT/FFPROBE.txt"
+          grep -q '^width=1920$' "$OUT/FFPROBE.txt"
+          grep -q '^height=1080$' "$OUT/FFPROBE.txt"
+          grep -q '^r_frame_rate=30/1$' "$OUT/FFPROBE.txt"
+          grep -q '^pix_fmt=yuv420p$' "$OUT/FFPROBE.txt"
+
+          # Sequential decode of every frame.
+          ffmpeg -v error -i "$FINAL" -f null -
+
+          # Broad visual sample over entire production render.
+          ffmpeg -hide_banner -loglevel error             -i "$FINAL"             -vf "fps=1/15,scale=640:-1"             "$OUT/qa_frames/broad/frame_%03d.jpg"
+
+          grep 'QA_EVENT|' render_pqh.log             | sed -E 's/.*(QA_EVENT\|[^[:space:]]+).*/\1/'             | tee "$OUT/QA_EVENTS.txt"
+
+          python - "$OUT/QA_EVENTS.txt" <<'PY'
+          import sys
+          from pathlib import Path
+
+          lines = [x.strip() for x in Path(sys.argv[1]).read_text().splitlines() if x.strip()]
+          assert len(lines) >= 60, f"Expected >=60 QA events, got {len(lines)}"
+          times = [float(x.rsplit("|", 1)[1]) for x in lines]
+          assert all(b >= a for a, b in zip(times, times[1:])), "Non-monotonic QA timeline"
+          required = {
+              "advanced_facade",
+              "bridge_plate",
+              "hexagon_plaza",
+              "roofed_stadium",
+              "capstone_emblem",
+          }
+          seen = {x.split("|")[1] for x in lines}
+          assert required.issubset(seen), (required, seen)
+          assert max(times) > 420, f"Production render unexpectedly short: {max(times)}"
+          print(f"QA timeline PASS: {len(lines)} events; last={max(times):.3f}s")
+          PY
+
+          python - "$FINAL" "$OUT/QA_EVENTS.txt" "$OUT/qa_frames/events" <<'PY'
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          video = Path(sys.argv[1])
+          events_file = Path(sys.argv[2])
+          out_dir = Path(sys.argv[3])
+          out_dir.mkdir(parents=True, exist_ok=True)
+
+          for line in [x.strip() for x in events_file.read_text().splitlines() if x.strip()]:
+              prefix, problem, label, ts = line.split("|", 3)
+              assert prefix == "QA_EVENT"
+              output = out_dir / f"{problem}__{label}.jpg"
+              subprocess.run(
+                  [
+                      "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+                      "-i", str(video), "-ss", ts, "-frames:v", "1",
+                      "-vf", "scale=960:-1", str(output),
+                  ],
+                  check=True,
+              )
+              assert output.exists() and output.stat().st_size > 0
+
+          print("Event QA frame extraction PASS")
+          PY
+
+          sha256sum             "$FINAL"             "$OUT/Geometry8_Shaded_Areas_Class3_Advanced_Complex_V3.py"             > "$OUT/SHA256SUMS.txt"
+
+          {
+            echo "branch=${GITHUB_REF_NAME}"
+            echo "commit_sha=${GITHUB_SHA}"
+            echo "actions_run_id=${GITHUB_RUN_ID}"
+            echo "workflow=${GITHUB_WORKFLOW}"
+            echo "artifact_name=geometry8-shaded-areas-class3-advanced-complex-v3-final"
+            echo "manim_image=manimcommunity/manim:v0.20.1"
+            echo "component_counts=6,8,6,8,9"
+          } > "$OUT/RUN_METADATA.txt"
+
+      - name: Build visual QA contact sheets
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd manim_lessons/shaded_areas_first_steps
+
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw
+
+          root = Path("delivery_class3_advanced_v3")
+          broad_dir = root / "qa_frames" / "broad"
+          event_dir = root / "qa_frames" / "events"
+          sheets = root / "qa_contact_sheets"
+
+          def make_sheet(paths, out, cols=4, thumb=(440, 248), label_height=34):
+              paths = list(paths)
+              assert paths, f"No images for {out}"
+              cells = []
+              for p in paths:
+                  img = Image.open(p).convert("RGB")
+                  img.thumbnail(thumb)
+                  canvas = Image.new("RGB", (thumb[0] + 20, thumb[1] + label_height), "white")
+                  canvas.paste(img, ((canvas.width - img.width)//2, 4))
+                  draw = ImageDraw.Draw(canvas)
+                  draw.text((8, thumb[1] + 8), p.stem, fill="black")
+                  cells.append(canvas)
+
+              rows = (len(cells) + cols - 1) // cols
+              sheet = Image.new(
+                  "RGB",
+                  (cols * cells[0].width, rows * cells[0].height),
+                  (235, 235, 235),
+              )
+              for i, cell in enumerate(cells):
+                  sheet.paste(cell, ((i % cols) * cell.width, (i // cols) * cell.height))
+              sheet.save(out, quality=92)
+
+          make_sheet(
+              sorted(broad_dir.glob("*.jpg")),
+              sheets / "00_broad_sampling_entire_video.jpg",
+              cols=4,
+          )
+
+          for problem in (
+              "advanced_facade",
+              "bridge_plate",
+              "hexagon_plaza",
+              "roofed_stadium",
+              "capstone_emblem",
+          ):
+              make_sheet(
+                  sorted(event_dir.glob(f"{problem}__*.jpg")),
+                  sheets / f"{problem}_event_QA.jpg",
+                  cols=3,
+                  thumb=(560, 315),
+                  label_height=38,
+              )
+
+          print("Contact sheets PASS")
+          PY
+
+      - name: Upload validated final package
+        uses: actions/upload-artifact@v4
+        with:
+          name: geometry8-shaded-areas-class3-advanced-complex-v3-final
+          path: manim_lessons/shaded_areas_first_steps/delivery_class3_advanced_v3/
+          if-no-files-found: error
+          retention-days: 14
