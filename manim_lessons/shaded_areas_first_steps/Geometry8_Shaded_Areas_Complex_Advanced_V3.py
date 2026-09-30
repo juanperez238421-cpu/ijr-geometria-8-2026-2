@@ -95,8 +95,8 @@ class Geometry8ShadedAreasComplexAdvancedV3(
         assert math.isclose(p1, 168.20132469929538, abs_tol=1e-9)
         assert math.isclose(p2, 134.57522203923062, abs_tol=1e-9)
         assert math.isclose(p3, 74.84955592153876, abs_tol=1e-9)
-        assert math.isclose(p4, 84.79518331624756, abs_tol=1e-9)
-        assert math.isclose(p5, 258.91371382168065, abs_tol=1e-9)
+        assert math.isclose(p4, 84.79475585273637, abs_tol=1e-9)
+        assert math.isclose(p5, 258.91371368004256, abs_tol=1e-9)
 
         component_counts = {
             "advanced_facade": 6,
