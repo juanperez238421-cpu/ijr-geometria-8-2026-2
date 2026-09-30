@@ -372,7 +372,7 @@ class Geometry8ShadedAreasComplexSeniorV3(
             fill_color=WHITE, fill_opacity=1
         )
 
-        circle_center = rect.get_center()+RIGHT*1.20+UP*0.48
+        circle_center = rect.get_center()+RIGHT*1.20+UP*0.30
         circle = Circle(
             radius=1.5*s,
             stroke_color=BLACK, stroke_width=2.4,
