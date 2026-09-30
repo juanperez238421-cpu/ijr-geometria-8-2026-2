@@ -465,10 +465,10 @@ class Geometry8ShadedAreasClass2Complex4PlusV6(
             self.txt("regular hexagon · side=6", 17, BOLD).next_to(
                 hexagon, DOWN, buff=0.12
             ),
-            self.math(r"P=36\ {m cm}", 23).next_to(
+            self.math(r"P=36\ {\rm cm}", 23).next_to(
                 hexagon, LEFT, buff=0.08
             ),
-            self.math(r"a=3\sqrt3\ {m cm}", 22).next_to(
+            self.math(r"a=3\sqrt3\ {\rm cm}", 22).next_to(
                 apothem, RIGHT, buff=0.06
             ),
             self.txt("60° · r=2", 13, BOLD).move_to(center + RIGHT * 0.55),
