@@ -783,8 +783,8 @@ class Geometry8ShadedAreasComplexAdvancedV3(
 
         labels = VGroup(
             self.txt("regular hexagon · side=6", 16, BOLD).next_to(hx, DOWN, buff=0.10),
-            self.math(r"P=36\ {m cm}", 22).next_to(hx, LEFT, buff=0.07),
-            self.math(r"a=3\sqrt3\ {m cm}", 21).next_to(apothem, RIGHT, buff=0.05),
+            self.math(r"P=36\ {\rm cm}", 22).next_to(hx, LEFT, buff=0.07),
+            self.math(r"a=3\sqrt3\ {\rm cm}", 21).next_to(apothem, RIGHT, buff=0.05),
             self.txt("60° · r=2", 12, BOLD).move_to(c + RIGHT*0.55),
             self.txt("r=1", 11, BOLD).move_to(circle),
             self.txt("b=2 · h=2", 10, BOLD).move_to(tri),
