@@ -3,7 +3,7 @@ name: Render Geometry8 Shaded Areas First Steps V1
 on:
   push:
     branches:
-      - temp/shaded-areas-first-steps-v1-20260904
+      - backup/recover-geometry8-firststeps-20261004
   workflow_dispatch:
 
 permissions:
@@ -102,4 +102,4 @@ jobs:
           name: geometry8-shaded-areas-first-steps-v1-final
           path: manim_lessons/shaded_areas_first_steps/delivery/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 2
