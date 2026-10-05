@@ -1,0 +1,40 @@
+name: Storage Cleanup After Backup
+
+on:
+  push:
+    branches:
+      - ops/storage-audit-2026-10-04
+    paths:
+      - '.github/workflows/storage-cleanup-after-backup.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Delete Actions artifacts after external backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo="${GITHUB_REPOSITORY}"
+          ids="$(mktemp)"
+          gh api --paginate "/repos/${repo}/actions/artifacts?per_page=100" --jq '.artifacts[].id' > "$ids"
+          before="$(wc -l < "$ids" | tr -d ' ')"
+          bytes_before="$(gh api --paginate "/repos/${repo}/actions/artifacts?per_page=100" --jq '[.artifacts[].size_in_bytes] | add // 0' | awk '{s+=$1} END {print s+0}')"
+          echo "Artifacts before: $before"
+          echo "Bytes before: $bytes_before"
+          export repo GH_TOKEN
+          cat "$ids" | xargs -r -n1 -P16 bash -c 'gh api --method DELETE "/repos/'"${repo}"'/actions/artifacts/$1" >/dev/null' _
+          gh cache delete --all --repo "$repo" || true
+          after="$(gh api --paginate "/repos/${repo}/actions/artifacts?per_page=100" --jq '.artifacts[].id' | wc -l | tr -d ' ')"
+          bytes_after="$(gh api --paginate "/repos/${repo}/actions/artifacts?per_page=100" --jq '[.artifacts[].size_in_bytes] | add // 0' | awk '{s+=$1} END {print s+0}')"
+          echo "Artifacts after: $after"
+          echo "Bytes after: $bytes_after"
+          echo "Freed bytes: $((bytes_before - bytes_after))"
