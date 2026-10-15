@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "course": "Geometry 8",
+  "topic": "Shaded composite areas",
+  "public_exam_enabled": false,
+  "problems_expected": 3,
+  "figures_per_problem": {
+    "min": 3,
+    "max": 5
+  },
+  "duration_minutes": null,
+  "language": "es",
+  "problems": [
+    {
+      "id": "P01",
+      "ready": false,
+      "title": null,
+      "statement": null,
+      "diagram": null,
+      "figure_count": null
+    },
+    {
+      "id": "P02",
+      "ready": false,
+      "title": null,
+      "statement": null,
+      "diagram": null,
+      "figure_count": null
+    },
+    {
+      "id": "P03",
+      "ready": false,
+      "title": null,
+      "statement": null,
+      "diagram": null,
+      "figure_count": null
+    }
+  ]
+}
