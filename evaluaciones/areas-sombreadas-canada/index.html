@@ -7,7 +7,7 @@
   <meta name="description" content="Evaluación virtual de áreas sombreadas, Geometría 8°, Instituto Jorge Robledo.">
   <title>Áreas sombreadas | Evaluación virtual | Geometría 8°</title>
   <link rel="stylesheet" href="./styles.css">
-  <script defer src="./app.js"></script>
+  <script defer src="./app.js"></script><style>.student-form{max-width:640px;display:grid;grid-template-columns:1fr 1fr;gap:8px 15px;margin:24px 0}.student-form label{font-weight:750;font-size:12px;color:#314968}.student-form input[type=text],.student-form select{width:100%;padding:12px 13px;border:1px solid #d9e1ee;border-radius:9px;background:#fff;color:#1b2944}.consent-line{grid-column:1/-1;display:flex;align-items:center;gap:9px;margin:7px 0}.consent-line input{accent-color:#2d63ce;width:18px;height:18px}.receipt{font:700 12px/1.6 ui-monospace,monospace;overflow-wrap:anywhere;color:#1b4caa}.diagram-frame img.problem-media{width:100%;height:100%;object-fit:contain}@media(max-width:580px){.student-form{grid-template-columns:1fr}}</style>
 </head>
 <body>
   <div class="app-shell">
@@ -21,7 +21,7 @@
       </div>
       <div class="topbar-right">
         <span class="topbar-year">2026 · Tercer periodo</span>
-        <span class="status-pill" id="topStatus"><span class="status-dot"></span> EN PREPARACIÓN</span>
+        <span class="status-pill" id="topStatus"><span class="status-dot"></span> DISPONIBLE</span>
       </div>
     </header>
 
@@ -29,23 +29,26 @@
       <section class="welcome view" id="welcomeView" aria-labelledby="welcomeTitle">
         <div class="welcome-copy">
           <div class="eyebrow"><span class="eyebrow-line"></span> EVALUACIÓN DE GEOMETRÍA · OCTAVO GRADO</div>
-          <h1 id="welcomeTitle">El área está <span>en los detalles.</span></h1>
-          <p class="welcome-lead">Evaluación individual de <strong>áreas sombreadas</strong> en figuras compuestas. Tres desafíos de razonamiento geométrico, con diagramas producidos específicamente para esta prueba.</p>
+          <h1 id="welcomeTitle">Cuatro problemas. <span>Una región por descubrir.</span></h1>
+          <p class="welcome-lead">Evaluación individual de <strong>áreas sombreadas</strong> en figuras compuestas. Cuatro desafíos de razonamiento geométrico. Analiza cada figura, determina el área sombreada y justifica tu procedimiento.</p>
           <div class="stats-grid">
-            <div class="stat"><span class="stat-number">03</span><span class="stat-label">Problemas</span></div>
-            <div class="stat"><span class="stat-number">3–5</span><span class="stat-label">Figuras por problema</span></div>
+            <div class="stat"><span class="stat-number">04</span><span class="stat-label">Problemas</span></div>
+            <div class="stat"><span class="stat-number">π</span><span class="stat-label">Usa 3.14</span></div>
             <div class="stat"><span class="stat-number">03</span><span class="stat-label">Alertas máximas</span></div>
           </div>
           <div class="instructions">
             <h2>Antes de comenzar</h2>
-            <p>La prueba oficial solicitará identificación y apertura a pantalla completa. Cambiar de pestaña, abandonar la ventana o salir del modo de pantalla completa genera una incidencia. Al llegar a tres, se bloquea la sesión para revisión del docente.</p>
-            <p class="muted-small"><strong>Estado actual:</strong> estructura en construcción. No hay problemas publicados, respuestas oficiales ni envío de calificaciones.</p>
+            <p>Ingresa tu nombre y grupo. El examen solicita pantalla completa. Cambiar de pestaña, minimizar o salir de pantalla completa registra una incidencia. Con tres incidencias, la sesión queda bloqueada para revisión docente. Cada problema requiere resultado en cm² y procedimiento.</p>
+            <p class="muted-small"><strong>Instrucciones para los cuatro problemas:</strong> Observa la figura y calcula el área de la región sombreada. Expresa tu respuesta en cm². Usa π = 3.14 cuando sea necesario.</p>
           </div>
-          <div class="welcome-actions">
-            <button class="btn btn-primary" type="button" id="previewStart">Explorar vista previa <span aria-hidden="true">↗</span></button>
-            <button class="btn btn-disabled" type="button" disabled title="Se habilitará después de incorporar los ejercicios y el backend">Iniciar evaluación oficial <span aria-hidden="true">→</span></button>
+          <div class="student-form" aria-label="Identificación del estudiante">
+  <label for="studentName">Nombre y apellido</label><input id="studentName" type="text" autocomplete="name" maxlength="120" placeholder="Escribe tu nombre completo" required />
+  <label for="studentGroup">Grupo</label><select id="studentGroup" required><option value="">Selecciona el grupo</option><option value="8A">8°A</option><option value="8B">8°B</option><option value="8C">8°C</option><option value="OTRO">Otro / movilidad</option></select>
+  <label class="consent-line"><input id="studentAgree" type="checkbox" /> Comprendo las reglas de pantalla completa y las tres incidencias.</label>
+</div><div class="welcome-actions">
+            <button class="btn btn-primary" type="button" id="previewStart">Iniciar evaluación <span aria-hidden="true">↗</span></button>
           </div>
-          <p class="preview-disclaimer">La vista previa es una simulación local para revisar diseño y eventos. No constituye un examen.</p>
+          <p class="preview-disclaimer">Las respuestas se guardan en un registro privado. No cierres la pestaña antes de enviar la evaluación.</p>
         </div>
 
         <div class="welcome-visual" aria-hidden="true">
@@ -68,7 +71,7 @@
               <text x="348" y="403" fill="#70819f" font-size="13" font-family="Arial, sans-serif">SCHEMATIC / DECORATIVE</text>
             </svg>
           </div>
-          <div class="visual-caption"><span>01 / 03 — DISEÑO PRELIMINAR</span><span class="visual-bar"></span><span>COMPOSITION STUDY</span></div>
+          <div class="visual-caption"><span>01 / 04 — EVALUACIÓN</span><span class="visual-bar"></span><span>SHADED AREA</span></div>
         </div>
       </section>
 
@@ -78,59 +81,59 @@
           <div class="exam-metrics">
             <div class="metric"><span>TIEMPO TRANSCURRIDO</span><strong id="clock" aria-live="off">00:00</strong></div>
             <div class="metric"><span>INCIDENCIAS</span><div class="strike-dots" id="strikeDots" aria-label="0 de 3 incidencias"><i></i><i></i><i></i></div></div>
-            <div class="metric"><span>AVANCE</span><strong id="progress">0 / 3</strong></div>
+            <div class="metric"><span>AVANCE</span><strong id="progress">0 / 4</strong></div>
           </div>
         </div>
-        <div class="preview-ribbon" role="status"><strong>VISTA PREVIA · NO OFICIAL</strong><span>Enunciados e imágenes pendientes de Opus. Las respuestas no se envían ni califican.</span></div>
+        <div class="preview-ribbon" role="status"><strong>EVALUACIÓN VIRTUAL</strong><span>Observa cada figura. Usa π = 3.14 cuando corresponda. Presenta el resultado en cm² y explica tu procedimiento.</span></div>
         <div class="exam-layout">
           <nav class="problem-rail" aria-label="Navegación de ejercicios">
             <div class="rail-top"><span class="rail-overline">CUESTIONARIO</span><strong>Problemas</strong><small>Selecciona un ejercicio</small></div>
             <div id="problemNavigation" class="rail-nav">
-              <button type="button" class="rail-item selected" data-problem="0" aria-current="step"><span class="rail-num">01</span><span class="rail-copy"><strong>Problema 01</strong><small>Pendiente de integrar</small></span><span class="rail-state">○</span></button>
-              <button type="button" class="rail-item" data-problem="1"><span class="rail-num">02</span><span class="rail-copy"><strong>Problema 02</strong><small>Pendiente de integrar</small></span><span class="rail-state">○</span></button>
-              <button type="button" class="rail-item" data-problem="2"><span class="rail-num">03</span><span class="rail-copy"><strong>Problema 03</strong><small>Pendiente de integrar</small></span><span class="rail-state">○</span></button>
+              <button type="button" class="rail-item selected" data-problem="0" aria-current="step"><span class="rail-num">01</span><span class="rail-copy"><strong>Problema 01</strong><small>Sector anular</small></span><span class="rail-state">○</span></button>
+              <button type="button" class="rail-item" data-problem="1"><span class="rail-num">02</span><span class="rail-copy"><strong>Problema 02</strong><small>Cuadrado y círculo</small></span><span class="rail-state">○</span></button>
+              <button type="button" class="rail-item" data-problem="2"><span class="rail-num">03</span><span class="rail-copy"><strong>Problema 03</strong><small>Semicírculo y triángulo</small></span><span class="rail-state">○</span></button>
+              <button type="button" class="rail-item" data-problem="3"><span class="rail-num">04</span><span class="rail-copy"><strong>Problema 04</strong><small>Cuatro cuartos</small></span><span class="rail-state">○</span></button>
             </div>
             <div class="rail-bottom"><span class="shield">◇</span><p>Sesión de demostración con control de incidencias de pantalla completa.</p></div>
           </nav>
           <div class="question-column">
             <article class="question-card">
-              <div class="question-header"><span class="question-index" id="questionCounter">EJERCICIO 01 DE 03</span><span class="question-type">ÁREA SOMBREADA · FIGURA COMPUESTA</span></div>
+              <div class="question-header"><span class="question-index" id="questionCounter">EJERCICIO 01 DE 04</span><span class="question-type">ÁREA SOMBREADA · FIGURA COMPUESTA</span></div>
               <h2 id="questionTitle">Composición geométrica pendiente</h2>
-              <p class="question-statement" id="questionStatement">Aquí se integrará el enunciado definitivo cuando estén aprobados los problemas diseñados en Opus. Cada ejercicio tendrá entre 3 y 5 figuras.</p>
+              <p class="question-statement" id="questionStatement">Determina el área de la región sombreada en la figura.</p>
               <div class="diagram-frame" id="diagramFrame" aria-label="Diagrama pendiente de incorporar">
                 <div class="diagram-placeholder">
                   <div class="placeholder-glyph" aria-hidden="true">▱</div>
-                  <strong>Espacio reservado para la figura</strong>
-                  <span>SVG / animación de enunciado · pendiente de Opus</span>
+                  <strong>Preparando figura geométrica…</strong>
+                  <span>La figura aparecerá en este espacio.</span>
                   <span class="placeholder-footnote">No se muestran soluciones durante el examen.</span>
                 </div>
               </div>
-              <div class="diagram-bottom"><span>DIAGRAMA <strong id="diagramNumber">01</strong> / 03</span><span id="figureCount">3 a 5 figuras · por definir</span></div>
+              <div class="diagram-bottom"><span>DIAGRAMA <strong id="diagramNumber">01</strong> / 04</span><span id="figureCount">Diagrama geométrico HD</span></div>
             </article>
-            <div class="question-pager"><button type="button" class="btn btn-outline" id="prevButton" disabled>← Anterior</button><span id="pageIndicator">01 / 03</span><button type="button" class="btn btn-primary" id="nextButton">Siguiente →</button></div>
+            <div class="question-pager"><button type="button" class="btn btn-outline" id="prevButton" disabled>← Anterior</button><span id="pageIndicator">01 / 04</span><button type="button" class="btn btn-primary" id="nextButton">Siguiente →</button></div>
           </div>
           <aside class="answer-card" aria-labelledby="answerHeading">
             <div class="answer-heading"><span class="answer-icon" aria-hidden="true">✎</span><div><span>TU RESPUESTA</span><h2 id="answerHeading">Desarrolla la solución</h2></div></div>
             <label class="field-label" for="areaValue">Área sombreada calculada</label>
-            <div class="value-field"><input type="text" inputmode="decimal" autocomplete="off" id="areaValue" placeholder="Ej. 24,5" aria-describedby="inputHelp" spellcheck="false"><select id="areaUnit" aria-label="Unidad de área"><option value="">Unidad</option><option value="cm²">cm²</option><option value="mm²">mm²</option><option value="m²">m²</option><option value="u²">u²</option></select></div>
+            <div class="value-field"><input type="text" inputmode="decimal" autocomplete="off" id="areaValue" placeholder="Ej. 24,5" aria-describedby="inputHelp" spellcheck="false"><select id="areaUnit" aria-label="Unidad de área"><option value="cm²">cm²</option></select></div>
             <p class="field-hint" id="inputHelp">Acepta valores decimales con coma o punto.</p>
             <label class="field-label steps-label" for="reasoning">Explica tu procedimiento</label>
             <textarea id="reasoning" rows="9" maxlength="5000" placeholder="1. Identifico las figuras…&#10;2. Calculo el área de cada una…&#10;3. Sumo o resto las áreas…"></textarea>
-            <div class="save-note" id="saveStatus" role="status">Borrador local · sin envío</div>
+            <div class="save-note" id="saveStatus" role="status">Borrador pendiente de guardar</div>
             <div class="answer-divider"></div>
             <div class="checklist-label">CRITERIOS DE LA PRUEBA</div>
             <ul class="criteria"><li><span>✓</span> Identificar las figuras geométricas</li><li><span>✓</span> Seleccionar las fórmulas correctas</li><li><span>✓</span> Justificar las operaciones</li><li><span>✓</span> Expresar el resultado con unidades</li></ul>
-            <button type="button" class="btn btn-secondary end-button" id="finishButton">Terminar simulación</button>
-            <button type="button" class="text-button" id="simulateStrike">Simular una incidencia (prueba QA)</button>
+            <button type="button" class="btn btn-secondary end-button" id="finishButton">Enviar evaluación</button>
           </aside>
         </div>
       </section>
 
       <section class="result view hidden" id="resultView" aria-labelledby="resultHeading">
-        <div class="result-card"><div class="result-icon" id="resultIcon">◇</div><p class="eyebrow">VISTA PREVIA / CONTROL DE CALIDAD</p><h1 id="resultHeading">Simulación finalizada</h1><p id="resultDescription">La interfaz está lista para recibir los problemas definitivos. No se ha registrado ni calificado ningún examen.</p><div id="resultSummary" class="result-summary"></div><button type="button" class="btn btn-primary" id="restartButton">Volver a la portada</button></div>
+        <div class="result-card"><div class="result-icon" id="resultIcon">◇</div><p class="eyebrow">VISTA PREVIA / CONTROL DE CALIDAD</p><h1 id="resultHeading">Evaluación enviada</h1><p id="resultDescription">Tu evaluación queda registrada en el servidor. Conserva el comprobante.</p><div id="resultSummary" class="result-summary"></div><p class="receipt" id="receipt"></p><button type="button" class="btn btn-primary" id="restartButton">Finalizar</button></div>
       </section>
     </main>
-    <footer class="site-footer"><span>© Instituto Jorge Robledo · Geometría 8° · 2026</span><span>Interfaz de preparación · No disponible para evaluación oficial</span></footer>
+    <footer class="site-footer"><span>© Instituto Jorge Robledo · Geometría 8° · 2026</span><span>Evaluación virtual de áreas sombreadas · 4 problemas</span></footer>
   </div>
 
   <div class="modal-backdrop hidden" id="incidentModal" role="presentation">
