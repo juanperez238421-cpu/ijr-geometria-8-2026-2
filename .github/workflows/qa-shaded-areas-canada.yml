@@ -1,0 +1,22 @@
+name: QA - Geometry 8 shaded areas Canada
+on:
+  push:
+    paths:
+      - 'evaluaciones/areas-sombreadas-canada/**'
+      - '.github/workflows/qa-shaded-areas-canada.yml'
+  pull_request:
+    paths:
+      - 'evaluaciones/areas-sombreadas-canada/**'
+      - '.github/workflows/qa-shaded-areas-canada.yml'
+jobs:
+  static-qa:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate four public diagram prompts and client
+        run: node --test evaluaciones/areas-sombreadas-canada/qa.test.cjs
