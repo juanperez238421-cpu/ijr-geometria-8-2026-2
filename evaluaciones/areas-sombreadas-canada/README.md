@@ -1,75 +1,62 @@
-# Quiz virtual · Áreas sombreadas · Geometría 8°
+# Evaluación virtual · Áreas sombreadas · Geometría 8°
 
-Instituto Jorge Robledo · Periodo 3 de 2026
+Instituto Jorge Robledo · 2026, periodo 3 · estudiantes en Canadá.
 
-**ESTADO: PREPARACIÓN / VISTA PREVIA — NO ES UN EXAMEN OFICIAL.**
+**PÁGINA PÚBLICA:** https://juanperez238421-cpu.github.io/ijr-geometria-8-2026-2/evaluaciones/areas-sombreadas-canada/
 
-Esta carpeta contiene la estructura visual para una evaluación virtual de estudiantes que estarán fuera de Colombia (Canadá). Se reserva el espacio para **tres ejercicios**, cada uno compuesto por **entre 3 y 5 figuras geométricas**. Los enunciados y las animaciones se integrarán cuando Opus los entregue y el docente los valide.
+Cuatro problemas con enunciados y diagramas SVG de alta definición, siguiendo las cuatro imágenes aprobadas. En el navegador no se incluyen respuestas ni pasos de solución.
 
-## Acceso a la interfaz
+## Los cuatro ejercicios
 
-- Publicación futura bajo GitHub Pages: \`/ijr-geometria-8-2026-2/evaluaciones/areas-sombreadas-canada/\`
-- Abrir \`index.html\`. Para probar la vista previa debe usarse un navegador compatible con la Fullscreen API.
-- El botón de evaluación **oficial permanece deshabilitado**. No hay credenciales, resultados, calificaciones ni soluciones públicas.
-- El modo de prueba no debe compartirse como enlace de evaluación final.
+1. Sector anular de **270°**: R = 6 cm; r = 3 cm.
+2. Círculo inscrito en un cuadrado: lado = 12 cm; r = 6 cm.
+3. Semicírculo y triángulo: diámetro = 12 cm; altura = 6 cm.
+4. Cuatro cuartos de círculo en un cuadrado: lado = 14 cm; radio = 7 cm.
 
-## Layout
+**Instrucción común:** Observa la figura y calcula el área de la región sombreada. Expresa tu respuesta en cm². Usa π = 3.14 cuando sea necesario.
 
-1. Portada de instrucciones y estado de preparación.
-2. Sesión a pantalla completa: navegación de tres preguntas, enunciado, zona grande para imagen/animación, respuesta numérica con unidad y razonamiento escrito.
-3. Panel superior: tiempo transcurrido, avance y contador de incidencias.
-4. Incidencias: salida del modo pantalla completa, cambio de pestaña o pérdida de foco. Un evento puede disparar varias señales, pero se contabiliza una sola vez hasta reanudar. Tras la tercera incidencia se bloquea la simulación y se muestra un resumen.
-5. Cierre con resumen local **sin envío académico**.
+## Proceso estudiantil
 
-## Integración con el material de Opus
+1. Escribe nombre y apellido, selecciona grupo (8A, 8B, 8C o movilidad) y acepta las reglas.
+2. Activa pantalla completa e inicia. El intento se crea en la base privada de Supabase.
+3. Navega entre los 4 ejercicios libremente. Las respuestas se guardan automáticamente en el servidor.
+4. Responde con área, unidades (cm²) y justificación en texto.
+5. Pulsa **Enviar evaluación** y conserva el identificador de comprobante.
 
-Editar exclusivamente \`manifest.json\` e incorporar imágenes SVG, PNG, WebP o clips MP4/WebM en una subcarpeta \`assets/\` dentro de este módulo. Un ejemplo del formato esperado:
+La sesión queda vinculada a un token aleatorio de 256 bits guardado en el navegador (sessionStorage); el servidor guarda solo su hash SHA-256. Nunca se publican datos estudiantiles, claves o soluciones en el repositorio.
 
-\`\`\`json
-{
-  "id": "P01",
-  "ready": true,
-  "title": "Título revisado por el docente",
-  "statement": "Enunciado sin solución...",
-  "diagram": "assets/p01-diagrama.svg",
-  "figure_count": 4
-}
-\`\`\`
+## Tres incidencias
 
-Los archivos de manifest deben contener exactamente P01, P02 y P03 y un \`figure_count\` válido de 3, 4 o 5. El cliente inserta enunciados como texto para evitar la ejecución de HTML. Las animaciones que se muestren durante el examen deben contener **solo el planteamiento**, nunca la solución paso a paso. Las soluciones de Opus deben publicarse aparte **después de finalizar la convocatoria**, bajo control del docente.
+El frontend vigila fullscreenchange, visibilitychange y blur y registra un incidente por salida para evitar contabilizaciones duplicadas de un mismo cambio. Los eventos se guardan en la tabla privada geo8_canada_quiz_attempts, junto con la hora del servidor. Tras tres eventos el servidor marca la sesión como **blocked** y no admite nuevas respuestas ni entregas. El docente deberá revisar las circunstancias; una salida de pantalla completa **no demuestra plagio**. La página no puede impedir capturas, móviles externos ni edición del navegador, y los eventos pueden ser omitidos por usuarios técnicamente avanzados. La regla se comunica explícitamente antes del inicio.
 
-**Validación matemática:** antes de activar cada pregunta, cotejar construcción geométrica, proporciones, cotas, solapamientos, región sombreada, método analítico, resultado exacto/aproximado y unidades. No insertar contenido sin esta revisión.
+El temporizador es informativo; no se inventó una duración o fecha límite, pues aún no fueron fijadas por el docente.
 
-## Limitaciones y garantías que faltan para publicar
+## Backend aislado
 
-GitHub Pages es un hosting **estático**: ni oculta respuestas de manera segura, ni garantiza identidad, ni almacena envíos oficiales, ni impide una segunda pantalla, capturas o uso de otro dispositivo. La Fullscreen API tampoco puede impedir que un estudiante abandone el navegador. Los contadores \`sessionStorage\`, el cronómetro y el bloqueo actuales son **solo una simulación frontend** y pueden alterarse. No deben usarse para imponer una sanción o registrar una nota.
+- Supabase project: `rlfxnjbqxbozjdzkbwlz`
+- Edge Function: `geometry8-canada-quiz`
+- Tabla privada (RLS, sin grants a anon/authenticated): `public.geo8_canada_quiz_attempts`
+- Operaciones: start, status, answer, incident, submit
+- La función de borde usa service role **únicamente en servidor**, con token opaco por intento. Un cliente no puede consultar otros intentos sin token.
+- Aún no hay un panel docente dentro de la página. Un docente con acceso a Supabase puede revisar registros privados mediante consultas autorizadas.
 
-Para una versión oficial se requiere un backend autenticado, con inicio autorizado por el docente, expiración validada en servidor, persistencia transaccional de respuestas, registros con hora del servidor, eventos idempotentes, bloqueo supervisable, control de versiones de preguntas y calificación privada. Contrato de API sugerido:
+Ejemplo de reporte para un administrador autenticado en Supabase (consulta ejecutada solo en servidor):
 
-\`\`\`txt
-POST  /api/geometry8/shaded-areas/sessions
-PATCH /api/geometry8/shaded-areas/sessions/:id/answers/:problemId
-POST  /api/geometry8/shaded-areas/sessions/:id/events
-POST  /api/geometry8/shaded-areas/sessions/:id/submit
-GET   /api/geometry8/shaded-areas/sessions/:id/status
-\`\`\`
+```sql
+select student_name, student_group, state, strikes, answers, started_at, submitted_at
+from public.geo8_canada_quiz_attempts
+order by started_at desc;
+```
 
-La salida de pantalla completa puede deberse también a notificaciones, permisos, fallos del navegador o necesidades de accesibilidad. Configurar excepciones aprobadas previamente, revisión docente y un procedimiento de apelación. Una incidencia técnica no demuestra plagio.
+El registro por nombre no comprueba por sí mismo identidad institucional y los incidentes del navegador no son supervisión invulnerable. Se recomienda acceso mediante cuentas escolares para próximas convocatorias, validación de identidad, política de recuperación y revisión docente.
 
-## Lista de control QA previa a publicación
+## QA
 
-- [ ] Revisar visualmente en 1440 × 900, 1366 × 768 y pantalla móvil.
-- [ ] Comprobar funcionamiento en Chrome/Edge de escritorio con Fullscreen API.
-- [ ] Comprobar 3 alertas aisladas, deduplicación de \`fullscreenchange\`, \`visibilitychange\` y \`blur\`, bloqueo después de la tercera y reanudación entre alertas.
-- [ ] Verificar navegación 1→2→3→1, conservación de respuestas en vista previa y unidades.
-- [ ] Comprobar recarga, volver atrás, sesión interrumpida y navegador sin fullscreen.
-- [ ] Validar contraste, teclado, texto ampliado y alternativas accesibles.
-- [ ] Integrar los 3 ejercicios de Opus y comprobar sus 3–5 figuras.
-- [ ] Revisar manualmente cada solución con dos métodos independientes y validar que no sea visible antes del cierre.
-- [ ] Implementar y probar servidor, permisos, persistencia y auditoría.
-- [ ] Fijar duración, horario según zona horaria del servidor y ventanas de acceso para Canadá/Colombia.
-- [ ] Realizar prueba con cuentas estudiantiles ficticias y revisar los registros reales antes de activar el botón oficial.
+```bash
+node --test evaluaciones/areas-sombreadas-canada/qa.test.cjs
+```
 
-## Separación del repositorio
-
-Este módulo reside solo en \`evaluaciones/areas-sombreadas-canada/\`. No se modifica la página principal ni se añade navegación estudiantil mientras no esté listo.
+- 4 manifest entries completadas; SVG individuales bajo assets/.
+- 4 controles de navegación, 3 indicadores de incidencias y envío.
+- No hay claves de respuestas ni enlace de solución.
+- Validar manualmente navegador Edge/Chrome en desktop, viewport móvil y servicio de Supabase antes de usar para asignar una nota.
