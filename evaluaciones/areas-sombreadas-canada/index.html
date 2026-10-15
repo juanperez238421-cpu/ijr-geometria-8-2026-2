@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f7fc">
+  <meta name="description" content="Evaluación virtual de áreas sombreadas, Geometría 8°, Instituto Jorge Robledo.">
+  <title>Áreas sombreadas | Evaluación virtual | Geometría 8°</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="../../assets/logo_ijr.svg" width="54" height="60" alt="Escudo del Instituto Jorge Robledo">
+        <div>
+          <span class="brand-school">Instituto Jorge Robledo</span>
+          <span class="brand-course">GEOMETRÍA <strong>08</strong> <span class="tiny-sep">/</span> EVALUACIÓN DIGITAL</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-year">2026 · Tercer periodo</span>
+        <span class="status-pill" id="topStatus"><span class="status-dot"></span> EN PREPARACIÓN</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="welcome view" id="welcomeView" aria-labelledby="welcomeTitle">
+        <div class="welcome-copy">
+          <div class="eyebrow"><span class="eyebrow-line"></span> EVALUACIÓN DE GEOMETRÍA · OCTAVO GRADO</div>
+          <h1 id="welcomeTitle">El área está <span>en los detalles.</span></h1>
+          <p class="welcome-lead">Evaluación individual de <strong>áreas sombreadas</strong> en figuras compuestas. Tres desafíos de razonamiento geométrico, con diagramas producidos específicamente para esta prueba.</p>
+          <div class="stats-grid">
+            <div class="stat"><span class="stat-number">03</span><span class="stat-label">Problemas</span></div>
+            <div class="stat"><span class="stat-number">3–5</span><span class="stat-label">Figuras por problema</span></div>
+            <div class="stat"><span class="stat-number">03</span><span class="stat-label">Alertas máximas</span></div>
+          </div>
+          <div class="instructions">
+            <h2>Antes de comenzar</h2>
+            <p>La prueba oficial solicitará identificación y apertura a pantalla completa. Cambiar de pestaña, abandonar la ventana o salir del modo de pantalla completa genera una incidencia. Al llegar a tres, se bloquea la sesión para revisión del docente.</p>
+            <p class="muted-small"><strong>Estado actual:</strong> estructura en construcción. No hay problemas publicados, respuestas oficiales ni envío de calificaciones.</p>
+          </div>
+          <div class="welcome-actions">
+            <button class="btn btn-primary" type="button" id="previewStart">Explorar vista previa <span aria-hidden="true">↗</span></button>
+            <button class="btn btn-disabled" type="button" disabled title="Se habilitará después de incorporar los ejercicios y el backend">Iniciar evaluación oficial <span aria-hidden="true">→</span></button>
+          </div>
+          <p class="preview-disclaimer">La vista previa es una simulación local para revisar diseño y eventos. No constituye un examen.</p>
+        </div>
+
+        <div class="welcome-visual" aria-hidden="true">
+          <div class="visual-top"><span>GEO / 08</span><span>SHAPES · AREAS · REASONING</span></div>
+          <div class="visual-board">
+            <svg viewBox="0 0 560 460" role="presentation" focusable="false">
+              <defs>
+                <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#e9eef7" stroke-width="1"/></pattern>
+              </defs>
+              <rect x="0" y="0" width="560" height="460" fill="url(#grid)"/>
+              <rect x="62" y="85" width="312" height="278" rx="3" fill="#e8eefc" stroke="#315ebd" stroke-width="3"/>
+              <path d="M62 363 L374 363 L374 207 Z" fill="#91aef2" opacity=".76"/>
+              <circle cx="312" cy="225" r="114" fill="#fff" stroke="#1b3d82" stroke-width="3"/>
+              <path d="M312 111 A114 114 0 0 1 426 225 L312 225 Z" fill="#2869e0" opacity=".82"/>
+              <path d="M101 320 L188 143 L264 320 Z" fill="#f6bf72" opacity=".91" stroke="#ad7d3e" stroke-width="3"/>
+              <path d="M62 363L374 363M62 85V363" stroke="#173d79" stroke-width="3"/>
+              <path d="M62 384H374M42 85V363" stroke="#6585b0" stroke-width="1.5" stroke-dasharray="5 7"/>
+              <circle cx="312" cy="225" r="4" fill="#1b3d82"/>
+              <text x="75" y="68" fill="#315ebd" font-size="15" font-family="Arial, sans-serif" letter-spacing="4">COMPOSITE GEOMETRY</text>
+              <text x="348" y="403" fill="#70819f" font-size="13" font-family="Arial, sans-serif">SCHEMATIC / DECORATIVE</text>
+            </svg>
+          </div>
+          <div class="visual-caption"><span>01 / 03 — DISEÑO PRELIMINAR</span><span class="visual-bar"></span><span>COMPOSITION STUDY</span></div>
+        </div>
+      </section>
+
+      <section class="exam view hidden" id="examView" aria-labelledby="examHeading">
+        <div class="exam-topline">
+          <div><p class="eyebrow exam-eyebrow">GEOMETRÍA 8° <span class="tiny-sep">/</span> PRUEBA VIRTUAL</p><h1 id="examHeading">Áreas sombreadas</h1></div>
+          <div class="exam-metrics">
+            <div class="metric"><span>TIEMPO TRANSCURRIDO</span><strong id="clock" aria-live="off">00:00</strong></div>
+            <div class="metric"><span>INCIDENCIAS</span><div class="strike-dots" id="strikeDots" aria-label="0 de 3 incidencias"><i></i><i></i><i></i></div></div>
+            <div class="metric"><span>AVANCE</span><strong id="progress">0 / 3</strong></div>
+          </div>
+        </div>
+        <div class="preview-ribbon" role="status"><strong>VISTA PREVIA · NO OFICIAL</strong><span>Enunciados e imágenes pendientes de Opus. Las respuestas no se envían ni califican.</span></div>
+        <div class="exam-layout">
+          <nav class="problem-rail" aria-label="Navegación de ejercicios">
+            <div class="rail-top"><span class="rail-overline">CUESTIONARIO</span><strong>Problemas</strong><small>Selecciona un ejercicio</small></div>
+            <div id="problemNavigation" class="rail-nav">
+              <button type="button" class="rail-item selected" data-problem="0" aria-current="step"><span class="rail-num">01</span><span class="rail-copy"><strong>Problema 01</strong><small>Pendiente de integrar</small></span><span class="rail-state">○</span></button>
+              <button type="button" class="rail-item" data-problem="1"><span class="rail-num">02</span><span class="rail-copy"><strong>Problema 02</strong><small>Pendiente de integrar</small></span><span class="rail-state">○</span></button>
+              <button type="button" class="rail-item" data-problem="2"><span class="rail-num">03</span><span class="rail-copy"><strong>Problema 03</strong><small>Pendiente de integrar</small></span><span class="rail-state">○</span></button>
+            </div>
+            <div class="rail-bottom"><span class="shield">◇</span><p>Sesión de demostración con control de incidencias de pantalla completa.</p></div>
+          </nav>
+          <div class="question-column">
+            <article class="question-card">
+              <div class="question-header"><span class="question-index" id="questionCounter">EJERCICIO 01 DE 03</span><span class="question-type">ÁREA SOMBREADA · FIGURA COMPUESTA</span></div>
+              <h2 id="questionTitle">Composición geométrica pendiente</h2>
+              <p class="question-statement" id="questionStatement">Aquí se integrará el enunciado definitivo cuando estén aprobados los problemas diseñados en Opus. Cada ejercicio tendrá entre 3 y 5 figuras.</p>
+              <div class="diagram-frame" id="diagramFrame" aria-label="Diagrama pendiente de incorporar">
+                <div class="diagram-placeholder">
+                  <div class="placeholder-glyph" aria-hidden="true">▱</div>
+                  <strong>Espacio reservado para la figura</strong>
+                  <span>SVG / animación de enunciado · pendiente de Opus</span>
+                  <span class="placeholder-footnote">No se muestran soluciones durante el examen.</span>
+                </div>
+              </div>
+              <div class="diagram-bottom"><span>DIAGRAMA <strong id="diagramNumber">01</strong> / 03</span><span id="figureCount">3 a 5 figuras · por definir</span></div>
+            </article>
+            <div class="question-pager"><button type="button" class="btn btn-outline" id="prevButton" disabled>← Anterior</button><span id="pageIndicator">01 / 03</span><button type="button" class="btn btn-primary" id="nextButton">Siguiente →</button></div>
+          </div>
+          <aside class="answer-card" aria-labelledby="answerHeading">
+            <div class="answer-heading"><span class="answer-icon" aria-hidden="true">✎</span><div><span>TU RESPUESTA</span><h2 id="answerHeading">Desarrolla la solución</h2></div></div>
+            <label class="field-label" for="areaValue">Área sombreada calculada</label>
+            <div class="value-field"><input type="text" inputmode="decimal" autocomplete="off" id="areaValue" placeholder="Ej. 24,5" aria-describedby="inputHelp" spellcheck="false"><select id="areaUnit" aria-label="Unidad de área"><option value="">Unidad</option><option value="cm²">cm²</option><option value="mm²">mm²</option><option value="m²">m²</option><option value="u²">u²</option></select></div>
+            <p class="field-hint" id="inputHelp">Acepta valores decimales con coma o punto.</p>
+            <label class="field-label steps-label" for="reasoning">Explica tu procedimiento</label>
+            <textarea id="reasoning" rows="9" maxlength="5000" placeholder="1. Identifico las figuras…&#10;2. Calculo el área de cada una…&#10;3. Sumo o resto las áreas…"></textarea>
+            <div class="save-note" id="saveStatus" role="status">Borrador local · sin envío</div>
+            <div class="answer-divider"></div>
+            <div class="checklist-label">CRITERIOS DE LA PRUEBA</div>
+            <ul class="criteria"><li><span>✓</span> Identificar las figuras geométricas</li><li><span>✓</span> Seleccionar las fórmulas correctas</li><li><span>✓</span> Justificar las operaciones</li><li><span>✓</span> Expresar el resultado con unidades</li></ul>
+            <button type="button" class="btn btn-secondary end-button" id="finishButton">Terminar simulación</button>
+            <button type="button" class="text-button" id="simulateStrike">Simular una incidencia (prueba QA)</button>
+          </aside>
+        </div>
+      </section>
+
+      <section class="result view hidden" id="resultView" aria-labelledby="resultHeading">
+        <div class="result-card"><div class="result-icon" id="resultIcon">◇</div><p class="eyebrow">VISTA PREVIA / CONTROL DE CALIDAD</p><h1 id="resultHeading">Simulación finalizada</h1><p id="resultDescription">La interfaz está lista para recibir los problemas definitivos. No se ha registrado ni calificado ningún examen.</p><div id="resultSummary" class="result-summary"></div><button type="button" class="btn btn-primary" id="restartButton">Volver a la portada</button></div>
+      </section>
+    </main>
+    <footer class="site-footer"><span>© Instituto Jorge Robledo · Geometría 8° · 2026</span><span>Interfaz de preparación · No disponible para evaluación oficial</span></footer>
+  </div>
+
+  <div class="modal-backdrop hidden" id="incidentModal" role="presentation">
+    <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalText">
+      <span class="modal-eyebrow" id="modalEyebrow">CONTROL DE INTEGRIDAD</span><div class="modal-symbol" id="modalSymbol">!</div>
+      <h2 id="modalTitle">Salida detectada</h2><p id="modalText">La evaluación debe permanecer a pantalla completa.</p>
+      <div class="modal-strikes" id="modalStrikeCount">1 de 3 incidencias</div><button class="btn btn-primary modal-action" id="modalAction" type="button">Volver a pantalla completa</button>
+      <p class="modal-foot" id="modalFoot">Las incidencias repetidas se contabilizan una sola vez por salida.</p>
+    </div>
+  </div>
+</body>
+</html>
