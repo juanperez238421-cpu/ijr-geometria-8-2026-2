@@ -1,401 +1,265 @@
 "use strict";
-
-/**
- * IJR Geometry 8 - Shaded Areas / Canada quiz shell
- * PREVIEW ONLY. No official exam or identity/grades are stored here.
- * Never put answer keys, student records or privileged credentials in static assets.
- */
-(function () {
-  const STORAGE_KEY = "ijr-geo8-canada-preview-v1";
-  const STRIKE_LIMIT = 3;
-  const INCIDENT_DEBOUNCE_MS = 2200;
-  const DEFAULT_STATEMENT = "Aquí se integrará el enunciado definitivo cuando estén aprobados los problemas diseñados en Opus. Cada ejercicio tendrá entre 3 y 5 figuras.";
-  const $ = (id) => document.getElementById(id);
-  const state = {
-    status: "welcome",
-    problem: 0,
-    strikes: 0,
-    startAt: null,
-    lastIncidentAt: 0,
-    answers: [{value: "", unit: "", reasoning: ""}, {value: "", unit: "", reasoning: ""}, {value: "", unit: "", reasoning: ""}],
-    incidents: [],
-    armed: false
-  };
-  let problems = Array.from({length: 3}, (_, index) => ({
-    id: "P0" + (index + 1), ready: false, title: null,
-    statement: null, diagram: null, figure_count: null
-  }));
-  let lastFocusTimeout = null;
-
-  function show(viewId) {
-    ["welcomeView", "examView", "resultView"].forEach((id) => $(id).classList.toggle("hidden", id !== viewId));
-  }
-
-  function save() {
-    try {
-      const snapshot = {
-        status: state.status, problem: state.problem, strikes: state.strikes,
-        startAt: state.startAt, lastIncidentAt: state.lastIncidentAt,
-        answers: state.answers, incidents: state.incidents
-      };
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-    } catch (_) {
-      // Storage can be disabled or exhausted. Preview still works in memory.
-    }
-  }
-
-  function load() {
-    try {
-      const snapshot = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "null");
-      if (!snapshot || !Array.isArray(snapshot.answers) || snapshot.answers.length !== 3) return false;
-      if (!["active", "paused", "locked", "finished"].includes(snapshot.status)) return false;
-      state.status = snapshot.status;
-      state.problem = Number.isInteger(snapshot.problem) && snapshot.problem >= 0 && snapshot.problem < 3 ? snapshot.problem : 0;
-      state.strikes = Math.min(STRIKE_LIMIT, Math.max(0, Number(snapshot.strikes) || 0));
-      state.startAt = Number(snapshot.startAt) > 0 ? snapshot.startAt : Date.now();
-      state.answers = snapshot.answers.map((a) => ({
-        value: String(a && a.value || "").slice(0, 50),
-        unit: ["", "cm²", "mm²", "m²", "u²"].includes(a && a.unit) ? a.unit : "",
-        reasoning: String(a && a.reasoning || "").slice(0, 5000)
-      }));
-      state.incidents = Array.isArray(snapshot.incidents) ? snapshot.incidents.slice(-3) : [];
-      state.armed = false;
-      return true;
-    } catch (_) { return false; }
-  }
-
-  function updateStatus() {
-    const element = $("topStatus");
-    const label = ({
-      welcome: "EN PREPARACIÓN", active: "VISTA PREVIA",
-      paused: "SESIÓN PAUSADA", locked: "SESIÓN BLOQUEADA", finished: "SIMULACIÓN TERMINADA"
-    })[state.status] || "EN PREPARACIÓN";
-    element.innerHTML = '<span class="status-dot"></span> ' + label;
-  }
-
-  function formattedTime(ms) {
-    const seconds = Math.max(0, Math.floor(ms / 1000));
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor(seconds / 60) % 60;
-    const s = seconds % 60;
-    const pair = (n) => String(n).padStart(2, "0");
-    return h ? pair(h) + ":" + pair(m) + ":" + pair(s) : pair(m) + ":" + pair(s);
-  }
-
-  function tickClock() {
-    if (state.startAt && ["active", "paused"].includes(state.status)) {
-      $("clock").textContent = formattedTime(Date.now() - state.startAt);
-    }
-  }
-
-  function numericValid(value) {
-    if (!/^\d+(?:[.,]\d+)?$/.test(value.trim())) return false;
-    return Number.isFinite(Number(value.replace(",", ".")));
-  }
-
-  function completedCount() {
-    return state.answers.filter((answer) => numericValid(answer.value) && !!answer.unit && answer.reasoning.trim().length >= 10).length;
-  }
-
-  function updateProgress() {
-    $("progress").textContent = completedCount() + " / 3";
-    $("strikeDots").setAttribute("aria-label", state.strikes + " de 3 incidencias");
-    Array.from($("strikeDots").children).forEach((node, i) => node.classList.toggle("active", i < state.strikes));
-    document.querySelectorAll(".rail-item").forEach((button, i) => {
-      const answer = state.answers[i];
-      const done = numericValid(answer.value) && !!answer.unit && answer.reasoning.trim().length >= 10;
-      const isSelected = i === state.problem;
-      button.classList.toggle("selected", isSelected);
-      button.classList.toggle("complete", done);
-      button.querySelector(".rail-state").textContent = done ? "✓" : "○";
-      if (isSelected) button.setAttribute("aria-current", "step");
-      else button.removeAttribute("aria-current");
-    });
-  }
-
-  function defaultDiagram(frame) {
-    frame.innerHTML =
-      '<div class="diagram-placeholder">' +
-      '<div class="placeholder-glyph" aria-hidden="true">▱</div>' +
-      '<strong>Espacio reservado para la figura</strong>' +
-      '<span>SVG / animación de enunciado · pendiente de Opus</span>' +
-      '<span class="placeholder-footnote">No se muestran soluciones durante el examen.</span>' +
-      '</div>';
-    frame.setAttribute("aria-label", "Diagrama pendiente de incorporar");
-  }
-
-  function renderDiagram(problem) {
-    const frame = $("diagramFrame");
-    frame.replaceChildren();
-    // Same-origin, versioned public diagram assets only. Never use inline HTML from the manifest.
-    const src = problem && typeof problem.diagram === "string" ? problem.diagram : "";
-    const valid = /^assets\/[a-zA-Z0-9/_-]+\.(svg|png|webp|mp4|webm)$/.test(src);
-    if (!problem.ready || !valid) { defaultDiagram(frame); return; }
-    const video = /\.(mp4|webm)$/.test(src);
-    const node = document.createElement(video ? "video" : "img");
-    node.src = src;
-    node.className = "problem-media";
-    node.setAttribute("aria-label", "Diagrama del problema " + (state.problem + 1));
-    if (video) {
-      node.controls = true;
-      node.preload = "metadata";
-      node.playsInline = true;
-      node.loop = false;
-    } else {
-      node.alt = "Figura geométrica del problema " + (state.problem + 1);
-      node.loading = "eager";
-    }
-    node.addEventListener("error", () => defaultDiagram(frame), {once: true});
-    frame.appendChild(node);
-    frame.setAttribute("aria-label", "Diagrama del problema " + (state.problem + 1));
-  }
-
-  function renderProblem() {
-    const index = state.problem, problem = problems[index];
-    $("questionCounter").textContent = "EJERCICIO 0" + (index + 1) + " DE 03";
-    $("questionTitle").textContent = problem.ready && problem.title ? problem.title : "Composición geométrica pendiente";
-    $("questionStatement").textContent = problem.ready && problem.statement ? problem.statement : DEFAULT_STATEMENT;
-    $("diagramNumber").textContent = "0" + (index + 1);
-    $("figureCount").textContent = problem.ready && Number.isInteger(problem.figure_count) ?
-      problem.figure_count + " figuras geométricas" : "3 a 5 figuras · por definir";
-    $("pageIndicator").textContent = "0" + (index + 1) + " / 03";
-    $("prevButton").disabled = index === 0;
-    $("nextButton").textContent = index === 2 ? "Volver al inicio ↺" : "Siguiente →";
-    const answer = state.answers[index];
-    $("areaValue").value = answer.value;
-    $("areaUnit").value = answer.unit;
-    $("reasoning").value = answer.reasoning;
-    $("saveStatus").textContent = "Borrador local · sin envío";
-    renderDiagram(problem);
-    updateProgress();
-  }
-
-  function saveAnswer() {
-    if (!["active", "paused"].includes(state.status)) return;
-    state.answers[state.problem] = {
-      value: $("areaValue").value.slice(0, 50),
-      unit: $("areaUnit").value,
-      reasoning: $("reasoning").value.slice(0, 5000)
-    };
-    save();
-    updateProgress();
-    $("saveStatus").textContent = "Borrador de demostración actualizado · sin envío";
-  }
-
-  function selectProblem(index) {
-    if (state.status !== "active" || index < 0 || index >= 3) return;
-    saveAnswer();
-    state.problem = index;
-    save();
-    renderProblem();
-  }
-
-  function errorMessage(message) {
-    let node = $("runtimeNotice");
-    if (!node) {
-      node = document.createElement("p");
-      node.id = "runtimeNotice";
-      node.style.cssText = "color:#b53c44;font-size:12px;max-width:560px;margin:10px 0";
-      $("previewStart").closest(".welcome-actions").after(node);
-    }
-    node.textContent = message;
-  }
-
-  async function enterFullscreen() {
-    if (document.fullscreenElement) return true;
-    if (!document.fullscreenEnabled || !document.documentElement.requestFullscreen) {
-      errorMessage("Este navegador no permite activar pantalla completa mediante esta página. Para una evaluación supervisada usa un navegador de escritorio compatible; el docente deberá definir una alternativa accesible.");
-      return false;
-    }
-    try {
-      await document.documentElement.requestFullscreen({navigationUI: "hide"});
-      return !!document.fullscreenElement;
-    } catch (_) {
-      errorMessage("No se pudo activar pantalla completa. Revisa los permisos del navegador y vuelve a pulsar el botón.");
-      return false;
-    }
-  }
-
-  async function startPreview() {
-    const ok = await enterFullscreen();
-    if (!ok) return;
-    state.status = "active";
-    state.problem = 0;
-    state.strikes = 0;
-    state.startAt = Date.now();
-    state.lastIncidentAt = 0;
-    state.answers = [{value:"",unit:"",reasoning:""},{value:"",unit:"",reasoning:""},{value:"",unit:"",reasoning:""}];
-    state.incidents = [];
-    state.armed = true;
-    $("incidentModal").classList.add("hidden");
-    show("examView");
-    renderProblem();
-    updateStatus();
-    tickClock();
-    save();
-  }
-
-  function showIncidentModal(reason) {
-    const locked = state.status === "locked";
-    $("modalEyebrow").textContent = locked ? "LÍMITE DE INCIDENCIAS ALCANZADO" : "CONTROL DE INTEGRIDAD";
-    $("modalTitle").textContent = locked ? "Sesión bloqueada" : "Salida detectada";
-    $("modalText").textContent = locked ?
-      "Se registraron tres salidas. La sesión de prueba queda bloqueada. Una evaluación oficial requerirá revisión del docente antes de cualquier decisión académica." :
-      "Se detectó una salida del entorno de examen (" + reason + "). Debes regresar a pantalla completa para continuar.";
-    $("modalStrikeCount").textContent = state.strikes + " de " + STRIKE_LIMIT + " incidencias";
-    $("modalAction").textContent = locked ? "Ver resumen de la simulación" : "Volver a pantalla completa";
-    $("modalSymbol").textContent = locked ? "×" : "!";
-    $("modalFoot").textContent = locked ?
-      "Esto es una simulación local; no se ha enviado ningún reporte académico." :
-      "Salir de pantalla completa o cambiar de pestaña pausa la actividad.";
-    $("incidentModal").classList.remove("hidden");
-    if (!document.hidden) $("modalAction").focus();
-  }
-
-  function incident(reason) {
-    if (state.status !== "active" || !state.armed) return;
-    const now = Date.now();
-    if (now - state.lastIncidentAt < INCIDENT_DEBOUNCE_MS) return;
-    state.lastIncidentAt = now;
-    state.armed = false; // One departure = one strike (even if multiple events fire).
-    state.strikes = Math.min(STRIKE_LIMIT, state.strikes + 1);
-    state.incidents.push({number: state.strikes, reason, at: new Date(now).toISOString()});
-    state.status = state.strikes >= STRIKE_LIMIT ? "locked" : "paused";
-    saveAnswer();
-    updateStatus();
-    updateProgress();
-    save();
-    showIncidentModal(reason);
-  }
-
-  async function resumeOrShowResult() {
-    if (state.status === "locked") {
-      finish(true);
-      return;
-    }
-    if (state.status !== "paused") return;
-    const ok = await enterFullscreen();
-    if (!ok) return;
-    state.status = "active";
-    state.armed = true;
-    $("incidentModal").classList.add("hidden");
-    updateStatus();
-    updateProgress();
-    save();
-  }
-
-  function finish(blocked) {
-    // Also render an already-finished preview restored from sessionStorage.
-    const isLocked = !!blocked || state.status === "locked";
-    if (state.status === "active") saveAnswer();
-    state.status = isLocked ? "locked" : "finished";
-    state.armed = false;
-    updateStatus();
-    $("incidentModal").classList.add("hidden");
-    show("resultView");
-    $("resultIcon").textContent = isLocked ? "!" : "◇";
-    $("resultHeading").textContent = isLocked ? "Simulación bloqueada" : "Simulación finalizada";
-    $("resultDescription").textContent = isLocked ?
-      "Se alcanzó el límite de tres incidencias. En la versión real el docente deberá poder revisar el registro y desbloquear o validar la sesión." :
-      "Probaste la interfaz de respuestas. Los ejercicios definitivos aún no se han incorporado y no hay ningún envío ni calificación.";
-    $("resultSummary").textContent =
-      "Problemas con valor, unidad y procedimiento: " + completedCount() + " de 3\n" +
-      "Incidencias registradas: " + state.strikes + " de 3\n" +
-      "Modo: demostración sin persistencia remota";
-    save();
-    if (document.fullscreenElement && document.exitFullscreen) {
-      document.exitFullscreen().catch(() => {});
-    }
-  }
-
-  function reset() {
-    try { sessionStorage.removeItem(STORAGE_KEY); } catch (_) {}
-    state.status = "welcome";
-    state.armed = false;
-    state.startAt = null;
-    state.strikes = 0;
-    state.incidents = [];
-    show("welcomeView");
-    updateStatus();
-    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
-  }
-
-  async function loadManifest() {
-    try {
-      const response = await fetch("./manifest.json", {cache: "no-store"});
-      if (!response.ok) return;
-      const data = await response.json();
-      if (!Array.isArray(data.problems) || data.problems.length !== 3) return;
-      problems = data.problems.map((p, i) => ({
-        id: "P0" + (i + 1),
-        ready: p.ready === true && !!p.statement &&
-          Number.isInteger(p.figure_count) && p.figure_count >= 3 && p.figure_count <= 5,
-        title: typeof p.title === "string" ? p.title.slice(0, 160) : null,
-        statement: typeof p.statement === "string" ? p.statement.slice(0, 3000) : null,
-        diagram: typeof p.diagram === "string" ? p.diagram : null,
-        figure_count: p.figure_count
-      }));
-      if (state.status === "active" || state.status === "paused") renderProblem();
-    } catch (_) {
-      // Static file:// previews might not support fetch; placeholders still render.
-    }
-  }
-
-  function bind() {
-    $("previewStart").addEventListener("click", startPreview);
-    $("prevButton").addEventListener("click", () => selectProblem(state.problem - 1));
-    $("nextButton").addEventListener("click", () => selectProblem(state.problem === 2 ? 0 : state.problem + 1));
-    document.querySelectorAll(".rail-item").forEach((button) =>
-      button.addEventListener("click", () => selectProblem(Number(button.dataset.problem))));
-    ["areaValue", "areaUnit", "reasoning"].forEach((id) => $(id).addEventListener("input", saveAnswer));
-    $("areaUnit").addEventListener("change", saveAnswer);
-    $("finishButton").addEventListener("click", () => finish(false));
-    $("simulateStrike").addEventListener("click", () => incident("simulación de salida QA"));
-    $("modalAction").addEventListener("click", resumeOrShowResult);
-    $("restartButton").addEventListener("click", reset);
-
-    document.addEventListener("fullscreenchange", () => {
-      if (state.status === "active" && state.armed && !document.fullscreenElement) incident("salida de pantalla completa");
-    });
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) incident("cambio de pestaña o ventana oculta");
-      else if (state.status === "paused" || state.status === "locked") showIncidentModal("cambio de pestaña");
-    });
-    window.addEventListener("blur", () => {
-      clearTimeout(lastFocusTimeout);
-      lastFocusTimeout = setTimeout(() => {
-        if (!document.hasFocus() && !document.hidden) incident("pérdida de foco de la ventana");
-      }, 800);
-    });
-    window.addEventListener("focus", () => clearTimeout(lastFocusTimeout));
-    // The timer is informative ONLY in preview. Real assessments must use server time and expiry.
-    setInterval(tickClock, 1000);
-  }
-
-  function init() {
-    bind();
-    if (load()) {
-      if (state.status === "active") {
-        // Reloaded while an exam was in progress. Count as one new departure.
-        state.armed = true;
-        incident("recarga durante el examen");
-      }
-      if (state.status === "paused") {
-        show("examView");
-        renderProblem();
-        showIncidentModal("sesión interrumpida");
-      } else if (state.status === "locked") {
-        show("examView");
-        renderProblem();
-        showIncidentModal("sesión bloqueada");
-      } else if (state.status === "finished") finish(false);
-    } else {
-      show("welcomeView");
-    }
-    updateStatus();
-    tickClock();
-    loadManifest();
-  }
-
-  init();
+/* IJR 8°: 4 problem assessment. Answers, events and submission are stored in
+ * private Supabase data through a constrained Edge Function. Never expose keys. */
+(() => {
+ const API="https://rlfxnjbqxbozjdzkbwlz.supabase.co/functions/v1/geometry8-canada-quiz";
+ const KEY="ijr-geometry8-canada-quiz-v2";
+ const MAX=3,COUNT=4;
+ const $=id=>document.getElementById(id);
+ const state={status:"welcome",problem:0,strikes:0,startedAt:null,
+  session:null,answers:Array.from({length:COUNT},()=>({value:"",unit:"cm²",reasoning:""})),
+  armed:false,locked:false,incidentBusy:false};
+ let manifest=[];
+ let saveTimer=0,focusTimer=0,saveChain=Promise.resolve(),serverReady=false;
+ const qs=(selector)=>Array.from(document.querySelectorAll(selector));
+ const show=(id)=>["welcomeView","examView","resultView"].forEach(x=>$(x).classList.toggle("hidden",x!==id));
+ const two=x=>String(x).padStart(2,"0");
+ const duration=()=>{const sec=state.startedAt?Math.max(0,Math.floor((Date.now()-new Date(state.startedAt).getTime())/1000)):0;return (sec>=3600?two(Math.floor(sec/3600))+":":"")+two(Math.floor(sec/60)%60)+":"+two(sec%60);};
+ const correctValue=v=>/^\d+(?:[.,]\d+)?$/.test(v.trim())&&Number.isFinite(Number(v.replace(",",".")));
+ const complete=a=>correctValue(a.value)&&a.unit==="cm²"&&a.reasoning.trim().length>=10;
+ const warn=(message)=>{let e=$("runtimeNotice");if(!e){e=document.createElement("p");e.id="runtimeNotice";e.style.cssText="color:#ad3b44;font-size:12px;max-width:650px;margin:12px 0";$("previewStart").closest(".welcome-actions").after(e);}e.textContent=message;};
+ const persistSession=()=>{try{sessionStorage.setItem(KEY,JSON.stringify({session:state.session,problem:state.problem}))}catch{}};
+ const readSession=()=>{try{const obj=JSON.parse(sessionStorage.getItem(KEY)||"null");return obj?.session?.attempt_id&&obj?.session?.token?obj:null}catch{return null}};
+ async function request(action,more={}){
+   const body={action,...more};
+   if(action!=="start"){
+     if(!state.session)throw Error("La sesión no está disponible.");
+     body.attempt_id=state.session.attempt_id;body.token=state.session.token;
+   }
+   const controller=new AbortController();const t=setTimeout(()=>controller.abort(),18000);
+   try{
+     const response=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body),signal:controller.signal,cache:"no-store"});
+     const data=await response.json();
+     if(!response.ok){throw Error(data.error||"No se pudo conectar con el servidor");}
+     return data;
+   }catch(err){throw Error(err instanceof Error?err.message:"Error de conexión");}
+   finally{clearTimeout(t);}
+ }
+ function updateStatus(){
+   const names={welcome:"DISPONIBLE",active:"EN CURSO",paused:"SESIÓN PAUSADA",blocked:"BLOQUEADA",submitted:"ENTREGADA"};
+   $("topStatus").innerHTML='<span class="status-dot"></span> '+(names[state.status]||"DISPONIBLE");
+ }
+ function updateProgress(){
+   const done=state.answers.filter(complete).length;
+   $("progress").textContent=done+" / "+COUNT;
+   $("strikeDots").setAttribute("aria-label",state.strikes+" de "+MAX+" incidencias");
+   Array.from($("strikeDots").children).forEach((n,i)=>n.classList.toggle("active",i<state.strikes));
+   qs(".rail-item").forEach((b,i)=>{
+      const sel=i===state.problem,ok=complete(state.answers[i]);
+      b.classList.toggle("selected",sel);b.classList.toggle("complete",ok);
+      b.querySelector(".rail-state").textContent=ok?"✓":"○";
+      if(sel)b.setAttribute("aria-current","step");else b.removeAttribute("aria-current");
+   });
+ }
+ function render(){
+   const i=state.problem,p=manifest[i];
+   if(!p)return;
+   $("questionCounter").textContent="EJERCICIO "+two(i+1)+" DE "+two(COUNT);
+   $("questionTitle").textContent=p.title;
+   $("questionStatement").textContent=p.statement;
+   $("diagramNumber").textContent=two(i+1);
+   $("figureCount").textContent="Diagrama geométrico vectorial · HD";
+   $("pageIndicator").textContent=two(i+1)+" / "+two(COUNT);
+   $("prevButton").disabled=i===0;
+   $("nextButton").textContent=i===COUNT-1?"Volver al primero ↺":"Siguiente →";
+   const frame=$("diagramFrame");
+   frame.replaceChildren();
+   const img=document.createElement("img");
+   img.className="problem-media";img.src=p.diagram;img.alt="Problema "+(i+1)+": "+p.title+". "+p.statement;
+   img.loading="eager";img.decoding="async";
+   img.addEventListener("error",()=>{frame.textContent="No se pudo cargar la figura. Informa al docente.";}, {once:true});
+   frame.appendChild(img);
+   const a=state.answers[i];
+   $("areaValue").value=a.value;
+   $("areaUnit").value="cm²";
+   $("reasoning").value=a.reasoning;
+   $("saveStatus").textContent="Las respuestas se guardan automáticamente.";
+   updateProgress();
+ }
+ function snapshot(){
+   const i=state.problem;
+   state.answers[i]={value:$("areaValue").value.trim().slice(0,32),unit:"cm²",reasoning:$("reasoning").value.slice(0,5000)};
+   updateProgress();
+   return {problem_id:"P"+two(i+1),...state.answers[i]};
+ }
+ function queueSave(data){
+   $("saveStatus").textContent="Guardando en servidor…";
+   saveChain=saveChain.catch(()=>{}).then(async()=>{
+     const answer=await request("answer",data);
+     if(answer.saved)$("saveStatus").textContent="Guardado en servidor ✓";
+   }).catch(e=>{
+     $("saveStatus").textContent="Error al guardar. Intenta escribir nuevamente antes de enviar.";
+     console.error("Save failure",e.message);
+     throw e;
+   });
+   // prevent unhandled async rejection when user keeps typing
+   saveChain.catch(()=>{});
+   return saveChain;
+ }
+ function saveNow(){
+   if(state.status!=="active")return saveChain;
+   clearTimeout(saveTimer);
+   return queueSave(snapshot());
+ }
+ function onInput(){
+   if(state.status!=="active")return;
+   const data=snapshot();
+   clearTimeout(saveTimer);
+   saveTimer=setTimeout(()=>queueSave(data),550);
+ }
+ function select(index){
+   if(state.status!=="active"||index<0||index>=COUNT)return;
+   saveNow();
+   state.problem=index;persistSession();render();
+ }
+ async function fullscreen(){
+   if(document.fullscreenElement)return true;
+   if(!document.fullscreenEnabled||!document.documentElement.requestFullscreen){
+     warn("El navegador no permite pantalla completa. Prueba Chrome o Edge en un computador, o informa al docente para una alternativa.");return false;
+   }
+   try{await document.documentElement.requestFullscreen({navigationUI:"hide"});return !!document.fullscreenElement;}
+   catch{warn("No se pudo activar la pantalla completa. Verifica los permisos del navegador.");return false;}
+ }
+ async function loadManifest(){
+   const r=await fetch("./manifest.json",{cache:"no-store"});
+   if(!r.ok)throw Error("No se pudo cargar el examen.");
+   const m=await r.json();
+   if(!m.public_exam_enabled||!Array.isArray(m.problems)||m.problems.length!==COUNT||
+      m.problems.some(p=>!p.ready||!p.statement||!p.title||!/^assets\/[a-z0-9/_-]+\.svg$/.test(p.diagram)))throw Error("El cuestionario no está completo.");
+   manifest=m.problems;
+ }
+ async function start(){
+   const name=$("studentName").value.trim().replace(/\s+/g," ");
+   const group=$("studentGroup").value;
+   if(name.length<3||!["8A","8B","8C","OTRO"].includes(group)||!$("studentAgree").checked){
+     warn("Ingresa tu nombre, selecciona el grupo y acepta las instrucciones para comenzar.");return;
+   }
+   if(!manifest.length){warn("Las figuras aún no están disponibles. Recarga la página.");return;}
+   const ok=await fullscreen();
+   if(!ok)return;
+   $("previewStart").disabled=true;
+   try{
+     const data=await request("start",{student_name:name,student_group:group,agreed:true});
+     state.session={attempt_id:data.attempt_id,token:data.token,student_name:data.student_name,student_group:data.student_group};
+     state.startedAt=data.started_at;state.strikes=data.strikes||0;state.status="active";state.armed=true;
+     persistSession();show("examView");render();updateStatus();
+   }catch(e){
+     warn("No se pudo iniciar la evaluación: "+e.message);
+     if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});
+   }finally{$("previewStart").disabled=false;}
+ }
+ function modal(reason){
+   const blocked=state.status==="blocked";
+   $("modalEyebrow").textContent=blocked?"LÍMITE DE INCIDENCIAS":"CONTROL DE INTEGRIDAD";
+   $("modalTitle").textContent=blocked?"Sesión bloqueada":"Salida detectada";
+   $("modalText").textContent=blocked?"Se registraron tres incidencias y la sesión fue bloqueada. Contacta al docente para la revisión.":"Se detectó una salida ("+reason+"). Vuelve a pantalla completa para continuar.";
+   $("modalStrikeCount").textContent=state.strikes+" de "+MAX+" incidencias";
+   $("modalAction").textContent=blocked?"Ver comprobante de bloqueo":"Regresar a pantalla completa";
+   $("modalSymbol").textContent=blocked?"×":"!";
+   $("modalFoot").textContent="Los eventos quedan registrados con hora del servidor. Una salida no demuestra plagio por sí sola.";
+   $("incidentModal").classList.remove("hidden");
+ }
+ async function incident(reason){
+   if(state.status!=="active"||!state.armed||state.incidentBusy)return;
+   state.armed=false;state.incidentBusy=true;
+   state.status="paused";updateStatus();
+   clearTimeout(saveTimer);
+   // A single departure generates exactly one event ID even if blur, visibilitychange
+   // and fullscreenchange fire together.
+   try{
+     await saveChain.catch(()=>{});
+     const data=await request("incident",{event_id:crypto.randomUUID(),reason});
+     state.strikes=data.strikes;
+     if(data.state==="blocked")state.status="blocked";
+   }catch(e){
+     console.error("Incident request failed",e.message);
+     warn("Incidencia pendiente de registrar: revisa tu conexión.");
+   }finally{
+     state.incidentBusy=false;updateStatus();updateProgress();modal(reason);
+   }
+ }
+ async function resume(){
+   if(state.status==="blocked"){showResult("blocked");return;}
+   if(state.status!=="paused")return;
+   const ok=await fullscreen();
+   if(!ok)return;
+   try{
+     const s=await request("status");
+     state.strikes=s.strikes;state.status=s.state;
+     if(s.state!=="active"){showResult(s.state);return;}
+     state.armed=true;$("incidentModal").classList.add("hidden");updateStatus();updateProgress();
+   }catch(e){warn("No fue posible reanudar: "+e.message);}
+ }
+ function showResult(status, receipt, stamp){
+   state.armed=false;state.status=status;
+   $("incidentModal").classList.add("hidden");show("resultView");updateStatus();
+   const blocked=status==="blocked";
+   $("resultIcon").textContent=blocked?"!":"✓";
+   $("resultHeading").textContent=blocked?"Evaluación bloqueada":"Evaluación enviada";
+   $("resultDescription").textContent=blocked?"Se alcanzaron tres incidencias. No se calificará automáticamente: el docente debe revisar el registro.":"Tus respuestas quedaron guardadas de manera privada. No se publican las soluciones ni la nota en esta página.";
+   $("resultSummary").textContent="Estudiante: "+(state.session?.student_name||"")+
+     "\nGrupo: "+(state.session?.student_group||"")+
+     "\nEjercicios con respuesta y desarrollo: "+state.answers.filter(complete).length+" de "+COUNT+
+     "\nIncidencias: "+state.strikes+" de "+MAX+
+     (stamp?"\nFecha de entrega: "+new Date(stamp).toLocaleString("es-CO"):"");
+   $("receipt").textContent="Comprobante: "+(receipt||state.session?.attempt_id||"");
+   persistSession();
+   if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+ }
+ async function submit(){
+   if(state.status!=="active")return;
+   $("finishButton").disabled=true;
+   try{
+     await saveNow();
+     const response=await request("submit");
+     showResult("submitted",response.receipt,response.submitted_at);
+   }catch(e){
+     $("saveStatus").textContent="No se ha enviado: "+e.message+". Reintenta cuando vuelva la conexión.";
+   }finally{$("finishButton").disabled=false;}
+ }
+ async function recover(){
+   const saved=readSession();if(!saved)return;
+   state.session=saved.session;state.problem=Number.isInteger(saved.problem)&&saved.problem>=0&&saved.problem<COUNT?saved.problem:0;
+   try{
+     const data=await request("status");
+     state.startedAt=data.started_at;state.strikes=data.strikes;
+     for(let i=0;i<COUNT;i++)state.answers[i]={value:String(data.answers?.["P"+two(i+1)]?.value||""),unit:"cm²",reasoning:String(data.answers?.["P"+two(i+1)]?.reasoning||"")};
+     if(data.state==="active"){
+       show("examView");render();state.status="active";state.armed=true;
+       await incident("recarga o reingreso de página");
+     }else if(data.state==="blocked"||data.state==="submitted"){showResult(data.state,data.attempt_id,data.submitted_at);}
+     updateStatus();
+   }catch(e){
+     show("welcomeView");warn("No se pudo recuperar la sesión del servidor. Revisa tu conexión antes de comenzar otra.");
+   }
+ }
+ function reset(){try{sessionStorage.removeItem(KEY)}catch{}state.session=null;state.status="welcome";state.armed=false;show("welcomeView");updateStatus();}
+ async function init(){
+   $("previewStart").addEventListener("click",start);
+   $("prevButton").addEventListener("click",()=>select(state.problem-1));
+   $("nextButton").addEventListener("click",()=>select(state.problem===COUNT-1?0:state.problem+1));
+   qs(".rail-item").forEach(b=>b.addEventListener("click",()=>select(Number(b.dataset.problem))));
+   $("areaValue").addEventListener("input",onInput);
+   $("reasoning").addEventListener("input",onInput);
+   $("modalAction").addEventListener("click",resume);
+   $("finishButton").addEventListener("click",submit);
+   $("restartButton").addEventListener("click",reset);
+   document.addEventListener("fullscreenchange",()=>{
+      if(state.status==="active"&&state.armed&&!document.fullscreenElement)incident("salida de pantalla completa");
+   });
+   document.addEventListener("visibilitychange",()=>{
+      if(document.hidden)incident("cambio de pestaña");
+      else if(["paused","blocked"].includes(state.status)&&!state.incidentBusy)modal("cambio de pestaña");
+   });
+   window.addEventListener("blur",()=>{
+      clearTimeout(focusTimer);
+      focusTimer=setTimeout(()=>{if(!document.hasFocus()&&!document.hidden)incident("pérdida de foco");},750);
+   });
+   window.addEventListener("focus",()=>clearTimeout(focusTimer));
+   setInterval(()=>{if(state.startedAt&&["active","paused"].includes(state.status))$("clock").textContent=duration();},1000);
+   try{await loadManifest();serverReady=true;}catch(e){warn("No se cargaron las figuras: "+e.message);$("previewStart").disabled=true;return;}
+   await recover();
+   updateStatus();
+ }
+ init();
 })();
