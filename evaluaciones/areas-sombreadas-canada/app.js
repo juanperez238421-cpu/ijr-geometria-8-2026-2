@@ -285,7 +285,7 @@
   }
 
   function finish(blocked) {
-    if (state.status === "finished") return;
+    // Also render an already-finished preview restored from sessionStorage.
     const isLocked = !!blocked || state.status === "locked";
     if (state.status === "active") saveAnswer();
     state.status = isLocked ? "locked" : "finished";
