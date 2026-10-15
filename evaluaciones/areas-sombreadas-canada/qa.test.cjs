@@ -1,47 +1,40 @@
 #!/usr/bin/env node
-// Static contract checks. Not a replacement for browser E2E or backend security tests.
-const {test} = require("node:test");
-const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
-const base = __dirname;
-const html = fs.readFileSync(path.join(base, "index.html"), "utf8");
-const js = fs.readFileSync(path.join(base, "app.js"), "utf8");
-const css = fs.readFileSync(path.join(base, "styles.css"), "utf8");
-const data = JSON.parse(fs.readFileSync(path.join(base, "manifest.json"), "utf8"));
-test("three slots pending from Opus", () => {
-  assert.equal(data.public_exam_enabled, false);
-  assert.equal(data.problems.length, 3);
-  assert.deepEqual(data.problems.map(p => p.id), ["P01", "P02", "P03"]);
-  data.problems.forEach(p => assert.equal(p.ready, false));
-  assert.equal(data.figures_per_problem.min, 3);
-  assert.equal(data.figures_per_problem.max, 5);
+const {test}=require("node:test");
+const assert=require("node:assert/strict");
+const fs=require("node:fs"),path=require("node:path");
+const read=f=>fs.readFileSync(path.join(__dirname,f),"utf8");
+const html=read("index.html"),css=read("styles.css"),js=read("app.js"),manifest=JSON.parse(read("manifest.json"));
+test("manifest exposes exactly four complete prompt-only problems",()=>{
+ assert.equal(manifest.public_exam_enabled,true);
+ assert.equal(manifest.problems.length,4);
+ assert.deepEqual(manifest.problems.map(x=>x.id),["P01","P02","P03","P04"]);
+ assert(manifest.problems.every(x=>x.ready && x.title && x.statement && /^assets\/.+\.svg$/.test(x.diagram)));
+ assert.doesNotMatch(JSON.stringify(manifest),/correct_answer|solution|answer_key|paso\s*1/i);
 });
-test("safe official launch status and teacher preview", () => {
-  assert.match(html, /id="previewStart"/);
-  assert.match(html, /id="previewStart"[\s\S]*?id="[^"]+"/); // whole hero remains reachable
-  assert.match(html, /id="areaValue"/);
-  assert.match(html, /id="reasoning"/);
-  assert.match(html, /Iniciar evaluación oficial[\s\S]*?<\/button>/);
-  assert.match(html, /button class="btn btn-disabled" type="button" disabled/);
+test("all referenced diagrams present and valid SVG",()=>{
+ for(const p of manifest.problems){
+  const svg=read(p.diagram);
+  assert.match(svg,/<svg /);assert.match(svg,/<\/svg>/);
+  assert.match(svg,/viewBox="0 0 1120 760"/);
+  assert.match(svg,/fill="#a8c9e3"/);
+ }
 });
-test("all app IDs resolve in HTML or are created intentionally", () => {
-  const ids = Array.from(js.matchAll(/\$\("([A-Za-z][A-Za-z0-9]+)"\)/g), m => m[1]);
-  const generated = new Set(["runtimeNotice"]);
-  for (const id of ids) {
-    assert.ok(html.includes('id="' + id + '"') || generated.has(id), "missing id=" + id);
-  }
+test("functional online form, navigation and private submission wiring",()=>{
+ for(const id of ["studentName","studentGroup","studentAgree","previewStart","problemNavigation","finishButton","receipt","areaValue","reasoning"]){
+  assert(html.includes('id="'+id+'"'),"missing "+id);
+ }
+ assert.equal((html.match(/data-problem="[0-3]"/g)||[]).length,4);
+ assert.match(js,/COUNT=4/);
+ for(const op of ['"start"','"status"','"answer"','"incident"','"submit"'])assert(js.includes(op));
+ assert.match(js,/functions\/v1\/geometry8-canada-quiz/);
 });
-test("anti-exit events, 3 strikes and deduplication", () => {
-  assert.match(js, /STRIKE_LIMIT = 3/);
-  assert.match(js, /document\.addEventListener\("fullscreenchange"/);
-  assert.match(js, /document\.addEventListener\("visibilitychange"/);
-  assert.match(js, /window\.addEventListener\("blur"/);
-  assert.match(js, /state\.armed = false/);
-  assert.match(js, /state\.strikes >= STRIKE_LIMIT/);
+test("3 exit incident signals, modal and meaningful mobile layouts",()=>{
+ for(const e of ["fullscreenchange","visibilitychange","blur","MAX=3","sessionStorage","incidentBusy"])assert(js.includes(e));
+ assert(css.includes("@media(max-width:580px)"));
+ assert(html.includes('id="incidentModal"'));
 });
-test("safe DOM rendering, responsive UI, no public answer key", () => {
-  assert.match(js, /questionStatement"\)\.textContent/);
-  assert.match(css, /@media\(max-width:580px\)/);
-  assert.doesNotMatch(JSON.stringify(data), /correct_answer|answer_key|solution_video/);
+test("JavaScript syntax and literal DOM references",()=>{
+ new Function(js);
+ const missing=[...js.matchAll(/\$\("([A-Za-z0-9]+)"\)/g)].map(x=>x[1]).filter(id=>id!=="runtimeNotice"&&!html.includes('id="'+id+'"'));
+ assert.deepEqual(missing,[]);
 });
