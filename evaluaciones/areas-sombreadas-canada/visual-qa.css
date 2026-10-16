@@ -157,3 +157,40 @@ body{background:var(--canvas);font-size:16px;color:#182c49}
   .rail-copy small{font-size:10px}
   .calc-key{min-height:48px}
 }
+
+/* Segunda revisión QA: separar las dimensiones del dibujo evita recorte de rótulos. */
+.diagram-frame{
+  overflow:visible!important;
+  position:relative!important;
+  height:auto!important;
+  aspect-ratio:auto!important;
+  display:block!important;
+}
+.diagram-frame > img.problem-media{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  aspect-ratio:800/555!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+  overflow:visible!important;
+}
+.dimension-caption{
+  display:block;
+  width:100%;
+  margin:12px 0 8px;
+  padding:12px 14px;
+  border:1px solid #cfdfef;
+  border-radius:9px;
+  background:#f0f6ff;
+  color:#17375f;
+  font-weight:800;
+  font-size:clamp(15px,.98vw,18px);
+  line-height:1.5;
+  text-align:center;
+  overflow-wrap:anywhere;
+}
+@media(max-width:680px){
+ .dimension-caption{font-size:15px;text-align:left;padding:10px 12px}
+}
