@@ -124,3 +124,13 @@ test("math dimensions are presented outside SVG and do not clip",()=>{
    assert.doesNotMatch(svg,/y="(?:667|677|682)"/);
  }
 });
+
+
+test("institutional email is required and recorded on each new Canada attempt",()=>{
+ assert.match(html,/id="studentEmail"[^>]*type="email"/);
+ assert.match(js,/const email=\$\("studentEmail"\)\.value/);
+ assert.match(js,/validEmail/);
+ assert.match(js,/student_email:email/);
+ assert.match(js,/student_email:data\.student_email/);
+ assert.match(js,/Correo institucional declarado/);
+});
