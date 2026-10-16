@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="655" viewBox="160 55 800 655" role="img" aria-label="Cuadrado de lado 14 centímetros con cuatro cuartos de círculo de radio 7 centímetros en sus esquinas; región central sombreada"><rect x="160" y="55" width="800" height="655" fill="#ffffff"/><defs><pattern id="paper" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#edf2f9" stroke-width="1"/></pattern></defs><rect x="168" y="63" width="784" height="639" rx="14" fill="url(#paper)" stroke="#dce6f3" stroke-width="2"/><rect x="310" y="80" width="440" height="440" fill="#a8c9e3" stroke="#1b2d46" stroke-width="5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="555" viewBox="160 55 800 555" role="img" aria-label="Cuadrado de lado 14 centímetros con cuatro cuartos de círculo de radio 7 centímetros en sus esquinas; región central sombreada"><rect x="160" y="55" width="800" height="555" fill="#ffffff"/><defs><pattern id="paper" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#edf2f9" stroke-width="1"/></pattern></defs><rect x="168" y="63" width="784" height="539" rx="14" fill="url(#paper)" stroke="#dce6f3" stroke-width="2"/><rect x="310" y="80" width="440" height="440" fill="#a8c9e3" stroke="#1b2d46" stroke-width="5"/>
 <g fill="#fff" stroke="#1b2d46" stroke-width="4">
 <path d="M310 80 H530 A220 220 0 0 1 310 300 Z"/>
 <path d="M750 80 H530 A220 220 0 0 0 750 300 Z"/>
@@ -6,4 +6,4 @@
 <path d="M310 520 H530 A220 220 0 0 0 310 300 Z"/>
 </g><path d="M750 80 L595 235" stroke="#26394c" stroke-width="3" stroke-dasharray="11 9"/><text x="676" y="180" font-family="Arial,sans-serif" font-size="32" font-weight="700" fill="#26394c">7 cm</text>
 <path d="M774 80 H808 M774 520 H808 M792 80 V520" fill="none" stroke="#26394c" stroke-width="3"/><path d="M792 80 l-8 18 h16 Z M792 520 l-8 -18 h16 Z" fill="#26394c"/><text x="818" y="310" font-family="Arial,sans-serif" font-size="34" fill="#26394c" font-weight="700">14 cm</text>
-<rect x="221" y="623" width="678" height="65" rx="13" fill="#f0f6fd" stroke="#d3e2f1"/><text x="560" y="667" font-family="Arial,sans-serif" font-size="30" font-weight="700" fill="#203859" text-anchor="middle">Lado = 14 cm   ·   Radio = 7 cm</text></svg>
+</svg>
