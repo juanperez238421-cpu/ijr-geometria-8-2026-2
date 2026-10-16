@@ -146,3 +146,141 @@ h1,h2,p{margin-top:0}
 
 .problem-media{display:block;width:100%;height:100%;max-height:100%;object-fit:contain;background:#fff}
 video.problem-media{object-fit:contain}
+
+
+/* === VISUAL V3 / editorial geometry redesign ===
+   Presentation-only improvements; backend, manifest and examination logic unchanged. */
+:root{
+  --ink:#192744;--ink-dark:#101D39;--muted:#64748B;--line:#DFE6F0;
+  --canvas:#F5F7FB;--blue:#3259DB;--blue-dark:#1D3FBA;--blue-fade:#EAF0FF;
+  --green:#177C69;--shadow:0 15px 45px rgba(18,32,64,.065);
+  --exam-progress:0%;
+}
+body{
+  background:radial-gradient(ellipse at 85% 10%,rgba(201,223,255,.3),transparent 36%),var(--canvas);
+  color:var(--ink);font-family:Inter,"Segoe UI",Arial,sans-serif;
+}
+.topbar{height:82px;box-shadow:0 2px 22px rgba(21,37,66,.027);position:relative;z-index:2}
+.brand-school{letter-spacing:-.025em}
+.brand-course{letter-spacing:.13em}
+.status-pill{background:#F0F9F6;border-color:#CFEADC;color:#156A52;border-radius:99px;padding:9px 14px}
+.status-dot{background:#26A47A;box-shadow:0 0 0 4px #DCF6EA}
+.welcome{
+  padding-block:clamp(38px,6vh,78px);gap:clamp(28px,5.5vw,98px);
+  grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);
+}
+.welcome .eyebrow{font-size:11px;color:#3A5DDB;letter-spacing:.16em}
+.welcome h1{
+  max-width:740px;font-size:clamp(48px,5.3vw,82px);
+  line-height:1.045;letter-spacing:-.065em;
+  margin:20px 0 24px;font-weight:850;
+}
+.welcome h1 span{color:#315BDD}
+.welcome-lead{line-height:1.75;color:#56667F;max-width:590px}
+.stats-grid{margin:30px 0 30px;border-color:#D8E1F0}
+.stat-number{font-size:33px;color:#1C335E}
+.stat-label{color:#6E7D95}
+.instructions{
+  border:1px solid #DFE8F7;background:rgba(255,255,255,.8);
+  padding:20px 22px 14px;border-radius:14px;
+  box-shadow:0 8px 30px rgba(24,53,107,.025);
+}
+.instructions h2{font-size:16px;color:#1B355D}
+.instructions p{color:#67768B}
+.btn{border-radius:11px;min-height:48px;transition:transform .22s,background .22s,box-shadow .22s}
+.btn-primary{background:linear-gradient(120deg,#315DDC,#234DBD);box-shadow:0 8px 20px rgba(48,87,208,.18)}
+.btn-primary:hover{background:linear-gradient(120deg,#284FC4,#173D9A);box-shadow:0 12px 28px rgba(48,87,208,.24)}
+.btn-secondary{background:#18345B}
+#previewStart{min-height:54px;padding:15px 24px;font-size:14px}
+.welcome-visual{
+  position:relative;max-width:680px;padding:20px 20px 16px;border-radius:24px;
+  border:1px solid #28436F;
+  background:linear-gradient(135deg,#152746,#0B1931 70%,#101F3B);
+  box-shadow:0 35px 75px rgba(15,31,66,.22),0 10px 25px rgba(15,31,66,.1);
+  transform:none;transition:transform .38s ease,box-shadow .38s ease;
+}
+.welcome-visual:hover{transform:translateY(-5px);box-shadow:0 39px 85px rgba(15,31,66,.27)}
+.visual-top,.visual-caption{color:#B9CFF0}
+.visual-top{font-size:10px;letter-spacing:.19em}
+.visual-board{border:1px solid #38547C;border-radius:14px;margin-top:15px;background:#101E39}
+.visual-board svg{width:100%;height:auto}
+.visual-caption{color:#91B3E8;margin-top:17px}
+.visual-bar{background:#2C4A75}
+.geo-orbit{transform-origin:260px 219px;animation:geo-breathe 10s ease-in-out infinite}
+@keyframes geo-breathe{0%,100%{opacity:.46;transform:rotate(-4deg)}50%{opacity:.9;transform:rotate(5deg)}}
+.student-form input[type=text]:focus-visible,.student-form select:focus-visible{
+  outline:3px solid #A5B8FC;outline-offset:2px;border-color:#4265E2;
+}
+.exam{max-width:1660px}
+.exam-topline h1{letter-spacing:-.05em;color:#142746}
+.exam-metrics{border-radius:15px}
+.metric>strong{color:#1B3864}
+.metric:last-child::after{
+  content:"";display:block;margin-top:9px;width:100%;height:4px;
+  border-radius:50px;background:linear-gradient(to right,#4367EC var(--exam-progress),#E1E9F5 var(--exam-progress));
+  transition:background .2s;
+}
+.preview-ribbon{background:#EDF3FF;border-color:#D9E4FB;color:#556B91;border-radius:11px}
+.problem-rail,.question-card,.answer-card{
+  border-color:#DEE6F2;border-radius:18px;
+  box-shadow:0 12px 33px rgba(18,35,70,.045)
+}
+.problem-rail{position:sticky;top:20px}
+.rail-item{border-radius:11px;transition:background .2s,color .2s,border .2s}
+.rail-item:not(.selected):hover{background:#F2F5FD;color:#335AC6}
+.rail-item.selected{background:#E9F0FF;border-color:#C7D6FF;color:#224AB7;box-shadow:inset 3px 0 #4268E5}
+.question-card{padding:clamp(24px,2.7vw,40px)}
+.question-card h2{font-size:clamp(22px,2.3vw,31px);line-height:1.17;color:#1A3157}
+.question-statement{color:#526780;font-size:14px;max-width:72ch;min-height:0}
+.diagram-frame{
+  height:clamp(340px,35vw,540px);
+  background:#FFF;border:1px solid #DBE6F3;border-radius:14px;
+  box-shadow:inset 0 1px 16px rgba(25,58,106,.025);padding:8px
+}
+.diagram-frame img.problem-media{border-radius:8px}
+.diagram-bottom{color:#7287A5}
+.answer-card{padding:27px 24px}
+.answer-heading{margin-bottom:30px}
+.answer-icon{width:44px;height:44px;background:#E7EEFF;color:#284EBC}
+.field-label{color:#294160}
+.value-field input,.value-field select,.answer-card textarea{border-radius:11px;border-color:#CED9E9}
+.value-field input:focus-visible,.answer-card textarea:focus-visible{
+  outline:3px solid #ABC1FA;outline-offset:1px;border-color:#4D72DB;
+}
+.answer-card textarea{font-size:13px;line-height:1.7}
+.save-note{color:#57739A;font-weight:600}
+.end-button{min-height:52px}
+.result-card{border-radius:24px;box-shadow:0 30px 70px rgba(20,44,86,.09)}
+.modal{border-radius:23px;box-shadow:0 30px 85px #0005}
+@media(max-width:1240px){
+  .welcome{grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:35px}
+  .exam-layout{grid-template-columns:210px minmax(0,1fr)}
+}
+@media(max-width:860px){
+  .welcome{grid-template-columns:1fr;gap:30px}
+  .welcome-visual{max-width:660px;width:100%}
+  .problem-rail{position:static}
+  .exam-layout{grid-template-columns:1fr}
+  .diagram-frame{height:clamp(310px,58vw,520px)}
+}
+@media(max-width:580px){
+  .topbar{height:74px}
+  .welcome{padding:34px 18px}
+  .welcome h1{font-size:clamp(42px,10vw,57px)}
+  .welcome-lead{font-size:15px;line-height:1.65}
+  .welcome-visual{padding:12px;border-radius:19px}
+  .visual-board{margin-top:11px;border-radius:10px}
+  .visual-top,.visual-caption{font-size:8px;letter-spacing:.09em}
+  .instructions{padding:17px 17px 12px}
+  .stats-grid{margin:25px 0}
+  .stat{min-width:90px}
+  .exam{padding:20px 12px 50px}
+  .question-card{padding:20px 16px}
+  .diagram-frame{height:290px;padding:4px}
+  .answer-card{padding:24px 18px}
+  .metric{padding:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  .geo-orbit{animation:none}
+  .welcome-visual{transition:none}
+}
