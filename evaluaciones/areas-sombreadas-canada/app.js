@@ -8,7 +8,7 @@
  const $=id=>document.getElementById(id);
  const state={status:"welcome",problem:0,strikes:0,startedAt:null,
   session:null,answers:Array.from({length:COUNT},()=>({value:"",unit:"cm²",reasoning:""})),
-  armed:false,locked:false,incidentBusy:false};
+  armed:false,locked:false,incidentBusy:false,windowOpen:null};
  let manifest=[];
  let saveTimer=0,focusTimer=0,saveChain=Promise.resolve(),serverReady=false;
  const qs=(selector)=>Array.from(document.querySelectorAll(selector));
@@ -22,7 +22,7 @@
  const readSession=()=>{try{const obj=JSON.parse(sessionStorage.getItem(KEY)||"null");return obj?.session?.attempt_id&&obj?.session?.token?obj:null}catch{return null}};
  async function request(action,more={}){
    const body={action,...more};
-   if(action!=="start"){
+   if(action!=="start"&&action!=="window"){
      if(!state.session)throw Error("La sesión no está disponible.");
      body.attempt_id=state.session.attempt_id;body.token=state.session.token;
    }
@@ -30,13 +30,13 @@
    try{
      const response=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body),signal:controller.signal,cache:"no-store"});
      const data=await response.json();
-     if(!response.ok){throw Error(data.error||"No se pudo conectar con el servidor");}
+     if(!response.ok){throw Error(data.error==="ASSESSMENT_CLOSED"?"Plazo cerrado: 31 de octubre de 2026, 11:59 p. m., hora de Ottawa.":(data.error||"No se pudo conectar con el servidor"));}
      return data;
    }catch(err){throw Error(err instanceof Error?err.message:"Error de conexión");}
    finally{clearTimeout(t);}
  }
  function updateStatus(){
-   const names={welcome:"DISPONIBLE",active:"EN CURSO",paused:"SESIÓN PAUSADA",blocked:"BLOQUEADA",submitted:"ENTREGADA"};
+   const names={welcome:"DISPONIBLE",active:"EN CURSO",paused:"SESIÓN PAUSADA",blocked:"BLOQUEADA",submitted:"ENTREGADA",closed:"PLAZO CERRADO"};
    $("topStatus").innerHTML='<span class="status-dot"></span> '+(names[state.status]||"DISPONIBLE");
  }
  function updateProgress(){
@@ -129,7 +129,17 @@
       m.problems.some(p=>!p.ready||!p.statement||!p.title||!/^assets\/[a-z0-9/_-]+\.svg$/.test(p.diagram)))throw Error("El cuestionario no está completo.");
    manifest=m.problems;
  }
+ async function refreshDeadline(){
+   const windowInfo=await request("window");
+   state.windowOpen=windowInfo.open===true;
+   $("deadlineStatus").textContent=state.windowOpen?"Habilitada hasta el 31 de octubre de 2026, 11:59 p. m. (Ottawa, Canadá).":"La evaluación cerró el 31 de octubre de 2026 a las 11:59 p. m. (Ottawa, Canadá).";
+   $("previewStart").disabled=!state.windowOpen;
+   if(!state.windowOpen && state.status==="welcome"){state.status="closed";updateStatus();}
+   if(!state.windowOpen && state.status==="active")showResult("closed",state.session?.attempt_id);
+   return windowInfo;
+ }
  async function start(){
+   if(state.windowOpen!==true){warn("No se pudo verificar la disponibilidad o la evaluación está cerrada.");return;}
    const name=$("studentName").value.trim().replace(/\s+/g," ");
    const group=$("studentGroup").value;
     const email=$("studentEmail").value.trim().toLowerCase();
@@ -149,7 +159,7 @@
    }catch(e){
      warn("No se pudo iniciar la evaluación: "+e.message);
      if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});
-   }finally{$("previewStart").disabled=false;}
+   }finally{$("previewStart").disabled=state.windowOpen!==true;}
  }
  function modal(reason){
    const blocked=state.status==="blocked";
@@ -196,10 +206,10 @@
  function showResult(status, receipt, stamp){
    state.armed=false;state.status=status;
    $("incidentModal").classList.add("hidden");show("resultView");updateStatus();
-   const blocked=status==="blocked";
-   $("resultIcon").textContent=blocked?"!":"✓";
-   $("resultHeading").textContent=blocked?"Evaluación bloqueada":"Evaluación enviada";
-   $("resultDescription").textContent=blocked?"Se alcanzaron tres incidencias. No se calificará automáticamente: el docente debe revisar el registro.":"Tus respuestas quedaron guardadas de manera privada. No se publican las soluciones ni la nota en esta página.";
+   const blocked=status==="blocked",closed=status==="closed";
+   $("resultIcon").textContent=blocked||closed?"!":"✓";
+   $("resultHeading").textContent=closed?"Plazo de evaluación cerrado":blocked?"Evaluación bloqueada":"Evaluación enviada";
+   $("resultDescription").textContent=closed?"El plazo finalizó el 31 de octubre a las 11:59 p. m. (Ottawa). Se conservan las respuestas guardadas, pero ya no se reciben cambios ni nuevas entregas.":blocked?"Se alcanzaron tres incidencias. No se calificará automáticamente: el docente debe revisar el registro.":"Tus respuestas quedaron guardadas de manera privada. No se publican las soluciones ni la nota en esta página.";
    $("resultSummary").textContent="Estudiante: "+(state.session?.student_name||"")+
      "\nGrupo: "+(state.session?.student_group||"")+
      (state.session?.student_email?"\nCorreo institucional declarado: "+state.session.student_email:"")+
@@ -229,7 +239,9 @@
      state.startedAt=data.started_at;state.strikes=data.strikes;
       state.session.student_email=data.student_email||state.session.student_email||null;
      for(let i=0;i<COUNT;i++)state.answers[i]={value:String(data.answers?.["P"+two(i+1)]?.value||""),unit:"cm²",reasoning:String(data.answers?.["P"+two(i+1)]?.reasoning||"")};
-     if(data.state==="active"){
+     if(data.state==="active"&&data.open===false){
+       state.windowOpen=false;showResult("closed",data.attempt_id);
+     }else if(data.state==="active"){
        show("examView");render();state.status="active";state.armed=true;
        await incident("recarga o reingreso de página");
      }else if(data.state==="blocked"||data.state==="submitted"){showResult(data.state,data.attempt_id,data.submitted_at);}
@@ -238,7 +250,7 @@
      show("welcomeView");warn("No se pudo recuperar la sesión del servidor. Revisa tu conexión antes de comenzar otra.");
    }
  }
- function reset(){try{sessionStorage.removeItem(KEY)}catch{}state.session=null;state.status="welcome";state.armed=false;show("welcomeView");updateStatus();}
+ function reset(){try{sessionStorage.removeItem(KEY)}catch{}state.session=null;state.status=state.windowOpen===false?"closed":"welcome";state.armed=false;show("welcomeView");updateStatus();}
  async function init(){
    $("previewStart").addEventListener("click",start);
    $("prevButton").addEventListener("click",()=>select(state.problem-1));
@@ -263,7 +275,9 @@
    window.addEventListener("focus",()=>clearTimeout(focusTimer));
    setInterval(()=>{if(state.startedAt&&["active","paused"].includes(state.status))$("clock").textContent=duration();},1000);
    try{await loadManifest();serverReady=true;}catch(e){warn("No se cargaron las figuras: "+e.message);$("previewStart").disabled=true;return;}
+   try{await refreshDeadline();}catch(e){$("previewStart").disabled=true;warn("No se pudo comprobar la disponibilidad en el servidor.");}
    await recover();
+   setInterval(()=>{if(["welcome","active"].includes(state.status))refreshDeadline().catch(()=>{});},30000);
    updateStatus();
  }
  init();
