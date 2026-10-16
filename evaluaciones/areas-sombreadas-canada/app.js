@@ -42,6 +42,7 @@
  function updateProgress(){
    const done=state.answers.filter(complete).length;
    $("progress").textContent=done+" / "+COUNT;
+   document.documentElement.style.setProperty("--exam-progress",((done/COUNT)*100)+"%");
    $("strikeDots").setAttribute("aria-label",state.strikes+" de "+MAX+" incidencias");
    Array.from($("strikeDots").children).forEach((n,i)=>n.classList.toggle("active",i<state.strikes));
    qs(".rail-item").forEach((b,i)=>{
