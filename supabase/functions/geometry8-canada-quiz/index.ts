@@ -7,6 +7,10 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const client = createClient(supabaseUrl, serviceRoleKey, {auth:{persistSession:false}});
 const TABLE = "geo8_canada_quiz_attempts";
+// Deadline: Oct 31, 2026 23:59:59 Ottawa EDT (America/Toronto); closed at Nov 1 00:00 EDT.
+const CLOSES_AT = "2026-11-01T04:00:00.000Z";
+const deadlineOpen = () => Date.now() < Date.parse(CLOSES_AT);
+const deadlineWindow = () => ({open:deadlineOpen(),closes_at:CLOSES_AT,timezone:"America/Toronto",closes_local:"31 de octubre de 2026, 11:59 p. m. (Ottawa)",server_now:new Date().toISOString()});
 
 function headers(origin: string|null) {
   const allowed = origin === ALLOWED_ORIGIN || origin === "http://localhost:8000" || origin === "http://127.0.0.1:8000";
@@ -75,7 +79,9 @@ Deno.serve(async(req:Request) => {
  } catch {return respond({error:"INVALID_JSON"},400,origin);}
  const action=payload.action;
  try {
+   if(action==="window") return respond(deadlineWindow(),200,origin);
    if(action==="start"){
+     if(!deadlineOpen()) return respond({error:"ASSESSMENT_CLOSED",...deadlineWindow()},403,origin);
      const student_name=cleanName(payload.student_name);
      const student_group=payload.student_group;
      const student_email=cleanEmail(payload.student_email);
@@ -84,6 +90,7 @@ Deno.serve(async(req:Request) => {
      }
      const token=newToken();
      const token_hash=await digest(token);
+     if(!deadlineOpen()) return respond({error:"ASSESSMENT_CLOSED",...deadlineWindow()},403,origin);
      const {data,error}=await client.from(TABLE).insert({student_name,student_group,student_email,identity_mode:"institutional_email_declared",token_hash}).select("id,state,strikes,started_at").single();
      if(error || !data) return respond({error:"START_UNAVAILABLE"},500,origin);
      return respond({attempt_id:data.id,token,student_name,student_group,student_email,identity_mode:"institutional_email_declared",state:data.state,strikes:data.strikes,started_at:data.started_at},200,origin);
@@ -97,9 +104,10 @@ Deno.serve(async(req:Request) => {
    if(fetchError) return respond({error:"SESSION_LOOKUP_FAILED"},500,origin);
    if(!row) return respond({error:"INVALID_SESSION"},401,origin);
 
-   if(action==="status") return respond(studentView(row),200,origin);
+   if(action==="status") return respond({...studentView(row),...deadlineWindow()},200,origin);
    if(row.state!=="active") return respond({error:row.state==="blocked"?"SESSION_BLOCKED":"ALREADY_SUBMITTED",...studentView(row)},409,origin);
 
+   if(["answer","incident","submit"].includes(String(action)) && !deadlineOpen()) return respond({error:"ASSESSMENT_CLOSED",...deadlineWindow()},403,origin);
    if(action==="answer") {
      const problem_id=payload.problem_id;
      if(typeof problem_id!=="string"||!ALLOWED_IDS.has(problem_id)) return respond({error:"INVALID_PROBLEM"},400,origin);
@@ -110,6 +118,7 @@ Deno.serve(async(req:Request) => {
        return respond({error:"INVALID_ANSWER"},400,origin);
      }
      const answers={...(row.answers??{}),[problem_id]:{value,unit,reasoning}};
+     if(!deadlineOpen()) return respond({error:"ASSESSMENT_CLOSED",...deadlineWindow()},403,origin);
      const {error}=await client.from(TABLE).update({answers,updated_at:new Date().toISOString()}).eq("id",row.id).eq("state","active");
      if(error) return respond({error:"SAVE_FAILED"},500,origin);
      return respond({saved:true,problem_id},200,origin);
@@ -125,6 +134,7 @@ Deno.serve(async(req:Request) => {
      const next= {event_id,reason,occurred_at:new Date().toISOString(),strike:strikes};
      const state=strikes>=3?"blocked":"active";
      const events=[...oldEvents.slice(-9),next];
+     if(!deadlineOpen()) return respond({error:"ASSESSMENT_CLOSED",...deadlineWindow()},403,origin);
      const {error}=await client.from(TABLE).update({strikes,state,events,updated_at:new Date().toISOString()}).eq("id",row.id).eq("state","active");
      if(error) return respond({error:"INCIDENT_FAILED"},500,origin);
      return respond({strikes,state},200,origin);
@@ -132,6 +142,7 @@ Deno.serve(async(req:Request) => {
 
    if(action==="submit"){
      const now=new Date().toISOString();
+     if(!deadlineOpen()) return respond({error:"ASSESSMENT_CLOSED",...deadlineWindow()},403,origin);
      const {error}=await client.from(TABLE).update({state:"submitted",submitted_at:now,updated_at:now}).eq("id",row.id).eq("state","active");
      if(error) return respond({error:"SUBMIT_FAILED"},500,origin);
      return respond({state:"submitted",receipt:row.id,submitted_at:now,strikes:row.strikes},200,origin);

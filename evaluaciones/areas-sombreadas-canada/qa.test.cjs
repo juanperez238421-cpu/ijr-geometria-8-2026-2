@@ -134,3 +134,18 @@ test("institutional email is required and recorded on each new Canada attempt",(
  assert.match(js,/student_email:data\.student_email/);
  assert.match(js,/Correo institucional declarado/);
 });
+
+
+test("Ottawa Oct 31 midnight cutoff is stated and server-enforced",()=>{
+ const edge=read("../../supabase/functions/geometry8-canada-quiz/index.ts");
+ assert(edge.includes('const CLOSES_AT = "2026-11-01T04:00:00.000Z"'));
+ assert(edge.includes('timezone:"America/Toronto"'));
+ assert(edge.includes('if(action==="window") return respond'));
+ assert(edge.includes('["answer","incident","submit"].includes(String(action)) && !deadlineOpen()'));
+ assert(edge.includes('if(!deadlineOpen()) return respond({error:"ASSESSMENT_CLOSED"'));
+ assert(html.includes('id="deadlineStatus"'));
+ assert(html.includes("31 de octubre de 2026"));
+ assert(js.includes('if(action!=="start"&&action!=="window")'));
+ assert(js.includes("refreshDeadline"));
+ assert(js.includes("data.open===false"));
+});
