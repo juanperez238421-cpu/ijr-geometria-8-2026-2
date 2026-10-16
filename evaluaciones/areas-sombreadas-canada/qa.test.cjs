@@ -50,3 +50,39 @@ test("original school crest present and valid embedded WebP",()=>{
  assert.equal(bytes.subarray(0,4).toString("ascii"),"RIFF");
  assert.equal(bytes.subarray(8,12).toString("ascii"),"WEBP");
 });
+
+const calculator = require("./calculator-core.js");
+test("calculator respects exam pi rule and arithmetic precedence",()=>{
+ assert.equal(calculator.PI,3.14);
+ assert.equal(calculator.evaluate("3×(2+1)"),9);
+ assert.equal(calculator.evaluate("π×2"),6.28);
+ assert.equal(calculator.evaluate("100×20%"),20);
+ assert.equal(calculator.evaluate("12,5÷2"),6.25);
+ assert.equal(calculator.evaluate("-3^2"),-9);
+ assert.equal(calculator.evaluate("2^3^2"),512);
+ assert.equal(calculator.evaluate("(5−2)^2"),9);
+ assert.equal(calculator.format(calculator.evaluate("1÷8")),"0.125");
+ assert.equal(calculator.format(calculator.evaluate("1,5+2,5")),"4");
+});
+test("calculator rejects unsafe or malformed input",()=>{
+ for(const input of ["","1÷0","2(3)","1+alert(1)","window","1;2","ππ","1+","(1+2","2^^2","10/0"]){
+  assert.throws(()=>calculator.evaluate(input), input);
+ }
+ assert.throws(()=>calculator.evaluate("1".repeat(121)));
+});
+test("accessibility and answer-autosave integration",()=>{
+ const c=read("calculator.js");
+ const refinement=read("refinement.css");
+ for(const id of ["calculatorPanel","calcExpression","calcResult","calcTransfer","calculatorHelp","calcHint"])assert(html.includes('id="'+id+'"'));
+ assert.match(html,/aria-live="polite"/);
+ assert.match(html,/aria-label="Teclado de la calculadora"/);
+ assert.match(html,/aria-readonly="true"/);
+ assert.equal((html.match(/data-calc="/g)||[]).length,24);
+ assert.match(c,/dispatchEvent\(new Event\("input"/);
+ assert.match(c,/panel\.addEventListener\("keydown"/);
+ assert.doesNotMatch(c,/\beval\s*\(/);
+ assert.match(refinement,/\.instruction-text p\{/);
+ assert.match(refinement,/\.question-statement\{/);
+ assert.match(refinement,/\.calculator-card\{/);
+ for(const size of ["1450","1240","990","760","450"])assert(refinement.includes("@media(max-width:"+size+"px)"));
+});
