@@ -59,13 +59,14 @@
    $("questionStatement").textContent=p.statement;
    $("diagramNumber").textContent=two(i+1);
    $("figureCount").textContent="Diagrama geométrico vectorial · HD";
+   $("dimensionCaption").textContent=p.dimensions||"Medidas indicadas en la figura";
    $("pageIndicator").textContent=two(i+1)+" / "+two(COUNT);
    $("prevButton").disabled=i===0;
    $("nextButton").textContent=i===COUNT-1?"Volver al primero ↺":"Siguiente →";
    const frame=$("diagramFrame");
    frame.replaceChildren();
    const img=document.createElement("img");
-   img.className="problem-media";img.src=p.diagram+"?v=20261016-qa-r2";img.alt="Problema "+(i+1)+": "+p.title+". "+p.statement;
+   img.className="problem-media";img.src=p.diagram+"?v=20261016-qa-r3";img.alt="Problema "+(i+1)+": "+p.title+". "+p.statement;
    img.loading="eager";img.decoding="async";
    img.addEventListener("error",()=>{frame.textContent="No se pudo cargar la figura. Informa al docente.";}, {once:true});
    frame.appendChild(img);
