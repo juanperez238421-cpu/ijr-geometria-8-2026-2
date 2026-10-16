@@ -54,21 +54,50 @@
         <div class="welcome-visual" aria-hidden="true">
           <div class="visual-top"><span>GEO / 08</span><span>SHAPES · AREAS · REASONING</span></div>
           <div class="visual-board">
-            <svg viewBox="0 0 560 460" role="presentation" focusable="false">
+            <svg viewBox="0 0 560 460" role="presentation" focusable="false" aria-hidden="true">
               <defs>
-                <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="#e9eef7" stroke-width="1"/></pattern>
+                <linearGradient id="geoStage" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#172F59"/><stop offset="100%" stop-color="#071629"/>
+                </linearGradient>
+                <linearGradient id="geoShade" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#8CE3E7"/><stop offset="100%" stop-color="#507DFF"/>
+                </linearGradient>
+                <radialGradient id="geoHalo">
+                  <stop offset="0%" stop-color="#4FA9FC" stop-opacity=".26"/>
+                  <stop offset="100%" stop-color="#4FA9FC" stop-opacity="0"/>
+                </radialGradient>
+                <pattern id="geoGrid" width="28" height="28" patternUnits="userSpaceOnUse">
+                  <path d="M28 0H0V28" fill="none" stroke="#5473A6" stroke-opacity=".13" stroke-width="1"/>
+                </pattern>
+                <filter id="geoGlow"><feGaussianBlur stdDeviation="15"/></filter>
               </defs>
-              <rect x="0" y="0" width="560" height="460" fill="url(#grid)"/>
-              <rect x="62" y="85" width="312" height="278" rx="3" fill="#e8eefc" stroke="#315ebd" stroke-width="3"/>
-              <path d="M62 363 L374 363 L374 207 Z" fill="#91aef2" opacity=".76"/>
-              <circle cx="312" cy="225" r="114" fill="#fff" stroke="#1b3d82" stroke-width="3"/>
-              <path d="M312 111 A114 114 0 0 1 426 225 L312 225 Z" fill="#2869e0" opacity=".82"/>
-              <path d="M101 320 L188 143 L264 320 Z" fill="#f6bf72" opacity=".91" stroke="#ad7d3e" stroke-width="3"/>
-              <path d="M62 363L374 363M62 85V363" stroke="#173d79" stroke-width="3"/>
-              <path d="M62 384H374M42 85V363" stroke="#6585b0" stroke-width="1.5" stroke-dasharray="5 7"/>
-              <circle cx="312" cy="225" r="4" fill="#1b3d82"/>
-              <text x="75" y="68" fill="#315ebd" font-size="15" font-family="Arial, sans-serif" letter-spacing="4">COMPOSITE GEOMETRY</text>
-              <text x="348" y="403" fill="#70819f" font-size="13" font-family="Arial, sans-serif">SCHEMATIC / DECORATIVE</text>
+              <rect width="560" height="460" fill="url(#geoStage)"/>
+              <rect width="560" height="460" fill="url(#geoGrid)"/>
+              <circle cx="278" cy="230" r="234" fill="url(#geoHalo)"/>
+              <g opacity=".6" stroke="#7CA0D3" fill="none" stroke-width="1">
+                <circle cx="260" cy="219" r="174" stroke-dasharray="2 11"/>
+                <path d="M64 219 H476 M260 42 V398" stroke-dasharray="2 9" stroke-opacity=".25"/>
+              </g>
+              <g class="geo-orbit" fill="none" stroke="#88C6FF" stroke-opacity=".22" stroke-width="2">
+                <path d="M88 351 A240 240 0 0 1 468 86"/>
+              </g>
+              <path d="M130 89H390V349H130Z M260 89a130 130 0 1 0 0 260a130 130 0 1 0 0-260Z" fill="url(#geoShade)" fill-rule="evenodd" opacity=".85"/>
+              <rect x="130" y="89" width="260" height="260" fill="none" stroke="#C4DCFF" stroke-width="2.5"/>
+              <circle cx="260" cy="219" r="130" fill="none" stroke="#F0F6FF" stroke-width="2.5"/>
+              <circle cx="260" cy="219" r="4" fill="#FBD899"/>
+              <path d="M260 219 H390" stroke="#FBD899" stroke-width="2" stroke-dasharray="6 5"/>
+              <text x="317" y="208" fill="#FFE8BA" font-size="14" font-weight="700" font-family="Arial, sans-serif">r</text>
+              <g fill="#ECF4FF" font-family="Arial, sans-serif">
+                <rect x="32" y="28" width="183" height="32" rx="16" fill="#E7F1FF" fill-opacity=".12" stroke="#C9DFFF" stroke-opacity=".25"/>
+                <text x="46" y="48" font-size="11" font-weight="700" letter-spacing="1.5">ESTUDIO DE ÁREAS</text>
+                <text x="421" y="108" font-size="12" letter-spacing="2" fill="#A9C5EA">FIG. 01</text>
+                <path d="M392 112 H461" stroke="#A9C5EA" stroke-opacity=".45"/>
+                <text x="412" y="344" font-size="12" fill="#B1C5E6">REGIÓN</text>
+                <text x="412" y="361" font-size="12" fill="#B1C5E6">SOMBREADA</text>
+                <text x="32" y="427" font-size="12" font-weight="700" letter-spacing="1.3" fill="#E8F3FF">OBSERVAR  /  RAZONAR  /  JUSTIFICAR</text>
+              </g>
+              <circle cx="130" cy="89" r="4" fill="#FBD899"/>
+              <circle cx="390" cy="349" r="4" fill="#FBD899"/>
             </svg>
           </div>
           <div class="visual-caption"><span>01 / 04 — EVALUACIÓN</span><span class="visual-bar"></span><span>SHADED AREA</span></div>
@@ -94,7 +123,7 @@
               <button type="button" class="rail-item" data-problem="2"><span class="rail-num">03</span><span class="rail-copy"><strong>Problema 03</strong><small>Semicírculo y triángulo</small></span><span class="rail-state">○</span></button>
               <button type="button" class="rail-item" data-problem="3"><span class="rail-num">04</span><span class="rail-copy"><strong>Problema 04</strong><small>Cuatro cuartos</small></span><span class="rail-state">○</span></button>
             </div>
-            <div class="rail-bottom"><span class="shield">◇</span><p>Sesión de demostración con control de incidencias de pantalla completa.</p></div>
+            <div class="rail-bottom"><span class="shield">◇</span><p>Intento con registro de incidencias y guardado privado.</p></div>
           </nav>
           <div class="question-column">
             <article class="question-card">
@@ -130,7 +159,7 @@
       </section>
 
       <section class="result view hidden" id="resultView" aria-labelledby="resultHeading">
-        <div class="result-card"><div class="result-icon" id="resultIcon">◇</div><p class="eyebrow">VISTA PREVIA / CONTROL DE CALIDAD</p><h1 id="resultHeading">Evaluación enviada</h1><p id="resultDescription">Tu evaluación queda registrada en el servidor. Conserva el comprobante.</p><div id="resultSummary" class="result-summary"></div><p class="receipt" id="receipt"></p><button type="button" class="btn btn-primary" id="restartButton">Finalizar</button></div>
+        <div class="result-card"><div class="result-icon" id="resultIcon">◇</div><p class="eyebrow">REGISTRO DE EVALUACIÓN</p><h1 id="resultHeading">Evaluación enviada</h1><p id="resultDescription">Tu evaluación queda registrada en el servidor. Conserva el comprobante.</p><div id="resultSummary" class="result-summary"></div><p class="receipt" id="receipt"></p><button type="button" class="btn btn-primary" id="restartButton">Finalizar</button></div>
       </section>
     </main>
     <footer class="site-footer"><span>© Instituto Jorge Robledo · Geometría 8° · 2026</span><span>Evaluación virtual de áreas sombreadas · 4 problemas</span></footer>
