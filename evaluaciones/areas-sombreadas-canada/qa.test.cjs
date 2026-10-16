@@ -15,7 +15,7 @@ test("all referenced diagrams present and valid SVG",()=>{
  for(const p of manifest.problems){
   const svg=read(p.diagram);
   assert.match(svg,/<svg /);assert.match(svg,/<\/svg>/);
-  assert.match(svg,/viewBox="0 0 1120 760"/);
+  assert.match(svg,/viewBox="160 55 800 655"/);
   assert.match(svg,/fill="#a8c9e3"/);
  }
 });
@@ -85,4 +85,26 @@ test("accessibility and answer-autosave integration",()=>{
  assert.match(refinement,/\.question-statement\{/);
  assert.match(refinement,/\.calculator-card\{/);
  for(const size of ["1450","1240","990","760","450"])assert(refinement.includes("@media(max-width:"+size+"px)"));
+});
+
+test("all diagrams are fully visible and responsive in source",()=>{
+ const repaired=read("visual-qa.css");
+ assert.match(html,/visual-qa\.css\?v=20261016-r2/);
+ assert.match(js,/p\.diagram\+"\?v=20261016-qa-r2"/);
+ assert.match(repaired,/grid-template-areas:/);
+ assert.match(repaired,/"nav nav"/);
+ assert.match(repaired,/height:auto!important/);
+ assert.match(repaired,/overflow:visible!important/);
+ assert.match(repaired,/aspect-ratio:800 \/ 655/);
+ assert.match(repaired,/@media\(max-width:680px\)/);
+ assert.match(repaired,/\.diagram-frame > img/);
+ assert.doesNotMatch(repaired,/\.diagram-frame\{[^}]*height:clamp/);
+ for(const p of manifest.problems){
+  const svg=read(p.diagram);
+  assert.match(svg,/viewBox="160 55 800 655"/);
+  assert.match(svg,/x="168" y="63" width="784" height="639"/);
+  assert(!svg.includes('viewBox="0 0 1120 760"'));
+  // All footer dimensions are inside the corrected SVG viewport (bottom=710).
+  assert.match(svg,/<text[^>]*y="6(6[7]|8[27])"/);
+ }
 });
