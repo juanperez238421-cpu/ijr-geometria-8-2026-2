@@ -38,3 +38,15 @@ test("JavaScript syntax and literal DOM references",()=>{
  const missing=[...js.matchAll(/\$\("([A-Za-z0-9]+)"\)/g)].map(x=>x[1]).filter(id=>id!=="runtimeNotice"&&!html.includes('id="'+id+'"'));
  assert.deepEqual(missing,[]);
 });
+
+
+test("original school crest present and valid embedded WebP",()=>{
+ assert.match(html,/assets\/escudo-institucional-original\.svg/);
+ const crest=read("assets/escudo-institucional-original.svg");
+ assert.match(crest,/<svg /);
+ const b64=crest.match(/data:image\/webp;base64,([A-Za-z0-9+/=]+)/);
+ assert(b64 && b64[1].length>3000,"missing real school crest pixels");
+ const bytes=Buffer.from(b64[1],"base64");
+ assert.equal(bytes.subarray(0,4).toString("ascii"),"RIFF");
+ assert.equal(bytes.subarray(8,12).toString("ascii"),"WEBP");
+});
