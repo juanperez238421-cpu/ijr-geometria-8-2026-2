@@ -140,7 +140,7 @@
   </div>
   <p class="calc-description" id="calculatorHelp">Realiza tus operaciones sin abandonar el examen. Para esta actividad, π = 3.14.</p>
   <div class="calc-screen" aria-describedby="calculatorHelp">
-    <div class="calc-expression" id="calcExpression" aria-label="Operación actual">0</div>
+    <div class="calc-expression" id="calcExpression" tabindex="0" role="textbox" aria-readonly="true" aria-label="Operación actual. Escribe una operación con el teclado">0</div>
     <output class="calc-result" id="calcResult" role="status" aria-live="polite" aria-atomic="true">0</output>
   </div>
   <div class="calc-keys" role="group" aria-label="Teclado de la calculadora"><button type="button" class="calc-key utility" data-calc="clear" aria-label="Borrar todo">AC</button>
@@ -168,7 +168,7 @@
               <button type="button" class="calc-key equals" data-calc="equals" aria-label="Calcular resultado">=</button>
               <button type="button" class="calc-key utility" data-calc="square" aria-label="Elevar al cuadrado">x²</button></div>
   <button type="button" class="calc-transfer" id="calcTransfer" disabled>↳ Usar resultado en mi respuesta</button>
-  <p class="calc-hint" id="calcHint">Puedes usar el teclado cuando la calculadora tenga el foco. Los cálculos no se envían como procedimiento.</p>
+  <p class="calc-hint" id="calcHint" role="status" aria-live="polite">Puedes usar el teclado cuando la calculadora tenga el foco. Los cálculos no se envían como procedimiento.</p>
 </aside>
         </div>
       </section>
