@@ -65,7 +65,7 @@
    const frame=$("diagramFrame");
    frame.replaceChildren();
    const img=document.createElement("img");
-   img.className="problem-media";img.src=p.diagram;img.alt="Problema "+(i+1)+": "+p.title+". "+p.statement;
+   img.className="problem-media";img.src=p.diagram+"?v=20261016-qa-r2";img.alt="Problema "+(i+1)+": "+p.title+". "+p.statement;
    img.loading="eager";img.decoding="async";
    img.addEventListener("error",()=>{frame.textContent="No se pudo cargar la figura. Informa al docente.";}, {once:true});
    frame.appendChild(img);
