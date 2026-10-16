@@ -105,6 +105,6 @@ test("all diagrams are fully visible and responsive in source",()=>{
   assert.match(svg,/x="168" y="63" width="784" height="639"/);
   assert(!svg.includes('viewBox="0 0 1120 760"'));
   // All footer dimensions are inside the corrected SVG viewport (bottom=710).
-  assert.match(svg,/<text[^>]*y="6(6[7]|8[27])"/);
+  assert.match(svg,/<text[^>]*y="(?:667|677|682)"/);
  }
 });
