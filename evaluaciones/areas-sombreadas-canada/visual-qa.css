@@ -1,0 +1,159 @@
+/* Visual QA 2026-10-16: layout sobreescrito sin alterar el motor del examen.
+   Prioridad: figura completa, navegación limpia, legibilidad y controles accesibles. */
+:root{
+  --canvas:#f7f9fc;
+  --line:#dfe7ef;
+  --shadow:0 2px 12px rgba(14,38,78,.035);
+}
+body{background:var(--canvas);font-size:16px;color:#182c49}
+.topbar{padding-inline:clamp(15px,3.2vw,55px)}
+.exam{max-width:1750px;width:100%;margin-inline:auto;padding:clamp(20px,2.4vw,38px) clamp(15px,2.5vw,38px) 76px}
+.exam-topline{margin-bottom:20px}
+.exam-topline h1{font-size:clamp(30px,2.7vw,42px)}
+.exam-instructions{margin-bottom:21px;max-width:none;padding:16px 21px}
+.instruction-text h2{font-size:12px}
+.instruction-text p{font-size:clamp(16px,1.02vw,19px);line-height:1.52}
+.exam-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1.8fr) minmax(0,1fr) minmax(0,.88fr);
+  grid-template-areas:
+    "nav nav nav"
+    "question answer calculator";
+  gap:16px;
+  align-items:start;
+}
+.problem-rail{
+  grid-area:nav;display:flex;align-items:center;gap:19px;
+  width:100%;min-width:0;padding:12px 18px;
+  box-shadow:none;background:#fff;
+}
+.rail-top{border:0;padding:0;flex:0 0 auto}
+.rail-overline{display:none}
+.rail-top strong{font-size:17px;margin:0;line-height:1.25}
+.rail-top small{font-size:11px;display:block;color:#718198}
+.rail-nav{
+  padding:0;min-width:0;flex:1;display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
+}
+.rail-item{
+  width:100%;min-width:0;max-width:none;min-height:57px;
+  padding:8px 12px;border:1px solid #e2eaf4;
+  background:#fff;border-radius:10px;gap:9px;
+}
+.rail-item.selected{background:#ecf3ff;border-color:#96b9f4}
+.rail-copy strong{font-size:13px;line-height:1.25}
+.rail-copy small{font-size:11px;white-space:normal;line-height:1.25}
+.rail-bottom{display:none}
+.question-column{grid-area:question;min-width:0;width:100%}
+.question-card{min-width:0;padding:clamp(18px,2vw,30px)}
+.question-header{margin-bottom:12px}
+.question-type{font-size:10px}
+.question-card h2{font-size:clamp(24px,1.65vw,30px);line-height:1.25;margin-bottom:13px}
+.problem-statement{margin-bottom:15px;padding-bottom:14px}
+.statement-label{font-size:11px;margin-bottom:4px}
+.question-statement{font-size:clamp(16px,1.12vw,19px);line-height:1.57;font-weight:520}
+.diagram-frame{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+  padding:0!important;
+  overflow:visible!important;
+  background:#fff;
+  border:1px solid #d9e4f1;
+  border-radius:10px;
+  line-height:0;
+}
+.diagram-frame > .problem-media,
+.diagram-frame > img,
+.diagram-frame > video {
+  display:block!important;
+  position:static!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:800 / 655;
+  object-fit:contain!important;
+  margin:0!important;
+  padding:0!important;
+  border-radius:9px;
+}
+.diagram-frame > .diagram-placeholder{padding:60px 20px;line-height:1.6}
+.diagram-bottom{margin:12px 0 0;font-size:11px;line-height:1.5}
+.question-pager{margin-top:5px;padding-block:13px}
+.question-pager .btn{min-height:46px}
+.answer-card{grid-area:answer;min-width:0;padding:22px 20px}
+.answer-heading h2{font-size:19px}
+.field-label{font-size:14px}
+.value-field input{min-width:0}
+.answer-card textarea{min-height:190px}
+.answer-advice{color:#425a78}
+.calculator-card{
+  grid-area:calculator;
+  min-width:0;
+  position:sticky;top:14px;
+  padding:19px 17px;
+  box-shadow:var(--shadow)
+}
+.calc-key{min-width:0;min-height:48px}
+.calc-description,.calc-hint{font-size:12px}
+.calc-screen{min-width:0}
+.calc-result{font-size:clamp(24px,1.65vw,30px)}
+@media(max-width:1520px){
+  .exam-layout{
+    grid-template-columns:minmax(0,1fr) minmax(310px,345px);
+    grid-template-areas:
+      "nav nav"
+      "question answer"
+      "question calculator";
+    gap:14px;
+  }
+  .problem-rail{gap:12px}
+  .calculator-card{position:static}
+  .question-card{padding:clamp(18px,2vw,27px)}
+  .diagram-frame > img{width:100%!important}
+}
+@media(max-width:980px){
+  .exam-layout{
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    grid-template-areas:
+      "nav nav"
+      "question question"
+      "answer calculator";
+  }
+  .problem-rail{align-items:stretch;flex-direction:column;gap:10px}
+  .rail-top{display:block;padding:0 2px}
+  .rail-nav{width:100%}
+  .question-column,.answer-card,.calculator-card{grid-row:auto;grid-column:auto}
+  .diagram-frame > img{max-width:850px!important;margin-inline:auto!important}
+  .calculator-card{position:static}
+}
+@media(max-width:680px){
+  .exam{padding:18px 12px 45px}
+  .exam-instructions{padding:14px 14px;gap:11px}
+  .instruction-text p{font-size:16px;line-height:1.5}
+  .exam-layout{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"nav" "question" "answer" "calculator";
+    gap:13px;
+  }
+  .problem-rail{padding:12px}
+  .rail-nav{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rail-item{min-height:58px}
+  .question-card{padding:18px 13px}
+  .question-statement{font-size:16px}
+  .diagram-frame > img{width:100%!important}
+  .answer-card,.calculator-card{padding:19px 17px}
+  .exam-metrics{width:100%}
+}
+@media(max-width:390px){
+  .rail-item{padding:8px 9px}
+  .rail-num{font-size:12px}
+  .rail-copy strong{font-size:12px}
+  .rail-copy small{font-size:10px}
+  .calc-key{min-height:48px}
+}
