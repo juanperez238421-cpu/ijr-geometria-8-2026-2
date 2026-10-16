@@ -76,7 +76,7 @@ Consultas de revisión desde la consola SQL de Supabase, con privilegios adminis
 select id, student_name, student_group, state, strikes, started_at,
        submitted_at, (select count(*) from jsonb_object_keys(answers)) as total_respuestas
 from public.geo8_canada_quiz_attempts
-where student_group='8C' and student_name ilike '%jacobo%';
+where student_group='8C' and student_name ilike '%APELLIDO_O_NOMBRE%';
 
 -- Huellas de registros auditados
 select audit_id, source, change_type, attempt_id,
@@ -86,3 +86,17 @@ from private.geo8_canada_quiz_audit_v1
 order by audit_id desc;
 ```
 
+
+### Vista de auditoría para docentes
+
+Se creó también `private.geo8_canada_quiz_audit_report_v1` (solo para personal autorizado en el editor SQL de Supabase). Cada fila muestra el último snapshot registrado, el tipo de evidencia (`historical_baseline` o `live_trigger`), la cantidad de respuestas, las incidencias, versiones y si el SHA-256 sigue correspondiendo al contenido. Los intentos anteriores a la creación del trigger tienen únicamente una copia retrospectiva: **no se puede afirmar que constituyan un historial detallado de eventos que no fueron capturados originalmente**.
+
+```sql
+select attempt_id, student_name, student_group, state,
+       strikes, answered_slots, audit_captured_at,
+       evidence_source, versions_count, integrity_verified
+from private.geo8_canada_quiz_audit_report_v1
+order by audit_captured_at desc;
+```
+
+Se validó el trigger INSERT/UPDATE/DELETE dentro de una transacción revertida (sin crear intentos de prueba permanentes). Un SHA-256 calculado y almacenado en la misma base de datos no equivale a un sellado de tiempo externo ni resiste a un administrador malicioso con acceso total.
