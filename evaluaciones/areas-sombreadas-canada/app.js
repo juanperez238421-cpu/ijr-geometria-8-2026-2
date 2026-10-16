@@ -132,16 +132,18 @@
  async function start(){
    const name=$("studentName").value.trim().replace(/\s+/g," ");
    const group=$("studentGroup").value;
-   if(name.length<3||!["8A","8B","8C","OTRO"].includes(group)||!$("studentAgree").checked){
-     warn("Ingresa tu nombre, selecciona el grupo y acepta las instrucciones para comenzar.");return;
+    const email=$("studentEmail").value.trim().toLowerCase();
+    const validEmail=/^[a-z0-9][a-z0-9._+-]*@ijr\.edu\.co$/.test(email);
+   if(name.length<3||!validEmail||!["8A","8B","8C","OTRO"].includes(group)||!$("studentAgree").checked){
+     warn("Ingresa nombre, correo institucional válido @ijr.edu.co, grupo y acepta las instrucciones.");return;
    }
    if(!manifest.length){warn("Las figuras aún no están disponibles. Recarga la página.");return;}
    const ok=await fullscreen();
    if(!ok)return;
    $("previewStart").disabled=true;
    try{
-     const data=await request("start",{student_name:name,student_group:group,agreed:true});
-     state.session={attempt_id:data.attempt_id,token:data.token,student_name:data.student_name,student_group:data.student_group};
+     const data=await request("start",{student_name:name,student_group:group,student_email:email,agreed:true});
+     state.session={attempt_id:data.attempt_id,token:data.token,student_name:data.student_name,student_group:data.student_group,student_email:data.student_email||email};
      state.startedAt=data.started_at;state.strikes=data.strikes||0;state.status="active";state.armed=true;
      persistSession();show("examView");render();updateStatus();
    }catch(e){
@@ -200,6 +202,7 @@
    $("resultDescription").textContent=blocked?"Se alcanzaron tres incidencias. No se calificará automáticamente: el docente debe revisar el registro.":"Tus respuestas quedaron guardadas de manera privada. No se publican las soluciones ni la nota en esta página.";
    $("resultSummary").textContent="Estudiante: "+(state.session?.student_name||"")+
      "\nGrupo: "+(state.session?.student_group||"")+
+     (state.session?.student_email?"\nCorreo institucional declarado: "+state.session.student_email:"")+
      "\nEjercicios con respuesta y desarrollo: "+state.answers.filter(complete).length+" de "+COUNT+
      "\nIncidencias: "+state.strikes+" de "+MAX+
      (stamp?"\nFecha de entrega: "+new Date(stamp).toLocaleString("es-CO"):"");
@@ -224,6 +227,7 @@
    try{
      const data=await request("status");
      state.startedAt=data.started_at;state.strikes=data.strikes;
+      state.session.student_email=data.student_email||state.session.student_email||null;
      for(let i=0;i<COUNT;i++)state.answers[i]={value:String(data.answers?.["P"+two(i+1)]?.value||""),unit:"cm²",reasoning:String(data.answers?.["P"+two(i+1)]?.reasoning||"")};
      if(data.state==="active"){
        show("examView");render();state.status="active";state.armed=true;

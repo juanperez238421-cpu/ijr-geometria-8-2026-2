@@ -17,7 +17,7 @@ Cuatro problemas con enunciados y diagramas SVG de alta definición, siguiendo l
 
 ## Proceso estudiantil
 
-1. Escribe nombre y apellido, selecciona grupo (8A, 8B, 8C o movilidad) y acepta las reglas.
+1. Escribe nombre y apellido, **correo institucional `@ijr.edu.co`**, selecciona grupo (8A, 8B, 8C o movilidad) y acepta las reglas.
 2. Activa pantalla completa e inicia. El intento se crea en la base privada de Supabase.
 3. Navega entre los 4 ejercicios libremente. Las respuestas se guardan automáticamente en el servidor.
 4. Responde con área, unidades (cm²) y justificación en texto.
@@ -114,3 +114,19 @@ Se validó el trigger INSERT/UPDATE/DELETE dentro de una transacción revertida 
 Pruebas: node --test evaluaciones/areas-sombreadas-canada/qa.test.cjs
 
 Incluye precedencia, π, coma decimal, división por cero, caracteres no permitidos, accesibilidad estructural y puntos de ruptura responsive.
+
+## Correo institucional y auditoría V2 · 2026-10-16
+
+- Se valida `@ijr.edu.co` en interfaz y servidor. `student_email` y su columna generada `email_normalized` permiten consultar intentos por correo/grupo; repetir registro crea otro intento.
+- `identity_mode` distingue `legacy_name_only` (históricos, sin correo) de `institutional_email_declared` (correo declarado). **No hay OTP:** el correo no prueba titularidad; no presentarlo como identidad verificada.
+- La auditoría privada append-only añade correo e identidad en nuevos snapshots; los históricos no se modifican.
+- Reporte privado: `private.geo8_canada_quiz_email_report_v2`, con seguimiento de entregas, incidencias y huellas; nunca exponerlo en GitHub Pages.
+- El código de Edge Function se conserva en `supabase/functions/geometry8-canada-quiz/index.ts`, sin credenciales de servicio.
+
+Consulta solo para administrador autenticado en el editor SQL de Supabase:
+
+```sql
+select student_name,student_group,current_institutional_email,identity_mode,state,
+       strikes,answered_slots,started_at_iso,submitted_at_iso,versions_count,integrity_verified,receipt
+from private.geo8_canada_quiz_email_report_v2 order by started_at_iso desc;
+```
