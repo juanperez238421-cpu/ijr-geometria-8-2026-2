@@ -60,3 +60,29 @@ node --test evaluaciones/areas-sombreadas-canada/qa.test.cjs
 - 4 controles de navegación, 3 indicadores de incidencias y envío.
 - No hay claves de respuestas ni enlace de solución.
 - Validar manualmente navegador Edge/Chrome en desktop, viewport móvil y servicio de Supabase antes de usar para asignar una nota.
+
+## Escudo institucional auténtico (2026-10-15)
+
+La cabecera de la evaluación utiliza `assets/escudo-institucional-original.svg`, recurso SVG con imagen WebP optimizada tomada de la **imagen institucional original entregada en las fuentes del proyecto** (`logo_colegio_fondo_blanco.png`). Se conserva su heráldica, colores y proporción; no se reinterpreta con figuras vectoriales inventadas. El cambio solo aplica al examen, sin sobrescribir el escudo SVG general de otros módulos.
+
+## Registro privado de auditoría (2026-10-15)
+
+En el proyecto Supabase existen los registros originales en `public.geo8_canada_quiz_attempts` y una nueva bitácora en `private.geo8_canada_quiz_audit_v1`. La bitácora contiene copias de los intentos ya existentes identificadas como `historical_baseline / BASELINE`, y para futuros cambios utiliza un trigger `AFTER INSERT OR UPDATE OR DELETE` que almacena snapshots de respuestas, incidencias, estado y marcas de tiempo con una huella SHA-256. El hash permite detectar inconsistencias del contenido, **no es una firma externa contra un administrador privilegiado**. La tabla tiene RLS sin políticas públicas y no expone el token de sesión; sus entradas son append-only mediante un trigger de protección contra UPDATE/DELETE. No debe publicarse ningún snapshot con datos personales en GitHub Pages.
+
+Consultas de revisión desde la consola SQL de Supabase, con privilegios administrativos:
+
+```sql
+-- Evidencia de entrega por estudiante (solo lectura)
+select id, student_name, student_group, state, strikes, started_at,
+       submitted_at, (select count(*) from jsonb_object_keys(answers)) as total_respuestas
+from public.geo8_canada_quiz_attempts
+where student_group='8C' and student_name ilike '%jacobo%';
+
+-- Huellas de registros auditados
+select audit_id, source, change_type, attempt_id,
+       captured_at, (snapshot->>'state') as state,
+       snapshot_sha256 = encode(sha256(convert_to(snapshot::text,'UTF8')),'hex') as digest_ok
+from private.geo8_canada_quiz_audit_v1
+order by audit_id desc;
+```
+
