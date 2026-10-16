@@ -13,7 +13,8 @@
       "title": "Sector anular de 270°",
       "statement": "Determina el área de la región sombreada mostrada en la figura. El sector anular tiene un ángulo central de 270°, radio exterior R = 6 cm y radio interior r = 3 cm.",
       "diagram": "assets/p01-sector-anular.svg",
-      "figure_count": 2
+      "figure_count": 2,
+      "dimensions": "Radio exterior: R = 6 cm   ·   Radio interior: r = 3 cm   ·   Ángulo: 270°"
     },
     {
       "id": "P02",
@@ -21,7 +22,8 @@
       "title": "Cuadrado con círculo inscrito",
       "statement": "Determina el área de la región sombreada dentro del cuadrado y fuera del círculo. El lado del cuadrado mide 12 cm y el radio del círculo inscrito mide 6 cm.",
       "diagram": "assets/p02-cuadrado-circulo.svg",
-      "figure_count": 2
+      "figure_count": 2,
+      "dimensions": "Lado del cuadrado = 12 cm   ·   Radio del círculo = 6 cm"
     },
     {
       "id": "P03",
@@ -29,7 +31,8 @@
       "title": "Semicírculo con triángulo",
       "statement": "Determina el área de la región sombreada dentro del semicírculo y fuera del triángulo. El diámetro del semicírculo es 12 cm y la altura del triángulo es 6 cm.",
       "diagram": "assets/p03-semicirculo-triangulo.svg",
-      "figure_count": 2
+      "figure_count": 2,
+      "dimensions": "Diámetro del semicírculo = 12 cm   ·   Altura del triángulo = 6 cm"
     },
     {
       "id": "P04",
@@ -37,7 +40,8 @@
       "title": "Cuatro cuartos de círculo",
       "statement": "Determina el área de la región sombreada formada entre los cuatro cuartos de círculo. El cuadrado tiene un lado de 14 cm y cada cuarto de círculo tiene radio de 7 cm.",
       "diagram": "assets/p04-cuatro-cuartos.svg",
-      "figure_count": 5
+      "figure_count": 5,
+      "dimensions": "Lado del cuadrado = 14 cm   ·   Radio de cada cuarto de círculo = 7 cm"
     }
   ]
 }
