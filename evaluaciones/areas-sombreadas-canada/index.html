@@ -7,7 +7,10 @@
   <meta name="description" content="Evaluación virtual de áreas sombreadas, Geometría 8°, Instituto Jorge Robledo.">
   <title>Áreas sombreadas | Evaluación virtual | Geometría 8°</title>
   <link rel="stylesheet" href="./styles.css">
-  <script defer src="./app.js"></script><style>.student-form{max-width:640px;display:grid;grid-template-columns:1fr 1fr;gap:8px 15px;margin:24px 0}.student-form label{font-weight:750;font-size:12px;color:#314968}.student-form input[type=text],.student-form select{width:100%;padding:12px 13px;border:1px solid #d9e1ee;border-radius:9px;background:#fff;color:#1b2944}.consent-line{grid-column:1/-1;display:flex;align-items:center;gap:9px;margin:7px 0}.consent-line input{accent-color:#2d63ce;width:18px;height:18px}.receipt{font:700 12px/1.6 ui-monospace,monospace;overflow-wrap:anywhere;color:#1b4caa}.diagram-frame img.problem-media{width:100%;height:100%;object-fit:contain}@media(max-width:580px){.student-form{grid-template-columns:1fr}}</style>
+  <link rel="stylesheet" href="./refinement.css?v=20261016">
+  <script defer src="./app.js"></script>
+  <script defer src="./calculator-core.js?v=20261016"></script>
+  <script defer src="./calculator.js?v=20261016"></script><style>.student-form{max-width:640px;display:grid;grid-template-columns:1fr 1fr;gap:8px 15px;margin:24px 0}.student-form label{font-weight:750;font-size:12px;color:#314968}.student-form input[type=text],.student-form select{width:100%;padding:12px 13px;border:1px solid #d9e1ee;border-radius:9px;background:#fff;color:#1b2944}.consent-line{grid-column:1/-1;display:flex;align-items:center;gap:9px;margin:7px 0}.consent-line input{accent-color:#2d63ce;width:18px;height:18px}.receipt{font:700 12px/1.6 ui-monospace,monospace;overflow-wrap:anywhere;color:#1b4caa}.diagram-frame img.problem-media{width:100%;height:100%;object-fit:contain}@media(max-width:580px){.student-form{grid-template-columns:1fr}}</style>
 </head>
 <body>
   <div class="app-shell">
@@ -84,7 +87,13 @@
             <div class="metric"><span>AVANCE</span><strong id="progress">0 / 4</strong></div>
           </div>
         </div>
-        <div class="preview-ribbon" role="status"><strong>EVALUACIÓN VIRTUAL</strong><span>Observa cada figura. Usa π = 3.14 cuando corresponda. Presenta el resultado en cm² y explica tu procedimiento.</span></div>
+        <section class="exam-instructions" aria-labelledby="examInstructionTitle">
+  <span class="instruction-mark" aria-hidden="true">i</span>
+  <div class="instruction-text">
+    <h2 id="examInstructionTitle">Instrucciones para los cuatro problemas</h2>
+    <p>Observa la figura y calcula el <strong>área sombreada</strong>. Usa <strong>π = 3.14</strong> cuando sea necesario. Escribe tu respuesta en <strong>cm²</strong> y explica tu procedimiento.</p>
+  </div>
+</section>
         <div class="exam-layout">
           <nav class="problem-rail" aria-label="Navegación de ejercicios">
             <div class="rail-top"><span class="rail-overline">CUESTIONARIO</span><strong>Problemas</strong><small>Selecciona un ejercicio</small></div>
@@ -94,13 +103,13 @@
               <button type="button" class="rail-item" data-problem="2"><span class="rail-num">03</span><span class="rail-copy"><strong>Problema 03</strong><small>Semicírculo y triángulo</small></span><span class="rail-state">○</span></button>
               <button type="button" class="rail-item" data-problem="3"><span class="rail-num">04</span><span class="rail-copy"><strong>Problema 04</strong><small>Cuatro cuartos</small></span><span class="rail-state">○</span></button>
             </div>
-            <div class="rail-bottom"><span class="shield">◇</span><p>Sesión de demostración con control de incidencias de pantalla completa.</p></div>
+            <div class="rail-bottom"><span class="shield" aria-hidden="true">◇</span><p>Evaluación individual. Las respuestas quedan registradas de manera privada.</p></div>
           </nav>
           <div class="question-column">
             <article class="question-card">
               <div class="question-header"><span class="question-index" id="questionCounter">EJERCICIO 01 DE 04</span><span class="question-type">ÁREA SOMBREADA · FIGURA COMPUESTA</span></div>
               <h2 id="questionTitle">Composición geométrica pendiente</h2>
-              <p class="question-statement" id="questionStatement">Determina el área de la región sombreada en la figura.</p>
+              <div class="problem-statement"><span class="statement-label">ENUNCIADO</span><p class="question-statement" id="questionStatement">Determina el área de la región sombreada en la figura.</p></div>
               <div class="diagram-frame" id="diagramFrame" aria-label="Diagrama pendiente de incorporar">
                 <div class="diagram-placeholder">
                   <div class="placeholder-glyph" aria-hidden="true">▱</div>
@@ -121,11 +130,46 @@
             <label class="field-label steps-label" for="reasoning">Explica tu procedimiento</label>
             <textarea id="reasoning" rows="9" maxlength="5000" placeholder="1. Identifico las figuras…&#10;2. Calculo el área de cada una…&#10;3. Sumo o resto las áreas…"></textarea>
             <div class="save-note" id="saveStatus" role="status">Borrador pendiente de guardar</div>
-            <div class="answer-divider"></div>
-            <div class="checklist-label">CRITERIOS DE LA PRUEBA</div>
-            <ul class="criteria"><li><span>✓</span> Identificar las figuras geométricas</li><li><span>✓</span> Seleccionar las fórmulas correctas</li><li><span>✓</span> Justificar las operaciones</li><li><span>✓</span> Expresar el resultado con unidades</li></ul>
+            <p class="answer-advice">Identifica las figuras, justifica las operaciones y expresa el resultado con unidades.</p>
             <button type="button" class="btn btn-secondary end-button" id="finishButton">Enviar evaluación</button>
           </aside>
+          <aside class="calculator-card" id="calculatorPanel" aria-labelledby="calculatorTitle">
+  <div class="calculator-head">
+    <div><span class="calculator-kicker">HERRAMIENTA DE APOYO</span><h2 id="calculatorTitle">Calculadora</h2></div>
+    <span class="calc-status">Disponible</span>
+  </div>
+  <p class="calc-description" id="calculatorHelp">Realiza tus operaciones sin abandonar el examen. Para esta actividad, π = 3.14.</p>
+  <div class="calc-screen" aria-describedby="calculatorHelp">
+    <div class="calc-expression" id="calcExpression" tabindex="0" role="textbox" aria-readonly="true" aria-label="Operación actual. Escribe una operación con el teclado">0</div>
+    <output class="calc-result" id="calcResult" role="status" aria-live="polite" aria-atomic="true">0</output>
+  </div>
+  <div class="calc-keys" role="group" aria-label="Teclado de la calculadora"><button type="button" class="calc-key utility" data-calc="clear" aria-label="Borrar todo">AC</button>
+              <button type="button" class="calc-key utility" data-calc="back" aria-label="Borrar último carácter">⌫</button>
+              <button type="button" class="calc-key utility" data-calc="(" aria-label="Abrir paréntesis">(</button>
+              <button type="button" class="calc-key utility" data-calc=")" aria-label="Cerrar paréntesis">)</button>
+              <button type="button" class="calc-key " data-calc="7">7</button>
+              <button type="button" class="calc-key " data-calc="8">8</button>
+              <button type="button" class="calc-key " data-calc="9">9</button>
+              <button type="button" class="calc-key operator" data-calc="÷" aria-label="Dividir">÷</button>
+              <button type="button" class="calc-key " data-calc="4">4</button>
+              <button type="button" class="calc-key " data-calc="5">5</button>
+              <button type="button" class="calc-key " data-calc="6">6</button>
+              <button type="button" class="calc-key operator" data-calc="×" aria-label="Multiplicar">×</button>
+              <button type="button" class="calc-key " data-calc="1">1</button>
+              <button type="button" class="calc-key " data-calc="2">2</button>
+              <button type="button" class="calc-key " data-calc="3">3</button>
+              <button type="button" class="calc-key operator" data-calc="−" aria-label="Restar">−</button>
+              <button type="button" class="calc-key " data-calc="0">0</button>
+              <button type="button" class="calc-key " data-calc="." aria-label="Punto decimal">.</button>
+              <button type="button" class="calc-key " data-calc="π" aria-label="Pi igual a tres punto catorce">π</button>
+              <button type="button" class="calc-key operator" data-calc="+" aria-label="Sumar">+</button>
+              <button type="button" class="calc-key utility" data-calc="±" aria-label="Cambiar signo">±</button>
+              <button type="button" class="calc-key utility" data-calc="%" aria-label="Porcentaje">%</button>
+              <button type="button" class="calc-key equals" data-calc="equals" aria-label="Calcular resultado">=</button>
+              <button type="button" class="calc-key utility" data-calc="square" aria-label="Elevar al cuadrado">x²</button></div>
+  <button type="button" class="calc-transfer" id="calcTransfer" disabled>↳ Usar resultado en mi respuesta</button>
+  <p class="calc-hint" id="calcHint" role="status" aria-live="polite">Puedes usar el teclado cuando la calculadora tenga el foco. Los cálculos no se envían como procedimiento.</p>
+</aside>
         </div>
       </section>
 

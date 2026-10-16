@@ -100,3 +100,17 @@ order by audit_captured_at desc;
 ```
 
 Se validó el trigger INSERT/UPDATE/DELETE dentro de una transacción revertida (sin crear intentos de prueba permanentes). Un SHA-256 calculado y almacenado en la misma base de datos no equivale a un sellado de tiempo externo ni resiste a un administrador malicioso con acceso total.
+
+## Mejoras de legibilidad y calculadora (octubre de 2026)
+
+- Instrucciones y enunciados más grandes y de alto contraste; grilla minimalista en escritorio y distribución adaptable para dispositivos móviles.
+- Calculadora visible dentro del mismo examen; botones de 46–49 px, foco por teclado, controles con nombres accesibles, pantalla de cálculo y mensajes anunciados mediante ARIA.
+- Operaciones: suma, resta, multiplicación, división, paréntesis, exponente, porcentaje, cambio de signo y π=3.14 exactamente (no Math.PI).
+- El parser de expresiones no ejecuta JavaScript dinámico ni utiliza servicios externos; no contiene las soluciones de los ejercicios.
+- La tecla = calcula. Con el resultado listo, "Usar resultado en mi respuesta" transfiere el valor no negativo al input del ejercicio activo y emite el evento input existente, manteniendo el mismo autoguardado privado en Supabase.
+- Mientras se usa la calculadora no es necesario cambiar de pestaña ni abandonar pantalla completa.
+- Las operaciones de la calculadora no se registran en Supabase; el estudiante debe escribir su razonamiento en el campo previsto. Cambiar el diseño no modifica intentos o calificaciones previas.
+
+Pruebas: node --test evaluaciones/areas-sombreadas-canada/qa.test.cjs
+
+Incluye precedencia, π, coma decimal, división por cero, caracteres no permitidos, accesibilidad estructural y puntos de ruptura responsive.
