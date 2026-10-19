@@ -1,0 +1,120 @@
+name: Render Geometry Week3 V3 PQH
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Reconstruct, patch and compile V3
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat manim_week3_v3_payload/payload.part* | base64 -d > geometry8_week3_v3.tar.gz
+          tar -xzf geometry8_week3_v3.tar.gz
+          python - <<'PY'
+          from pathlib import Path
+
+          shaded = Path('Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py')
+          s = shaded.read_text(encoding='utf-8')
+          patches = [
+              ('fill_color=LIGHT_GRAY, fill_opacity=0.72).move_to(LEFT*3.35 + DOWN*0.62)',
+               'fill_color=LIGHT_GRAY, fill_opacity=0.72).move_to(LEFT*3.35 + DOWN*0.97)'),
+              ('r"10\\,\\mathrm{cm}", y_shift=0.30, size=46)',
+               'r"10\\,\\mathrm{cm}", y_shift=-0.35, size=46)'),
+              ('Geometry8Week3ShadedAreasSeniorV3 --format',
+               'Geometry8Week3ShadedAreasSeniorV3Final --format'),
+          ]
+          for old, new in patches:
+              assert old in s, f'expected shaded patch not found: {old}'
+              s = s.replace(old, new, 1)
+          shaded.write_text(s, encoding='utf-8')
+
+          circle = Path('Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py')
+          c = circle.read_text(encoding='utf-8')
+          patches = [
+              ('r"\\boxed{C=\\pi d}"', 'r"C=\\pi d"'),
+              ('r"\\boxed{C=2\\pi r}"', 'r"C=2\\pi r"'),
+              ('Geometry8Week3CircleTheorySeniorV3 --format',
+               'Geometry8Week3CircleTheorySeniorV3Final --format'),
+          ]
+          for old, new in patches:
+              assert old in c, f'expected circle patch not found: {old}'
+              c = c.replace(old, new, 1)
+          circle.write_text(c, encoding='utf-8')
+          PY
+          python -m py_compile jp_classroom_style.py \
+            Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py \
+            Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py
+
+      - name: Pull official ManimCE 0.20.1 image
+        run: docker pull manimcommunity/manim:v0.20.1
+
+      - name: Final literal -pqh renders
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_manim () {
+            local source="$1" scene="$2" log="$3"
+            docker run --rm \
+              --user "$(id -u):$(id -g)" \
+              -e HOME=/tmp/manim-home \
+              -e LESSON_TIME_SCALE=1.0 \
+              -v "$PWD:/manim" -w /manim \
+              --entrypoint bash manimcommunity/manim:v0.20.1 \
+              -c "set -euo pipefail; mkdir -p /tmp/colab-bin; printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/colab-bin/xdg-open; chmod +x /tmp/colab-bin/xdg-open; export PATH=/tmp/colab-bin:\$PATH; manim -pqh '$source' '$scene' --format=mp4 --disable_caching" \
+              2>&1 | tee "$log"
+          }
+          run_manim Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py Geometry8Week3CircleTheorySeniorV3Final render_circle_pqh.log
+          run_manim Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py Geometry8Week3ShadedAreasSeniorV3Final render_shaded_pqh.log
+
+      - name: Stage exact rendered delivery
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p delivery
+          CIRCLE="$(find media -type f -name 'Geometry8Week3CircleTheorySeniorV3Final.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
+          SHADED="$(find media -type f -name 'Geometry8Week3ShadedAreasSeniorV3Final.mp4' -printf '%T@ %p\n' | sort -nr | head -1 | cut -d' ' -f2-)"
+          test -n "$CIRCLE" && test -s "$CIRCLE"
+          test -n "$SHADED" && test -s "$SHADED"
+          cp "$CIRCLE" delivery/Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL_pqh.mp4
+          cp "$SHADED" delivery/Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL_pqh.mp4
+          cp Geometry8_Week3_Class1_CircleTheory_Senior_V3_FINAL.py delivery/
+          cp Geometry8_Week3_Class2_ShadedAreas_Senior_V3_FINAL.py delivery/
+          cp jp_classroom_style.py delivery/
+          cp render_circle_pqh.log render_shaded_pqh.log delivery/
+          sha256sum delivery/*.mp4 delivery/*.py > delivery/SHA256SUMS.txt
+          ls -lh delivery
+
+      - name: Upload rendered delivery
+        uses: actions/upload-artifact@v4
+        with:
+          name: geometry8-week3-v3-pqh
+          path: delivery/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Post-render audit
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -u
+          for f in delivery/*.mp4; do
+            meta="${f%.mp4}.ffprobe.txt"
+            ffprobe -v error -select_streams v:0 \
+              -show_entries stream=codec_name,width,height,r_frame_rate,pix_fmt \
+              -show_entries format=duration,size \
+              -of default=noprint_wrappers=1 "$f" > "$meta"
+            cat "$meta"
+            ffmpeg -v error -i "$f" -f null -
+          done
