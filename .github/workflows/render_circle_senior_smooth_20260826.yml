@@ -1,0 +1,134 @@
+name: Render Geometry8 Circle 2D Only PQH
+
+on:
+  push:
+    branches: [circle-2d-only-workshop-20260826]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: geometry8-circle-2d-only-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Python sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd manim_circle_20260826
+          python -m py_compile \
+            Geometry8_Circle_2D_Only_Workshop.py \
+            Geometry8_Circle_2D_Only_Workshop_Final.py
+
+      - name: Pull pinned ManimCE image
+        run: docker pull manimcommunity/manim:v0.20.1
+
+      - name: PQL smoke render
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd manim_circle_20260826
+          mkdir -p /tmp/manim-bin
+          printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/manim-bin/xdg-open
+          chmod +x /tmp/manim-bin/xdg-open
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp/manim-home \
+            -e LESSON_TIME_SCALE=0.08 \
+            -v "$PWD:/manim" \
+            -v /tmp/manim-bin:/tmp/manim-bin:ro \
+            -w /manim --entrypoint bash \
+            manimcommunity/manim:v0.20.1 \
+            -c 'export PATH="/tmp/manim-bin:$PATH"; printf "import os\nif not hasattr(os, \"startfile\"):\n    os.startfile = lambda *args, **kwargs: None\n" > /tmp/sitecustomize.py; export PYTHONPATH="/tmp${PYTHONPATH:+:$PYTHONPATH}"; manim -pql Geometry8_Circle_2D_Only_Workshop_Final.py Geometry8Circle2DOnlyWorkshopFinal --format=mp4 --disable_caching'
+
+      - name: Final literal PQH render
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd manim_circle_20260826
+          rm -rf final_media_2d_only
+          mkdir -p /tmp/manim-bin
+          printf '#!/usr/bin/env bash\nexit 0\n' > /tmp/manim-bin/xdg-open
+          chmod +x /tmp/manim-bin/xdg-open
+          docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp/manim-home \
+            -e LESSON_TIME_SCALE=1.0 \
+            -v "$PWD:/manim" \
+            -v /tmp/manim-bin:/tmp/manim-bin:ro \
+            -w /manim --entrypoint bash \
+            manimcommunity/manim:v0.20.1 \
+            -c 'export PATH="/tmp/manim-bin:$PATH"; printf "import os\nif not hasattr(os, \"startfile\"):\n    os.startfile = lambda *args, **kwargs: None\n" > /tmp/sitecustomize.py; export PYTHONPATH="/tmp${PYTHONPATH:+:$PYTHONPATH}"; manim -pqh Geometry8_Circle_2D_Only_Workshop_Final.py Geometry8Circle2DOnlyWorkshopFinal --format=mp4 --disable_caching --resolution 1920,1080 --media_dir final_media_2d_only'
+
+      - name: Normalize verify decode and package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd manim_circle_20260826
+          rm -rf delivery_2d_only
+          mkdir -p delivery_2d_only
+          SRC="$(find final_media_2d_only -type f -name 'Geometry8Circle2DOnlyWorkshopFinal.mp4' -print -quit)"
+          test -n "$SRC"
+          test -s "$SRC"
+          OUT='delivery_2d_only/Geometry8_Circle_2D_Only_Workshop_SENIOR_QA_FINAL_pqh.mp4'
+
+          # Preserve the required literal -pqh render, then normalize the delivery
+          # master to the classroom protocol's exact 30 fps.
+          ffmpeg -y -v error -i "$SRC" \
+            -vf fps=30 \
+            -c:v libx264 -preset medium -crf 17 \
+            -pix_fmt yuv420p -an "$OUT"
+
+          ffprobe -v error -select_streams v:0 \
+            -show_entries stream=codec_name,width,height,pix_fmt,r_frame_rate \
+            -of json "$OUT" > delivery_2d_only/ffprobe.json
+          python3 - <<'PY'
+          import json
+          from fractions import Fraction
+          s=json.load(open('delivery_2d_only/ffprobe.json'))['streams'][0]
+          assert s['codec_name']=='h264', s
+          assert int(s['width'])==1920 and int(s['height'])==1080, s
+          assert s['pix_fmt']=='yuv420p', s
+          assert Fraction(s['r_frame_rate'])==30, s
+          print('VERIFIED 1920x1080 30fps H.264 yuv420p')
+          PY
+          ffmpeg -v error -i "$OUT" -f null -
+          cp Geometry8_Circle_2D_Only_Workshop.py delivery_2d_only/
+          cp Geometry8_Circle_2D_Only_Workshop_Final.py delivery_2d_only/
+          sha256sum "$OUT" > delivery_2d_only/SHA256SUMS.txt
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          delivery = Path('delivery_2d_only')
+          paths = [
+              delivery / 'Geometry8_Circle_2D_Only_Workshop_SENIOR_QA_FINAL_pqh.mp4',
+              Path('Geometry8_Circle_2D_Only_Workshop.py'),
+              Path('Geometry8_Circle_2D_Only_Workshop_Final.py'),
+              delivery / 'ffprobe.json',
+              delivery / 'SHA256SUMS.txt',
+          ]
+          archive = delivery / 'Geometry8_Circle_2D_Only_Workshop_PQH.zip'
+          with zipfile.ZipFile(archive, 'w', compression=zipfile.ZIP_DEFLATED) as z:
+              for path in paths:
+                  z.write(path, arcname=path.name)
+          print(f'PACKAGED {archive}')
+          PY
+
+      - name: Upload verified 2D-only render
+        uses: actions/upload-artifact@v4
+        with:
+          name: geometry8-circle-2d-only-senior-qa-pqh
+          path: manim_circle_20260826/delivery_2d_only/
+          if-no-files-found: error
