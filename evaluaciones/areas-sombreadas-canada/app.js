@@ -30,7 +30,7 @@
    try{
      const response=await fetch(API,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body),signal:controller.signal,cache:"no-store"});
      const data=await response.json();
-     if(!response.ok){throw Error(data.error==="ASSESSMENT_CLOSED"?"Plazo cerrado: 31 de octubre de 2026, 11:59 p. m., hora de Ottawa.":(data.error||"No se pudo conectar con el servidor"));}
+     if(!response.ok){throw Error(data.error==="ASSESSMENT_CLOSED"?"La actividad no está disponible temporalmente. Informa al docente.":(data.error||"No se pudo conectar con el servidor"));}
      return data;
    }catch(err){throw Error(err instanceof Error?err.message:"Error de conexión");}
    finally{clearTimeout(t);}
@@ -129,10 +129,10 @@
       m.problems.some(p=>!p.ready||!p.statement||!p.title||!/^assets\/[a-z0-9/_-]+\.svg$/.test(p.diagram)))throw Error("El cuestionario no está completo.");
    manifest=m.problems;
  }
- async function refreshDeadline(){
+ async function refreshAvailability(){
    const windowInfo=await request("window");
    state.windowOpen=windowInfo.open===true;
-   $("deadlineStatus").textContent=state.windowOpen?"Habilitada hasta el 31 de octubre de 2026, 11:59 p. m. (Ottawa, Canadá).":"La evaluación cerró el 31 de octubre de 2026 a las 11:59 p. m. (Ottawa, Canadá).";
+   $("deadlineStatus").textContent=state.windowOpen?"Disponible sin fecha límite: puedes iniciar y entregar la evaluación en cualquier momento.":"No se pudo habilitar la evaluación. Informa al docente.";
    $("previewStart").disabled=!state.windowOpen;
    if(!state.windowOpen && state.status==="welcome"){state.status="closed";updateStatus();}
    if(!state.windowOpen && state.status==="active")showResult("closed",state.session?.attempt_id);
@@ -208,8 +208,8 @@
    $("incidentModal").classList.add("hidden");show("resultView");updateStatus();
    const blocked=status==="blocked",closed=status==="closed";
    $("resultIcon").textContent=blocked||closed?"!":"✓";
-   $("resultHeading").textContent=closed?"Plazo de evaluación cerrado":blocked?"Evaluación bloqueada":"Evaluación enviada";
-   $("resultDescription").textContent=closed?"El plazo finalizó el 31 de octubre a las 11:59 p. m. (Ottawa). Se conservan las respuestas guardadas, pero ya no se reciben cambios ni nuevas entregas.":blocked?"Se alcanzaron tres incidencias. No se calificará automáticamente: el docente debe revisar el registro.":"Tus respuestas quedaron guardadas de manera privada. No se publican las soluciones ni la nota en esta página.";
+   $("resultHeading").textContent=closed?"Evaluación no disponible":blocked?"Evaluación bloqueada":"Evaluación enviada";
+   $("resultDescription").textContent=closed?"La evaluación no está disponible temporalmente. Los datos guardados se conservan; informa al docente.":blocked?"Se alcanzaron tres incidencias. No se calificará automáticamente: el docente debe revisar el registro.":"Tus respuestas quedaron guardadas de manera privada. No se publican las soluciones ni la nota en esta página.";
    $("resultSummary").textContent="Estudiante: "+(state.session?.student_name||"")+
      "\nGrupo: "+(state.session?.student_group||"")+
      (state.session?.student_email?"\nCorreo institucional declarado: "+state.session.student_email:"")+
@@ -275,9 +275,9 @@
    window.addEventListener("focus",()=>clearTimeout(focusTimer));
    setInterval(()=>{if(state.startedAt&&["active","paused"].includes(state.status))$("clock").textContent=duration();},1000);
    try{await loadManifest();serverReady=true;}catch(e){warn("No se cargaron las figuras: "+e.message);$("previewStart").disabled=true;return;}
-   try{await refreshDeadline();}catch(e){$("previewStart").disabled=true;warn("No se pudo comprobar la disponibilidad en el servidor.");}
+   try{await refreshAvailability();}catch(e){$("previewStart").disabled=true;warn("No se pudo comprobar la disponibilidad en el servidor.");}
    await recover();
-   setInterval(()=>{if(["welcome","active"].includes(state.status))refreshDeadline().catch(()=>{});},30000);
+   setInterval(()=>{if(["welcome","active"].includes(state.status))refreshAvailability().catch(()=>{});},30000);
    updateStatus();
  }
  init();
