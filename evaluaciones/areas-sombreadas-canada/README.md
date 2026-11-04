@@ -29,7 +29,7 @@ La sesión queda vinculada a un token aleatorio de 256 bits guardado en el naveg
 
 El frontend vigila fullscreenchange, visibilitychange y blur y registra un incidente por salida para evitar contabilizaciones duplicadas de un mismo cambio. Los eventos se guardan en la tabla privada geo8_canada_quiz_attempts, junto con la hora del servidor. Tras tres eventos el servidor marca la sesión como **blocked** y no admite nuevas respuestas ni entregas. El docente deberá revisar las circunstancias; una salida de pantalla completa **no demuestra plagio**. La página no puede impedir capturas, móviles externos ni edición del navegador, y los eventos pueden ser omitidos por usuarios técnicamente avanzados. La regla se comunica explícitamente antes del inicio.
 
-El temporizador es informativo; no existe duración fija por intento. La **fecha límite de recepción de evaluaciones** es el 31 de octubre de 2026 a las 11:59 p. m., hora de Ottawa, Canadá (`America/Toronto`). El cierre técnico comienza el **1 de noviembre de 2026 a las 00:00 EDT** (`2026-11-01T04:00:00Z`).
+El temporizador es informativo; no existe duración fija por intento **ni fecha límite de recepción**. Por solicitud docente del 4 de noviembre de 2026, los estudiantes pueden iniciar, guardar y enviar la evaluación en cualquier momento.
 
 ## Backend aislado
 
@@ -131,6 +131,7 @@ select student_name,student_group,current_institutional_email,identity_mode,stat
 from private.geo8_canada_quiz_email_report_v2 order by started_at_iso desc;
 ```
 
-## Cierre automático confirmado · Ottawa · 31 de octubre de 2026
+## Disponibilidad sin fecha de vencimiento · 4 de noviembre de 2026
 
-La Edge Function tiene una ventana `window` de solo lectura con la hora límite y estado abierto/cerrado. `start`, `answer`, `incident` y `submit` rechazan operaciones fuera de plazo con `ASSESSMENT_CLOSED`; `status` sigue accesible para revisar intentos previos sin alterarlos. El navegador muestra la fecha de cierre y deshabilita el botón de inicio al vencer la ventana. El control del servidor determina el cierre, no el reloj del estudiante. La fecha local de la capital canadiense Ottawa se resuelve con `America/Toronto`, UTC−4 el 31 de octubre de 2026. La sesión debe enviarse **antes** de la medianoche del 1 de noviembre en Ottawa.
+Se eliminó el cierre automático de la Edge Function. La operación `window` devuelve `open: true` y `closes_at: null`. Las operaciones `start`, `answer`, `incident` y `submit` no se bloquean por fecha. Se conservan el requisito de correo institucional, los tokens de sesión, el máximo de tres incidencias y el almacenamiento privado con auditoría. No se cambian intentos históricos ni se reactivan sesiones previamente bloqueadas o entregadas.
+
