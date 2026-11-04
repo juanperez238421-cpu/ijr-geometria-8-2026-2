@@ -136,16 +136,21 @@ test("institutional email is required and recorded on each new Canada attempt",(
 });
 
 
-test("Ottawa Oct 31 midnight cutoff is stated and server-enforced",()=>{
+test("Canada assessment has no calendar deadline and retains server-side safeguards",()=>{
  const edge=read("../../supabase/functions/geometry8-canada-quiz/index.ts");
- assert(edge.includes('const CLOSES_AT = "2026-11-01T04:00:00.000Z"'));
- assert(edge.includes('timezone:"America/Toronto"'));
- assert(edge.includes('if(action==="window") return respond'));
- assert(edge.includes('["answer","incident","submit"].includes(String(action)) && !deadlineOpen()'));
- assert(edge.includes('if(!deadlineOpen()) return respond({error:"ASSESSMENT_CLOSED"'));
+ assert(edge.includes('const availabilityWindow = () => ({open:true,closes_at:null,timezone:null,closes_local:null,server_now:'));
+ assert(edge.includes('if(action==="window") return respond(availabilityWindow(),200,origin)'));
+ assert(!edge.includes("CLOSES_AT"));
+ assert(!edge.includes("deadlineOpen"));
+ assert(!edge.includes("ASSESSMENT_CLOSED"));
+ assert(edge.includes('if(row.state!=="active")'));
+ assert(edge.includes('const strikes=Math.min(3,Number(row.strikes)+1)'));
+ assert(edge.includes('const hash=await digest(payload.token)'));
  assert(html.includes('id="deadlineStatus"'));
- assert(html.includes("31 de octubre de 2026"));
+ assert(html.includes("Disponible sin fecha límite"));
+ assert(!html.includes("31 de octubre de 2026"));
  assert(js.includes('if(action!=="start"&&action!=="window")'));
- assert(js.includes("refreshDeadline"));
+ assert(js.includes("refreshAvailability"));
+ assert(js.includes('windowInfo.open===true'));
  assert(js.includes("data.open===false"));
 });
